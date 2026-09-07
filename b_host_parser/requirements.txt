@@ -1,0 +1,4 @@
+# B模块（主机日志解析）依赖库
+# 安装: pip install -r requirements.txt
+python-evtx>=0.8.1
+requests>=2.28
