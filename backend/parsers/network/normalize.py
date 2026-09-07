@@ -20,17 +20,54 @@ import os
 from datetime import datetime, timedelta, timezone
 
 from .config import DetectionConfig
-from .detectors import STAGE_ZH
+from .detectors import STAGE_ZH, _base_domain
 from .models import Anomaly, FlowRecord
 
 TZ_CN = timezone(timedelta(hours=8))
 
 EVENT_V2_FIELDS = (
-    "timestamp", "host", "source", "event_id", "event_type", "user", "process",
+    "timestamp", "host", "source", "source_event_id", "event_type", "user", "process",
     "src_ip", "dst_ip", "dst_port", "protocol",
     "logon_type", "session_id", "cmdline",
     "detail", "description", "anomaly_flags", "severity", "raw_log",
 )
+
+# event_type 冻结枚举（全组规范，B 起草 2026-09-07）
+EVENT_TYPE_ENUM = {
+    # 登录与会话
+    "login_success", "login_failed", "logout",
+    # 进程行为
+    "process_start", "process_end",
+    # 网络行为
+    "network_connection", "dns_query", "http_request",
+    # 文件行为
+    "file_create", "file_read", "file_write", "file_modify", "file_delete",
+    # 注册表行为
+    "registry_set", "registry_create", "registry_delete", "registry_query",
+    # 账户与权限
+    "user_created", "user_deleted", "user_modified",
+    "group_member_added", "group_member_removed", "privilege_change",
+    # 服务与计划任务
+    "service_created", "service_started", "service_stopped", "service_deleted",
+    "scheduled_task_created", "scheduled_task_run", "scheduled_task_deleted",
+}
+
+# 网络侧告警 -> 冻结 event_type 映射（检测名称一律放 anomaly_flags，不再自造 event_type）
+ANOMALY_EVENT_TYPE = {
+    "port_scan": "network_connection",
+    "suspicious_port": "network_connection",
+    "c2_beacon": "network_connection",
+    "exfiltration": "network_connection",
+    "icmp_tunnel": "network_connection",
+    "lateral_movement": "network_connection",
+    "http_attack": "http_request",
+    "dns_tunnel": "dns_query",
+}
+
+# 个别 flag 名对齐规范示例（规范 network_connection 示例用 remote_service_connection）
+ANOMALY_FLAG_NAME = {
+    "lateral_movement": "remote_service_connection",
+}
 
 # 模块内部分级 -> Event V2 数字 severity（critical 收敛为 3）
 SEVERITY_MAP = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 3}
@@ -67,12 +104,11 @@ def _direction(src_ip: str, dst_ip: str, cfg: DetectionConfig) -> str:
 
 
 def _flow_type(rec: FlowRecord) -> str:
+    """会话 -> 冻结 event_type。ICMP 归 network_connection，用 protocol=icmp 区分。"""
     if rec.dns_queries:
         return "dns_query"
     if rec.http_requests:
         return "http_request"
-    if rec.protocol == "ICMP":
-        return "icmp_traffic"
     return "network_connection"
 
 
@@ -90,7 +126,6 @@ def flow_to_event(rec: FlowRecord, host_map: dict, cfg: DetectionConfig) -> dict
 
     detail = {
         "src_port": rec.src_port if has_ports and rec.src_port else None,
-        "dst_port_full": rec.dst_port if has_ports and rec.dst_port else None,
         "peer_host": host_map.get(peer_ip, peer_ip),
         "direction": _direction(rec.src_ip, rec.dst_ip, cfg),
         "packets": rec.packets,
@@ -99,13 +134,22 @@ def flow_to_event(rec: FlowRecord, host_map: dict, cfg: DetectionConfig) -> dict
         "flow_key": rec.flow_key,
         "end_time": _iso8601_cn(rec.end_ts),
     }
+    # D 推荐键名：bytes_out=发起方发送字节，bytes_in=对端返回字节
+    if rec.src_bytes is not None:
+        detail["bytes_out"] = rec.src_bytes
+        detail["bytes_in"] = rec.dst_bytes or 0
     if rec.protocol == "TCP":
         detail["tcp_flags"] = {"src": sorted(rec.src_flags), "dst": sorted(rec.dst_flags)}
     if rec.dns_queries:
+        detail["domain"] = _base_domain(rec.dns_queries[0].qname)   # D 推荐键名
         detail["dns_queries"] = [{"qname": q.qname, "qtype": q.qtype}
                                  for q in rec.dns_queries[:50]]
         detail["dns_query_count"] = len(rec.dns_queries)
     if rec.http_requests:
+        first = rec.http_requests[0]
+        detail["method"] = first.method        # D 推荐键名
+        detail["uri"] = first.uri
+        detail["domain"] = first.host or None
         detail["http_requests"] = [
             {"method": r.method, "host": r.host, "uri": r.uri,
              "user_agent": r.user_agent, "body": r.body}
@@ -128,14 +172,14 @@ def flow_to_event(rec: FlowRecord, host_map: dict, cfg: DetectionConfig) -> dict
         "timestamp": _iso8601_cn(rec.start_ts),
         "host": host_map.get(host_ip, host_ip),
         "source": rec.source,
-        "event_id": rec.event_id,
+        "source_event_id": rec.source_event_id,   # Event V2 FINAL：网络事件恒为 null
         "event_type": _flow_type(rec),
         "user": None,
         "process": None,
         "src_ip": rec.src_ip,
         "dst_ip": rec.dst_ip,
         "dst_port": rec.dst_port if has_ports and rec.dst_port else None,
-        "protocol": rec.protocol,
+        "protocol": rec.protocol.lower(),
         "logon_type": None,
         "session_id": None,
         "cmdline": None,
@@ -171,20 +215,20 @@ def anomaly_to_event(a: Anomaly, host_map: dict, cfg: DetectionConfig) -> dict:
         "timestamp": _iso8601_cn(a.start_ts),
         "host": host_map.get(host_ip, host_ip),
         "source": a.source,
-        "event_id": None,               # 检测器产物，无原始日志编号
-        "event_type": a.kind,
+        "source_event_id": None,        # 检测器产物，无原始日志编号
+        "event_type": ANOMALY_EVENT_TYPE[a.kind],   # 冻结枚举，检测名放 anomaly_flags
         "user": None,
         "process": None,
         "src_ip": a.src_ip,
         "dst_ip": a.dst_ip,
         "dst_port": a.dst_port or None,
-        "protocol": a.protocol,
+        "protocol": a.protocol.lower(),
         "logon_type": None,
         "session_id": None,
         "cmdline": None,
         "detail": detail,
         "description": a.description,
-        "anomaly_flags": [a.kind, a.mitre],
+        "anomaly_flags": [ANOMALY_FLAG_NAME.get(a.kind, a.kind), a.mitre],
         "severity": SEVERITY_MAP[a.severity],
         "raw_log": raw_log,
     }
@@ -222,6 +266,8 @@ def validate_events(events: list) -> list:
             problems.append(f"事件#{i} anomaly_flags 不是数组")
         if e["severity"] not in (0, 1, 2, 3):
             problems.append(f"事件#{i} severity 非法: {e['severity']!r}")
+        if e["event_type"] not in EVENT_TYPE_ENUM:
+            problems.append(f"事件#{i} event_type 不在冻结枚举: {e['event_type']!r}")
         if not isinstance(e["timestamp"], str) or not e["timestamp"].endswith("+08:00"):
             problems.append(f"事件#{i} 时间戳非 UTC+8 ISO8601: {e['timestamp']!r}")
         if e["source"] not in ("windows_evtx", "sysmon", "linux_auth", "linux_audit",

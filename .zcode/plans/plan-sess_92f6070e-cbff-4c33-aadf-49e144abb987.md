@@ -1,47 +1,28 @@
-# 解决 pull 冲突（3 个文件）+ 合并 README
+# 按 event_type 冻结枚举规范改正网络模块事件输出
 
-## 冲突原因
-本地（成员C：网络流量模块）与远端（成员A：FastAPI 后端 + 成员B：主机日志解析）分叉，`.gitignore`/`requirements.txt` 两边都改了，根 `Readme.md` 两边各写了一版。
+## 差距分析结论（对照 B 的规范文档）
 
-## 解决方案：三个文件全部做并集合并
+1. **8 类告警自造了 event_type**（port_scan/c2_beacon/dns_tunnel/lateral_movement/exfiltration/suspicious_port/http_attack/icmp_tunnel）——违反"不建议自行新增 event_type"原则。改正：全部映射回冻结枚举，检测名称移入 `anomaly_flags[0]`，ATT&CK 与证据留 `detail`：
+   - port_scan / suspicious_port / c2_beacon / exfiltration / icmp_tunnel / lateral_movement → `network_connection`
+   - http_attack → `http_request`
+   - dns_tunnel → `dns_query`
+2. **`icmp_traffic` 不在枚举** → 改为 `network_connection` + `protocol: "icmp"`。
+3. **protocol 大小写**：规范示例为小写 `"tcp"` → 输出统一小写（tcp/udp/icmp）。
+4. **detail 键名对齐 D 的推荐**：新增 `bytes_in/bytes_out`（需在 pcap/zeek 解析层加每方向字节统计）、`domain`（DNS/HTTP）、`method/uri`（HTTP）；删除冗余的 `dst_port_full`。
+5. **anomaly_flags 命名对齐规范示例**：lateral_movement 告警的 flag 改为 `remote_service_connection`（规范示例原文）。
+6. **契约自检增强**：`validate_events()` 增加 event_type ∈ 30 个冻结枚举的校验。
 
-### 1. `.gitignore` —— 合并两边所有条目（去重）
-```
-E/
-__pycache__/
-*.pyc
-.pytest_cache/
-out/
-tmp/
-.zcode/
-.venv/
-venv/
-.env
-*.db
-*.sqlite
-*.sqlite3
-data/output/
-Thumbs.db
-.DS_Store
-```
-（本地贡献：.pytest_cache/out/tmp；远端贡献：.venv/venv/.env/*.db/data/output/.zcode/Thumbs.db/.DS_Store）
+## 改动文件
 
-### 2. `requirements.txt` —— 后端依赖(A) + 网络模块依赖(C) 合并
-保留 A 的完整 pin 版本列表（fastapi/uvicorn/pydantic 等 13 项），追加网络模块的 scapy 和 pytest（带注释分区）。B 的依赖在 `b_host_parser/requirements.txt` 里独立存在，不受影响。
+- `models.py`：FlowRecord 增加 `src_bytes/dst_bytes`（每方向字节）
+- `pcap_parser.py`：按方向累计字节数
+- `zeek_parser.py`：orig_bytes/resp_bytes → src/dst_bytes
+- `detectors.py`：exfil 证据键 `bytes` → `bytes_out`
+- `normalize.py`：新增 `EVENT_TYPE_ENUM`（30 个冻结值）与 `ANOMALY_EVENT_TYPE` 映射；_flow_type 去掉 icmp_traffic；protocol 小写；detail 增删如上；validate_events 校验 event_type
+- `tests/test_network_parser.py`：更新受影响断言（icmp/告警 event_type、bytes_out 键、protocol 小写），新增"全部输出 event_type ∈ 冻结枚举"测试
+- `backend/parsers/network/README.md`：规则表与 Event V2 说明更新
+- 根 `Readme.md`：契约摘要补一行 event_type 枚举说明
 
-### 3. `Readme.md` —— 按你之前的要求"合并总结"
-写成一版**项目级总览 README**（取代两边的冲突版本）：
-- 项目标题（题3）+ 一段系统定位
-- 架构图（后端A / 主机解析B / 网络解析C / 关联D / 靶场E / 前端F + 数据流）
-- 目录结构说明
-- 快速开始：后端启动（uvicorn、/docs、/health）+ 网络解析 CLI + 主机解析入口
-- Event V2 契约摘要（19 字段、severity 0-3、UTC+8、null 语义、source 枚举）——A 的旧版还写着 Event V1，合并版统一为已冻结的 V2
-- 详细文档链接：`backend/parsers/network/README.md`、`b_host_parser/README.md`、`docs/`
+## 验证
 
-网络模块的详细 README 仍保留在 `backend/parsers/network/README.md`，根 README 只做总览+引用，不丢任何细节。
-
-## 收尾步骤
-1. `git add .gitignore requirements.txt Readme.md` 标记冲突已解决
-2. `git commit` 完成合并提交（信息：合并远程分支，统一依赖与 README）
-3. 验证：`git status` 干净、`python -m pytest tests -q` 全绿、`python -m backend.parsers.network ...` 契约自检通过
-4. `git push` 同步回远端（如你想先自己检查再推，最后这步可以跳过）
+pytest 全绿 + CLI 契约自检通过 + 抽查 JSON 确认 event_type/protocol/detail 新键正确。不涉及 git 提交（等 push 网络恢复后一并处理）。

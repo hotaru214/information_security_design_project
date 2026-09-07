@@ -63,11 +63,10 @@ class _ConnBuilder:
                 return rec
         return None
 
-    def synth(self, src, sport, dst, dport, proto, ts, source_file,
-              event_id=None, raw_log=""):
+    def synth(self, src, sport, dst, dport, proto, ts, source_file, raw_log=""):
         rec = FlowRecord(src_ip=src, src_port=sport, dst_ip=dst, dst_port=dport,
                          protocol=proto, start_ts=ts, end_ts=ts, source_file=source_file,
-                         source="network_zeek", event_id=event_id, raw_log=raw_log)
+                         source="network_zeek", raw_log=raw_log)
         self.add(rec)
         return rec
 
@@ -106,8 +105,7 @@ def parse_zeek_logs(path: str):
             if not qname:
                 continue
             rec = builder.match(src, dst, dport, ts) or builder.synth(
-                src, 0, dst, dport, "UDP", ts, dns_file,
-                event_id=row.get("uid"), raw_log=raw_line)
+                src, 0, dst, dport, "UDP", ts, dns_file, raw_log=raw_line)
             rec.dns_queries.append(DnsQuery(qname=qname, qtype=str(row.get("qtype_name") or "")))
             stats["dns"] += 1
 
@@ -126,8 +124,7 @@ def parse_zeek_logs(path: str):
             if not method or not uri:
                 continue
             rec = builder.match(src, dst, dport, ts) or builder.synth(
-                src, 0, dst, dport, "TCP", ts, http_file,
-                event_id=row.get("uid"), raw_log=raw_line)
+                src, 0, dst, dport, "TCP", ts, http_file, raw_log=raw_line)
             rec.http_requests.append(HttpRequest(
                 method=method, host=str(row.get("host") or ""), uri=uri,
                 user_agent=str(row.get("user_agent") or "")[:200],
@@ -195,12 +192,15 @@ def _conn_row_to_flow(row: dict, source_file: str, raw_line: str = ""):
 
     duration = max(0.0, _num("duration"))
     bytes_total = int(max(0.0, _num("orig_bytes")) + max(0.0, _num("resp_bytes")))
-    uid = row.get("uid") or None
     rec = FlowRecord(src_ip=src, src_port=sport, dst_ip=dst, dst_port=dport,
                      protocol=proto, start_ts=ts, end_ts=ts + duration,
                      packets=max(1, int(_num("orig_pkts") + _num("resp_pkts"))),
                      bytes_total=bytes_total, source_file=source_file,
-                     source="network_zeek", event_id=uid, raw_log=raw_line[:1000])
+                     source="network_zeek", raw_log=raw_line[:1000])
+    # Event V2 detail.bytes_out/bytes_in：orig_bytes=发起方发送，resp_bytes=对端返回
+    if _num("orig_bytes") or _num("resp_bytes"):
+        rec.src_bytes = int(max(0.0, _num("orig_bytes")))
+        rec.dst_bytes = int(max(0.0, _num("resp_bytes")))
     state = str(row.get("conn_state") or "")
     # Zeek conn_state: S0/REJ -> 只发了 SYN 未完成；S1/SF/... -> 见过 SYN+SYNACK
     if proto == "TCP":
@@ -257,11 +257,11 @@ def parse_connection_csv(path: str):
         duration = _to_float(col(row, "duration", 0))
         bytes_total = int(_to_float(col(row, "bytes", 0)))
         packets = max(1, int(_to_float(col(row, "packets", 0))))
-        raw_event_id = str(col(row, "event_id", "") or "").strip() or None
+        # Event V2 FINAL：网络事件 source_event_id 恒为 null（原始编号不进公共字段）
         rec = FlowRecord(src_ip=src, src_port=sport, dst_ip=dst, dst_port=dport,
                          protocol=proto, start_ts=ts, end_ts=ts + max(0.0, duration),
                          packets=packets, bytes_total=bytes_total, source_file=path,
-                         source="network_zeek", event_id=raw_event_id)
+                         source="network_zeek")
         if proto == "TCP":
             rec.src_flags.add("S")
         flows.append(rec)

@@ -35,6 +35,8 @@ class FlowRecord:
     end_ts: float
     packets: int = 0
     bytes_total: int = 0
+    src_bytes: int | None = None    # 发起方方向字节数（Event V2 detail.bytes_out）
+    dst_bytes: int | None = None    # 对端方向字节数（Event V2 detail.bytes_in）
     src_flags: set = field(default_factory=set)   # TCP 标志（发起方方向）
     dst_flags: set = field(default_factory=set)   # TCP 标志（对端方向）
     dns_queries: list = field(default_factory=list)    # list[DnsQuery]
@@ -44,7 +46,7 @@ class FlowRecord:
     source_file: str = ""
     # Event V2 契约相关
     source: str = "network_pcap"       # network_pcap / network_zeek（CSV 兜底也归 network_zeek）
-    event_id: str | None = None        # 原始日志自带的事件编号（如 Zeek uid），PCAP 无则 None
+    source_event_id: str | None = None  # Event V2 FINAL：网络事件恒为 null，原始编号(如 Zeek uid)保留在 raw_log
     raw_log: str = ""                  # 原始日志行（Zeek/CSV 可保留，PCAP 留空由输出层合成摘要）
 
     @property

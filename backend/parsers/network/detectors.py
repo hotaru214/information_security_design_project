@@ -192,7 +192,7 @@ def detect_dns_tunnel(flows, cfg: DetectionConfig):
                          + (f"（最长标签 {max_label} 字符/熵 {max_entropy:.2f}）" if entropy_hit else "")
                          + (f"（TXT 查询 {txt_count} 次）" if txt_hit else "")),
             evidence={
-                "base_domain": domain, "query_count": len(queries),
+                "domain": domain, "query_count": len(queries),
                 "txt_count": txt_count, "max_label_len": max_label,
                 "max_label_entropy": round(max_entropy, 3),
                 "trigger": ("entropy" if entropy_hit else "") + ("+volume" if txt_hit and entropy_hit else ("volume" if txt_hit else "")),
@@ -223,7 +223,7 @@ def detect_exfiltration(flows, cfg: DetectionConfig):
                          f"上传 {rec.bytes_total / 1e6:.1f} MB（{rec.packets} 包，"
                          f"持续 {rec.duration:.0f}s）"),
             evidence={
-                "bytes": rec.bytes_total, "packets": rec.packets,
+                "bytes_out": rec.bytes_total, "packets": rec.packets,
                 "duration_sec": round(rec.duration, 2),
                 "flow_key": rec.flow_key, "trigger": "volume" if big else "duration",
             },

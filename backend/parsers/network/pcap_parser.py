@@ -48,6 +48,10 @@ def _update_flow(rec: FlowRecord, ts: float, size: int, direction: str,
                  flags: str = "", payload: bytes = b"", pkt=None):
     rec.packets += 1
     rec.bytes_total += size
+    if direction == "src":
+        rec.src_bytes = (rec.src_bytes or 0) + size
+    else:
+        rec.dst_bytes = (rec.dst_bytes or 0) + size
     if ts < rec.start_ts:
         rec.start_ts = ts
     if ts > rec.end_ts:

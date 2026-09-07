@@ -76,18 +76,21 @@ C2 心跳、DNS 隧道、数据外传、ICMP 隧道。详见 [backend/parsers/ne
 
 所有模块输出的统一事件共 **19 个公共字段**：
 
-`timestamp, host, source, event_id, event_type, user, process, src_ip, dst_ip, dst_port, protocol, logon_type, session_id, cmdline, detail, description, anomaly_flags, severity, raw_log`
+`timestamp, host, source, source_event_id, event_type, user, process, src_ip, dst_ip, dst_port, protocol, logon_type, session_id, cmdline, detail, description, anomaly_flags, severity, raw_log`
 
 要点：
 
 - **时间**：统一 UTC+8，后端标准化为 ISO8601（`2026-09-08T13:10:00+08:00`）。
 - **severity**：`0` 正常/未标记、`1` 低、`2` 中、`3` 高。
+- **event_type**：使用全组冻结枚举（30 个值）；网络模块只输出 `network_connection` /
+  `dns_query` / `http_request` 三种，检测规则名放 `anomaly_flags`，protocol 为小写。
 - **缺失即 null**：不允许用 `"unknown"`、`0`、空字符串占位。
 - **detail 必填对象**：各模块独有字段（`parent_process`、`file_path`、`registry_*`、`src_port`、
   `attack_stage`、`mitre_technique` 等）全部放 `detail`，不再新增公共字段。
 - **anomaly_flags 必填**：无异常 `[]`。
-- **event_id 与数据库 id 区分**：`event_id` 是原始日志自带编号（Windows 4624 / Sysmon 1 / Zeek uid），
-  没有则传 `null`；后端 SQLite 另生成内部主键 `id`，用于 `evidence_event_ids`。
+- **source_event_id 与数据库 id 区分**：`source_event_id` 是原始日志自带编号（Windows 4624 /
+  Sysmon 1 等），网络事件（PCAP/Zeek）传 `null`；后端 SQLite 另生成内部主键 `id`，
+  D 的 `evidence_event_ids` 只用这个 `id`。
 - **source 枚举**：`windows_evtx` / `sysmon` / `linux_auth` / `linux_audit` / `network_pcap` / `network_zeek`。
 
 契约变更需全组同步，任何模块不得单方面修改字段。
