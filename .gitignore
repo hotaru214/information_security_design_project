@@ -1,1 +1,6 @@
 E/
+__pycache__/
+*.pyc
+.pytest_cache/
+out/
+tmp/
