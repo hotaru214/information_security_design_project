@@ -35,10 +35,14 @@ def check(tag, desc, fn):
 
 # ---------- 任务1：契约 / schema ----------
 def t1():
-    from schema import make_event, STANDARD_FIELDS
+    from schema import make_event, STANDARD_FIELDS, SOURCES
     ev = make_event(timestamp="t", host="h")
     assert list(ev.keys()) == STANDARD_FIELDS, "make_event的键和STANDARD_FIELDS不一致"
-    assert len(STANDARD_FIELDS) == 19, f"契约字段应为19个(含dst_port/protocol), 实际{len(STANDARD_FIELDS)}"
+    assert len(STANDARD_FIELDS) == 19, f"契约字段应为19个, 实际{len(STANDARD_FIELDS)}"
+    # Event V2: source枚举6值
+    for s in ("windows_evtx", "sysmon", "linux_auth", "linux_audit",
+              "network_pcap", "network_zeek"):
+        assert s in SOURCES, f"V2要求source枚举缺 {s}"
     try:
         make_event(不存在的字段=1)
         raise AssertionError("make_event应当拒绝未知字段，但没拒绝")
@@ -46,7 +50,7 @@ def t1():
         pass  # 预期行为：报KeyError
 
 
-check("任务1", "标准事件结构: 19字段齐全(含dst_port/protocol), 未知字段会被拒绝", t1)
+check("任务1", "Event V2: 19字段齐全, source枚举6值, 未知字段会被拒绝", t1)
 
 # ---------- 任务2：环境 + 样例数据 ----------
 def t2():
@@ -68,7 +72,9 @@ def t3():
     assert st["parsed"] == 4 and st["failed"] == 0, f"期望4条0失败, 实际: {st}"
 
     f4625 = next(e for e in evs if e["event_id"] == 4625)
-    assert f4625["timestamp"].endswith("+08:00"), "时间没有转成UTC+8"
+    # Event V2: ISO8601 T分隔
+    assert "T" in f4625["timestamp"] and f4625["timestamp"].endswith("+08:00"), \
+        f"时间应为ISO8601 T分隔UTC+8, 实际: {f4625['timestamp']}"
     assert f4625["src_ip"] is None, "本地登录(类型2)的src_ip必须是null(原始值是'-')"
     assert f4625["detail"]["substatus_desc"] == "密码错误", "SubStatus没翻译成人话"
 
@@ -76,14 +82,14 @@ def t3():
     evs2 = parse_windows_evtx(str(PROJECT / "data" / "sample_logs" / "sample_wmi_4624.evtx"), st2)
     assert st2["parsed"] == 8 and st2["by_event_id"].get("4688") == 2, f"4688应解析出来: {st2}"
     p = next(e for e in evs2 if e["event_id"] == 4688)
-    assert p["event_type"] == "process_create" and p["process"] == "WmiPrvSE.exe"
+    assert p["event_type"] == "process_start" and p["process"] == "WmiPrvSE.exe"
     assert p["cmdline"] is None, "4688未开命令行审核时cmdline必须是null(不许造假)"
     assert p["detail"]["new_process_id"], "new_process_id应取自NewProcessId"
     assert any(e["event_id"] == 4624 and e["src_ip"] == "10.0.2.17" for e in evs2), \
         "应有src_ip=10.0.2.17的远程登录(样例里第一条带IP的是IPv6)"
 
 
-check("任务3", "Windows解析: UTC+8 / 空IP=null / 4625失败原因 / 4624远程IP / 4688进程创建", t3)
+check("任务3", "Windows解析: UTC+8 / 空IP=null / 4625失败原因 / 4624远程IP / 4688进程启动(process_start)", t3)
 
 # ---------- 任务3b：Sysmon解析器（进程/网络/文件/注册表） ----------
 def t3b():
@@ -96,12 +102,13 @@ def t3b():
         by_type.setdefault(e["event_type"], []).append(e)
         assert e["source"] == "sysmon" and e["raw_log"], "source/raw_log必填"
 
-    p1 = by_type["process_create"][0]
+    p1 = by_type["process_start"][0]
     assert p1["cmdline"] and p1["detail"]["parent_cmdline"], "Sysmon1必须有真实cmdline和父进程"
 
-    p3 = by_type["network_connect"][0]
+    p3 = by_type["network_connection"][0]
     assert p3["dst_ip"] and p3["dst_port"] and p3["protocol"], "Sysmon3必须有dst_ip/dst_port/protocol"
     assert p3["src_ip"], "Sysmon3必须有src_ip"
+    assert "src_port" in p3["detail"], "detail键名应为src_port（D规范）"
 
     p11 = by_type["file_create"][0]
     assert p11["detail"]["file_path"], "Sysmon11必须有文件路径"
@@ -110,9 +117,15 @@ def t3b():
     evs2 = parse_sysmon_evtx(str(PROJECT / "data" / "sample_logs" / "sample_sysmon_12_13.evtx"), str2)
     reg = next(e for e in evs2 if e["event_id"] == 13)
     assert reg["detail"]["registry_key"], "Sysmon13必须有注册表键"
+    # Event V2 detail键名
+    assert "registry_value_data" in reg["detail"], "应使用V2键名registry_value_data"
+    assert "registry_operation" in reg["detail"], "应使用V2键名registry_operation"
+    assert "registry_value_name" in reg["detail"], "应使用V2键名registry_value_name"
+    assert "value" not in reg["detail"] and "event_type_name" not in reg["detail"], \
+        "旧键名value/event_type_name必须移除"
 
 
-check("任务3b", "Sysmon解析: process_create/cmdline+父进程 / network_connect含dst_port+protocol / file_create / registry_set", t3b)
+check("任务3b", "Sysmon解析: process_start/cmdline+父进程 / network_connection含dst_port+protocol+src_port / file_create / registry_set", t3b)
 
 # ---------- 任务4：落地.jsonl + POST给后端 ----------
 class MockBackend(BaseHTTPRequestHandler):

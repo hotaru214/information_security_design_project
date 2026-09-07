@@ -54,7 +54,15 @@ EVENT_TYPES = [
 ]
 
 # source 枚举：这条事件是从哪类日志里解析出来的
-SOURCES = ["windows_evtx", "sysmon", "linux_auth", "linux_audit"]
+# Event V2（2026-09-07 契约冻结，A发布）：全组统一，改动需全组同步
+SOURCES = [
+    "windows_evtx",
+    "sysmon",
+    "linux_auth",
+    "linux_audit",
+    "network_pcap",   # C同学：PCAP解析
+    "network_zeek",   # C同学：Zeek日志
+]
 
 # Windows 登录类型含义（解析4624/4625时给人看的说明）
 LOGON_TYPES = {

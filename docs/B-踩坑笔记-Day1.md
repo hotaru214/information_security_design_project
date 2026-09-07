@@ -80,3 +80,17 @@ open("out.evtx", "wb").write(base64.b64decode(data["content"]))
 5. **Sysmon的User字段看配置** —— ID 11/13的样本里没有User字段（采集配置没启用），如实null；ID 1/3有。
 6. **Sysmon ID 12 ≠ ID 13** —— 12是注册表对象创建/删除，13是键值修改；当前只做13，12计入other。
 7. **4624的IpPort是源端口不是目的端口** —— 放`detail.src_port`，别冒充dst_port。
+
+## 10. Event V2 契约对齐（9/7晚，A发布冻结版后）
+
+1. **对齐点只有3处**（其余19字段/null语义/detail必填本来就一致）：source枚举补`network_pcap`/`network_zeek`；时间戳空格改T分隔（ISO8601）；Sysmon13的detail键改名（`value`→`registry_value_data`、`event_type_name`→`registry_operation`、新增`registry_value_name`从TargetObject末段提取）。
+2. **V2的`id`和`event_id`是两个东西**：`id`是后端SQLite自增主键（B不产生），`event_id`是原始日志事件编号（B产出，PCAP/Zeek可为null）。D的`evidence_event_ids`存的是前者。
+3. **微秒保留了**（T格式+微秒是合法ISO8601，evtx真实精度），是否截断到秒留给A的后端标准化决定——报备在《给A的样例》文档里。
+4. 教训：契约冻结后**改动面其实很小**，因为B的schema.py一直是"契约代码版"，两边从第一天就同步演化——这就是"字段对不上及时喊他改"的好处。
+
+## 11. event_type 按 D 规范改名（9/7晚）
+
+1. **5处类型名变更**：login_failure→`login_failed`、process_create→`process_start`、network_connect→`network_connection`、account_created→`user_created`、logoff→`logout`。教训：**event_type这种被下游当switch-case用的字段，命名要在第一个消费者出现前冻结**——A冻结了字段结构但没冻结词表，D一来就返工了5处。
+2. **detail.source_port→`src_port`**：同一信息在4624里叫src_port、在Sysmon3里叫source_port，D按src_port取数——**同一含义的字段全组只能有一个名字**。
+3. `log_cleared`（1102）D枚举里没有，已申请加入；`sudo_exec`并入了`process_start`（sudo执行的命令本质是进程启动，sudo信息放detail），`file_access`按D拆成file_read/file_write。
+4. src_port顺手从字符串转int（D的示例是数字，端口本来就是数字）。
