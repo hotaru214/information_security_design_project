@@ -63,9 +63,11 @@ class _ConnBuilder:
                 return rec
         return None
 
-    def synth(self, src, sport, dst, dport, proto, ts, source_file):
+    def synth(self, src, sport, dst, dport, proto, ts, source_file,
+              event_id=None, raw_log=""):
         rec = FlowRecord(src_ip=src, src_port=sport, dst_ip=dst, dst_port=dport,
-                         protocol=proto, start_ts=ts, end_ts=ts, source_file=source_file)
+                         protocol=proto, start_ts=ts, end_ts=ts, source_file=source_file,
+                         source="network_zeek", event_id=event_id, raw_log=raw_log)
         self.add(rec)
         return rec
 
@@ -84,15 +86,15 @@ def parse_zeek_logs(path: str):
 
     conn_file = next((f for f in files if os.path.basename(f).replace(".gz", "") == "conn.log"), None)
     if conn_file:
-        for row in _iter_zeek_rows(conn_file):
-            rec = _conn_row_to_flow(row, conn_file)
+        for row, raw_line in _iter_zeek_rows(conn_file):
+            rec = _conn_row_to_flow(row, conn_file, raw_line)
             if rec:
                 builder.add(rec)
                 stats["conn"] += 1
 
     dns_file = next((f for f in files if os.path.basename(f).replace(".gz", "") == "dns.log"), None)
     if dns_file:
-        for row in _iter_zeek_rows(dns_file):
+        for row, raw_line in _iter_zeek_rows(dns_file):
             src = str(_nested_get(row, "id.orig_h") or "")
             dst = str(_nested_get(row, "id.resp_h") or "")
             dport = int(_nested_get(row, "id.resp_p") or 53)
@@ -103,13 +105,15 @@ def parse_zeek_logs(path: str):
             qname = str(row.get("query") or "").rstrip(".")
             if not qname:
                 continue
-            rec = builder.match(src, dst, dport, ts) or builder.synth(src, 0, dst, dport, "UDP", ts, dns_file)
+            rec = builder.match(src, dst, dport, ts) or builder.synth(
+                src, 0, dst, dport, "UDP", ts, dns_file,
+                event_id=row.get("uid"), raw_log=raw_line)
             rec.dns_queries.append(DnsQuery(qname=qname, qtype=str(row.get("qtype_name") or "")))
             stats["dns"] += 1
 
     http_file = next((f for f in files if os.path.basename(f).replace(".gz", "") == "http.log"), None)
     if http_file:
-        for row in _iter_zeek_rows(http_file):
+        for row, raw_line in _iter_zeek_rows(http_file):
             src = str(_nested_get(row, "id.orig_h") or "")
             dst = str(_nested_get(row, "id.resp_h") or "")
             dport = int(_nested_get(row, "id.resp_p") or 80)
@@ -121,7 +125,9 @@ def parse_zeek_logs(path: str):
             uri = str(row.get("uri") or "")
             if not method or not uri:
                 continue
-            rec = builder.match(src, dst, dport, ts) or builder.synth(src, 0, dst, dport, "TCP", ts, http_file)
+            rec = builder.match(src, dst, dport, ts) or builder.synth(
+                src, 0, dst, dport, "TCP", ts, http_file,
+                event_id=row.get("uid"), raw_log=raw_line)
             rec.http_requests.append(HttpRequest(
                 method=method, host=str(row.get("host") or ""), uri=uri,
                 user_agent=str(row.get("user_agent") or "")[:200],
@@ -147,7 +153,7 @@ def _collect_zeek_files(path: str) -> list:
 
 
 def _iter_zeek_rows(path: str):
-    """逐行产出 Zeek 日志记录（dict）。自动识别 TSV 与 JSON。"""
+    """逐行产出 (记录dict, 原始行)（保留原始行供 Event V2 的 raw_log）。自动识别 TSV 与 JSON。"""
     with _open_text(path) as fh:
         tsv_fields = None
         for line in fh:
@@ -160,16 +166,16 @@ def _iter_zeek_rows(path: str):
                 continue
             if line.lstrip().startswith("{"):
                 try:
-                    yield json.loads(line)
+                    yield json.loads(line), line
                 except json.JSONDecodeError:
                     continue
             elif tsv_fields:
                 values = line.split("\t")
                 if len(values) == len(tsv_fields):
-                    yield _parse_conn_line_fields(tsv_fields, values)
+                    yield _parse_conn_line_fields(tsv_fields, values), line
 
 
-def _conn_row_to_flow(row: dict, source_file: str):
+def _conn_row_to_flow(row: dict, source_file: str, raw_line: str = ""):
     src = str(_nested_get(row, "id.orig_h") or "")
     dst = str(_nested_get(row, "id.resp_h") or "")
     try:
@@ -189,10 +195,12 @@ def _conn_row_to_flow(row: dict, source_file: str):
 
     duration = max(0.0, _num("duration"))
     bytes_total = int(max(0.0, _num("orig_bytes")) + max(0.0, _num("resp_bytes")))
+    uid = row.get("uid") or None
     rec = FlowRecord(src_ip=src, src_port=sport, dst_ip=dst, dst_port=dport,
                      protocol=proto, start_ts=ts, end_ts=ts + duration,
                      packets=max(1, int(_num("orig_pkts") + _num("resp_pkts"))),
-                     bytes_total=bytes_total, source_file=source_file)
+                     bytes_total=bytes_total, source_file=source_file,
+                     source="network_zeek", event_id=uid, raw_log=raw_line[:1000])
     state = str(row.get("conn_state") or "")
     # Zeek conn_state: S0/REJ -> 只发了 SYN 未完成；S1/SF/... -> 见过 SYN+SYNACK
     if proto == "TCP":
@@ -232,6 +240,7 @@ def parse_connection_csv(path: str):
             return row[header.index(name)]
         return default
 
+    # CSV 连接日志本质是 conn.log 的重新序列化，按契约归入 network_zeek
     for row in data_rows:
         if not row or all(not c.strip() for c in row) or row[0].strip().startswith("#"):
             continue
@@ -248,9 +257,11 @@ def parse_connection_csv(path: str):
         duration = _to_float(col(row, "duration", 0))
         bytes_total = int(_to_float(col(row, "bytes", 0)))
         packets = max(1, int(_to_float(col(row, "packets", 0))))
+        raw_event_id = str(col(row, "event_id", "") or "").strip() or None
         rec = FlowRecord(src_ip=src, src_port=sport, dst_ip=dst, dst_port=dport,
                          protocol=proto, start_ts=ts, end_ts=ts + max(0.0, duration),
-                         packets=packets, bytes_total=bytes_total, source_file=path)
+                         packets=packets, bytes_total=bytes_total, source_file=path,
+                         source="network_zeek", event_id=raw_event_id)
         if proto == "TCP":
             rec.src_flags.add("S")
         flows.append(rec)

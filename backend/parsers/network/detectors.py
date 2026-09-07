@@ -76,7 +76,7 @@ def detect_port_scans(flows, cfg: DetectionConfig):
         results.append(Anomaly(
             kind="port_scan", severity="medium", attack_stage="Reconnaissance", mitre="T1046",
             src_ip=src, dst_ip=dst, dst_port=0, start_ts=start, end_ts=end,
-            protocol="TCP",
+            protocol="TCP", source=recs[0].source,
             description=(f"端口扫描: {src} 在 {_hhmmss(start)} 前后对 {dst} 的 "
                          f"{len(ports)} 个端口发起探测，开放 {len(open_ports)} 个"),
             evidence={
@@ -114,7 +114,7 @@ def detect_c2_beacons(flows, cfg: DetectionConfig):
         results.append(Anomaly(
             kind="c2_beacon", severity="high", attack_stage="Command and Control", mitre="T1071",
             src_ip=src, dst_ip=dst, dst_port=dport, start_ts=start, end_ts=end,
-            protocol="TCP",
+            protocol="TCP", source=recs[0].source,
             description=(f"C2心跳外联: {src} 以平均 {mean:.0f}s 的固定间隔"
                          f"（抖动 {jitter:.2f}）向 {dst}:{dport} 回连 {len(recs)} 次"),
             evidence={
@@ -139,6 +139,7 @@ def detect_suspicious_ports(flows, cfg: DetectionConfig):
             attack_stage="Command and Control", mitre="T1571",
             src_ip=rec.src_ip, dst_ip=rec.dst_ip, dst_port=rec.dst_port,
             start_ts=rec.start_ts, end_ts=rec.end_ts, protocol=rec.protocol,
+            source=rec.source,
             description=(f"可疑端口连接: {rec.src_ip} 主动连接 {rec.dst_ip}:{rec.dst_port}"
                          f"（常见远控/反弹Shell端口）"
                          + ("，目标为外部地址" if external else "")),
@@ -153,17 +154,17 @@ def detect_suspicious_ports(flows, cfg: DetectionConfig):
 
 def detect_dns_tunnel(flows, cfg: DetectionConfig):
     """DNS 隐蔽信道：超长高熵子域名 / 大量 TXT 查询（C2, T1071.004）。"""
-    groups = defaultdict(list)   # (src, base_domain) -> [(ts, qname, qtype)]
+    groups = defaultdict(list)   # (src, base_domain) -> [(ts, qname, qtype, resolver, source)]
     for rec in flows:
         for q in rec.dns_queries:
             groups[(rec.src_ip, _base_domain(q.qname))].append(
-                (rec.start_ts, q.qname, q.qtype, rec.dst_ip))
+                (rec.start_ts, q.qname, q.qtype, rec.dst_ip, rec.source))
 
     results = []
     for (src, domain), queries in groups.items():
         max_label, max_entropy, max_qname = 0, 0.0, ""
         suspicious_qnames, txt_count = [], 0
-        for ts, qname, qtype, _dst in queries:
+        for ts, qname, qtype, _dst, _src_type in queries:
             labels = qname.rstrip(".").split(".")
             for label in labels[:-1]:          # 逐标签检查（排除 TLD）
                 ent = shannon_entropy(label)
@@ -177,15 +178,16 @@ def detect_dns_tunnel(flows, cfg: DetectionConfig):
         txt_hit = txt_count >= cfg.dns_txt_volume
         if not (entropy_hit or txt_hit):
             continue
-        long_qnames = [q for _t, q, ty, _d in queries
+        long_qnames = [q for _t, q, ty, _d, _s in queries
                        if max(len(l) for l in q.rstrip(".").split(".")[:-1] or [""]) >= cfg.dns_long_label]
         times = sorted(t for t, *_ in queries)
-        resolver = next((d for _t, _q, _ty, d in queries if d), "")
+        resolver = next((d for _t, _q, _ty, d, _s in queries if d), "")
+        source = next((s for _t, _q, _ty, _d, s in queries if s), "network_pcap")
         results.append(Anomaly(
             kind="dns_tunnel", severity="high", attack_stage="Command and Control",
             mitre="T1071.004",
             src_ip=src, dst_ip=resolver, dst_port=53, start_ts=times[0], end_ts=times[-1],
-            protocol="DNS",
+            protocol="UDP", source=source,
             description=(f"DNS隐蔽信道嫌疑: {src} 对域名 {domain} 的查询异常"
                          + (f"（最长标签 {max_label} 字符/熵 {max_entropy:.2f}）" if entropy_hit else "")
                          + (f"（TXT 查询 {txt_count} 次）" if txt_hit else "")),
@@ -216,6 +218,7 @@ def detect_exfiltration(flows, cfg: DetectionConfig):
             kind="exfiltration", severity=severity, attack_stage="Exfiltration", mitre="T1048",
             src_ip=rec.src_ip, dst_ip=rec.dst_ip, dst_port=rec.dst_port,
             start_ts=rec.start_ts, end_ts=rec.end_ts, protocol=rec.protocol,
+            source=rec.source,
             description=(f"数据外传嫌疑: {rec.src_ip} 向外部 {rec.dst_ip}:{rec.dst_port} "
                          f"上传 {rec.bytes_total / 1e6:.1f} MB（{rec.packets} 包，"
                          f"持续 {rec.duration:.0f}s）"),
@@ -243,6 +246,7 @@ def detect_icmp_tunnel(flows, cfg: DetectionConfig):
             mitre="T1095",
             src_ip=rec.src_ip, dst_ip=rec.dst_ip, dst_port=0,
             start_ts=rec.start_ts, end_ts=rec.end_ts, protocol="ICMP",
+            source=rec.source,
             description=(f"ICMP隐蔽信道嫌疑: {rec.src_ip} -> {rec.dst_ip} "
                          f"{'单包载荷达 ' + str(rec.icmp_max_payload) + ' 字节' if large else ''}"
                          f"{'共 ' + str(rec.icmp_count) + ' 个ICMP包' if frequent else ''}"),
@@ -270,6 +274,7 @@ def detect_lateral_movement(flows, cfg: DetectionConfig):
             mitre="T1021",
             src_ip=rec.src_ip, dst_ip=rec.dst_ip, dst_port=rec.dst_port,
             start_ts=rec.start_ts, end_ts=rec.end_ts, protocol="TCP",
+            source=rec.source,
             description=(f"内网横向连接: {rec.src_ip} 使用 {service}"
                          f" 访问 {rec.dst_ip}:{rec.dst_port}（横向移动候选链路）"),
             evidence={
@@ -304,7 +309,8 @@ def detect_http_attacks(flows, cfg: DetectionConfig):
         results.append(Anomaly(
             kind="http_attack", severity="high", attack_stage="Initial Access", mitre="T1190",
             src_ip=rec.src_ip, dst_ip=rec.dst_ip, dst_port=rec.dst_port,
-            start_ts=rec.start_ts, end_ts=rec.end_ts, protocol="HTTP",
+            start_ts=rec.start_ts, end_ts=rec.end_ts, protocol="TCP",
+            source=rec.source,
             description=(f"Web攻击请求: {rec.src_ip} 对 {rec.dst_ip}:{rec.dst_port} 的 HTTP 请求命中特征 "
                          + "、".join(sorted({h["pattern"] for h in uniq}))),
             evidence={"matched_requests": uniq[:10], "http_requests_total": len(rec.http_requests)},
