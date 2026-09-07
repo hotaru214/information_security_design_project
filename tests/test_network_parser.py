@@ -22,7 +22,13 @@ from backend.parsers.network.detectors import (
     shannon_entropy,
 )
 from backend.parsers.network.models import DnsQuery, FlowRecord, HttpRequest
-from backend.parsers.network.normalize import build_events, load_host_map, save_events
+from backend.parsers.network.normalize import (
+    EVENT_V2_FIELDS,
+    build_events,
+    load_host_map,
+    save_events,
+    validate_events,
+)
 from backend.parsers.network.zeek_parser import parse_connection_csv, parse_zeek_logs
 
 BASE = datetime(2026, 9, 7, 9, 0, 0).timestamp()
@@ -224,13 +230,24 @@ def test_pcap_end_to_end(tmp_path):
     from backend.parsers.network.cli import analyze_paths
     events, flows, anomalies, stats = analyze_paths([str(pcap_file)])
     kinds = {a.kind for a in anomalies}
-    assert "port_scan" in kinds
-    assert "c2_beacon" in kinds
-    assert events and all(e["source"] == "network_traffic" for e in events)
-    ids = [e["event_id"] for e in events]
-    assert len(ids) == len(set(ids))
+    assert {"port_scan", "c2_beacon"} <= kinds
+
+    # Event V2 契约断言
+    assert events
+    for e in events:
+        assert set(e.keys()) == set(EVENT_V2_FIELDS)      # 恰好 19 个字段
+        assert e["source"] == "network_pcap"
+        assert e["event_id"] is None                      # PCAP 无原始编号 -> null
+        assert e["timestamp"].endswith("+08:00")          # UTC+8 ISO8601
+        assert e["severity"] in (0, 1, 2, 3)              # 数字 severity
+        assert isinstance(e["detail"], dict) and e["raw_log"]
+    assert validate_events(events) == []
     timestamps = [e["timestamp"] for e in events]
     assert timestamps == sorted(timestamps)
+
+    alarmed = [e for e in events if e["anomaly_flags"]]
+    assert len(alarmed) == len(anomalies)
+    assert all(e["severity"] >= 1 for e in alarmed)
 
 
 # ---------------------------------------------------------------- Zeek / CSV
@@ -250,10 +267,18 @@ def test_zeek_tsv_logs(tmp_path):
     assert shell.src_ip == "10.0.0.5" and shell.dst_ip == "203.0.113.66"
     assert shell.bytes_total == 2000 and shell.duration == pytest.approx(3.5)
     assert "FA" in shell.src_flags
+    # Event V2：Zeek uid 作为 event_id，保留原始日志行
+    assert shell.source == "network_zeek"
+    assert shell.event_id == "Cabc123"
+    assert "10.0.0.5" in shell.raw_log and "4444" in shell.raw_log
 
     anomalies = run_all(flows, CFG)
     kinds = {a.kind for a in anomalies}
     assert "suspicious_port" in kinds       # 4444 反弹 Shell
+
+    events = build_events(flows, anomalies, {}, CFG)
+    assert validate_events(events) == []
+    assert all(e["source"] == "network_zeek" for e in events)
 
 
 def test_csv_connection_log(tmp_path):
@@ -267,33 +292,77 @@ def test_csv_connection_log(tmp_path):
         encoding="utf-8")
     flows, stats = parse_connection_csv(str(csv_file))
     assert len(flows) == 4
+    assert all(f.source == "network_zeek" for f in flows)   # CSV 兜底格式归 network_zeek
+    assert all(f.event_id is None for f in flows)           # 无 event_id 列 -> null
     anomalies = run_all(flows, CFG)
-    assert any(a.kind == "c2_beacon" for a in anomalies)
+    assert any(a.kind == "c2_beacon" and a.source == "network_zeek" for a in anomalies)
 
 
-# ---------------------------------------------------------------- 事件标准化
+# ---------------------------------------------------------------- Event V2 输出
 
-def test_normalize_and_host_map(tmp_path):
+def test_flow_event_v2_and_host_map(tmp_path):
     hosts_file = tmp_path / "hosts.csv"
     hosts_file.write_text("ip,hostname,role\n10.0.0.5,web-server,dmz\n", encoding="utf-8")
     host_map = load_host_map(str(hosts_file))
     assert host_map["10.0.0.5"] == "web-server"
 
     flows = [mk_flow(src="203.0.113.66", dst="10.0.0.5", dport=80)]
-    anomalies = []
-    events = build_events(flows, anomalies, host_map, CFG)
+    events = build_events(flows, [], host_map, CFG)
     assert len(events) == 1
     e = events[0]
-    # 统一事件模型的关键字段（D 关联引擎依赖）
-    for key in ("event_id", "timestamp", "source", "event_type", "severity",
-                "src_ip", "src_port", "dst_ip", "dst_port", "protocol",
-                "host", "attack_stage", "description", "evidence"):
-        assert key in e, f"缺少字段 {key}"
-    assert e["host"] == "web-server"        # 内网侧主机名
-    assert e["peer_host"] == "203.0.113.66"
-    assert e["direction"] == "inbound"
-    assert e["timestamp"].startswith("2026-09-07T09:0")
+    assert set(e.keys()) == set(EVENT_V2_FIELDS)           # 恰好 19 个字段
+    # 主机语义：host=内网侧主机名，对端信息在 detail
+    assert e["host"] == "web-server"
+    assert e["detail"]["peer_host"] == "203.0.113.66"
+    assert e["detail"]["direction"] == "inbound"
+    assert e["detail"]["src_port"] == 1234                 # src_port 按契约放 detail
+    # 网络事件不涉及的字段必须为 null（不用 unknown/0/空串占位）
+    assert e["user"] is None and e["process"] is None
+    assert e["cmdline"] is None and e["logon_type"] is None and e["session_id"] is None
+    assert e["event_id"] is None
+    # severity / anomaly_flags / 时间格式
+    assert e["severity"] == 0 and e["anomaly_flags"] == []
+    assert e["timestamp"].endswith("+08:00")
+    assert e["raw_log"].startswith("FLOW")                 # PCAP 会话的规范化 raw_log
+    assert validate_events(events) == []
 
     out_file = tmp_path / "events.json"
     save_events(events, str(out_file))
     assert out_file.exists() and "web-server" in out_file.read_text(encoding="utf-8")
+
+
+def test_anomaly_event_v2_severity_and_flags():
+    flows = [mk_flow(sport=41000 + i, dport=8443, start=BASE + i * 60.0,
+                     end=BASE + i * 60.0 + 0.5) for i in range(6)]
+    anomalies = detect_c2_beacons(flows, CFG)
+    events = build_events([], anomalies, {"185.199.108.153": "c2-server"}, CFG)
+    e = events[0]
+    assert set(e.keys()) == set(EVENT_V2_FIELDS)
+    assert e["event_type"] == "c2_beacon"
+    assert e["severity"] == 3                              # high -> 3
+    assert e["anomaly_flags"] == ["c2_beacon", "T1071"]    # [规则, ATT&CK技术]
+    assert e["detail"]["mitre_technique"] == "T1071"
+    assert e["detail"]["attack_stage"] == "Command and Control"
+    assert e["detail"]["attack_stage_zh"] == "命令与控制"
+    assert e["dst_port"] == 8443
+    assert e["host"] == "10.0.0.5"                         # 内网侧（src），不在映射表则保留 IP
+    assert validate_events(events) == []
+
+
+def test_icmp_event_ports_are_null():
+    flows = [mk_flow(src="10.0.0.10", sport=0, dst="8.8.8.8", dport=0, proto="ICMP",
+                     src_flags=set(), dst_flags=set())]
+    flows[0].icmp_count = 5
+    flows[0].icmp_max_payload = 512
+    events = build_events(flows, [], {}, CFG)
+    e = events[0]
+    assert e["event_type"] == "icmp_traffic"
+    assert e["dst_port"] is None                           # ICMP 无端口 -> null，非 0
+    assert e["detail"]["src_port"] is None
+    assert e["detail"]["icmp_max_payload_bytes"] == 512
+    assert validate_events(events) == []
+
+
+def test_severity_mapping():
+    from backend.parsers.network.normalize import SEVERITY_MAP
+    assert SEVERITY_MAP == {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 3}

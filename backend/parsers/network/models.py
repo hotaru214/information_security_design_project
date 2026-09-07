@@ -77,4 +77,4 @@ class Anomaly:
     protocol: str = "TCP"
     description: str = ""
     evidence: dict = field(default_factory=dict)
-    source: str = "network_pcap"       # 来自哪种输入（沿会所聚合的会话）
+    source: str = "network_pcap"       # 沿袭所聚合会话的来源标记

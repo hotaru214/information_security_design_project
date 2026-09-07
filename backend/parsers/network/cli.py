@@ -18,7 +18,7 @@ from datetime import datetime
 
 from .config import DetectionConfig
 from .detectors import STAGE_ZH
-from .normalize import build_events, load_host_map, save_events
+from .normalize import build_events, load_host_map, save_events, validate_events
 from .pcap_parser import parse_pcap
 from .zeek_parser import parse_connection_csv, parse_zeek_logs
 
@@ -83,6 +83,10 @@ def _print_summary(events, flows, anomalies, stats):
     print(f"  异常告警: {len(anomalies)} 条"
           + ("（" + "、".join(f"{KIND_ZH.get(k, k)}×{v}" for k, v in kinds.items() if v) + "）"
              if kinds else "（未检出）"))
+    problems = validate_events(events)
+    print(f"  Event V2 契约自检: {'通过' if not problems else '不合规 x' + str(len(problems))}")
+    for p in problems[:5]:
+        print(f"    ! {p}")
 
     if anomalies:
         print("-" * 62)
