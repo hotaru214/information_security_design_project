@@ -1,1 +1,9 @@
 E/
+
+# ---- B模块（主机日志解析）添加：忽略生成物和本地工具文件 ----
+data/output/
+__pycache__/
+*.pyc
+.zcode/
+Thumbs.db
+.DS_Store
