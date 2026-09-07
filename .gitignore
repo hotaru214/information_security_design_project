@@ -4,3 +4,13 @@ __pycache__/
 .pytest_cache/
 out/
 tmp/
+.zcode/
+.venv/
+venv/
+.env
+*.db
+*.sqlite
+*.sqlite3
+data/output/
+Thumbs.db
+.DS_Store
