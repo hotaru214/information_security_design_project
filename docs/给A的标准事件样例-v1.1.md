@@ -1,5 +1,6 @@
-# 给A：主机日志标准事件样例 v1.1（数据100%来自真实日志解析）
+# 给A：主机日志标准事件样例 v2（数据100%来自真实日志解析）
 
+> **✅ 已对齐 Event V2（2026-09-07契约冻结）**：19字段、source枚举6值、ISO8601 T分隔时间戳、detail注册表键名、null语义，全部按V2执行。**event_type已按D《Event V2 event_type 规范》对齐**（login_failed/process_start/network_connection等）。
 > **数据来源声明**：以下每条JSON都是解析器从真实攻击样本日志（GitHub: sbousseaden/EVTX-ATTACK-SAMPLES，含ATT&CK标注）里**解析输出的原文**，不是手编的。解析代码在 `b_host_parser/`（schema.py 是契约代码版），随时可以现场跑给你看。
 > **空值语义（回应你说的"不要塑料花"）**：没有的数据一律 `null`，绝不填 "unknown"/0/""。每条样例里哪些字段是null、为什么null，我都标了原因。
 
@@ -11,7 +12,7 @@
 
 ```json
 {
-  "timestamp": "2019-03-19 06:15:49.692402+08:00",
+  "timestamp": "2019-03-19T06:15:49.692402+08:00",
   "host": "WIN-77LTAPHIQ1R.example.corp",
   "source": "windows_evtx",
   "event_id": 4624,
@@ -38,11 +39,11 @@
 
 ```json
 {
-  "timestamp": "2020-09-09 21:18:23.627951+08:00",
+  "timestamp": "2020-09-09T21:18:23.627951+08:00",
   "host": "MSEDGEWIN10",
   "source": "windows_evtx",
   "event_id": 4625,
-  "event_type": "login_failure",
+  "event_type": "login_failed",
   "user": "IEUser",
   "process": "chrome.exe",
   "src_ip": null,
@@ -65,11 +66,11 @@
 
 ```json
 {
-  "timestamp": "2019-03-19 06:15:49.645889+08:00",
+  "timestamp": "2019-03-19T06:15:49.645889+08:00",
   "host": "WIN-77LTAPHIQ1R.example.corp",
   "source": "windows_evtx",
   "event_id": 4688,
-  "event_type": "process_create",
+  "event_type": "process_start",
   "user": "WIN-77LTAPHIQ1R$",
   "process": "WmiPrvSE.exe",
   "src_ip": null,
@@ -92,11 +93,11 @@
 
 ```json
 {
-  "timestamp": "2019-05-21 23:32:57.286253+08:00",
+  "timestamp": "2019-05-21T23:32:57.286253+08:00",
   "host": "IEWIN7",
   "source": "sysmon",
   "event_id": 1,
-  "event_type": "process_create",
+  "event_type": "process_start",
   "user": "IEWIN7\\IEUser",
   "process": "cmd.exe",
   "src_ip": null,
@@ -123,7 +124,7 @@
 
 ```json
 {
-  "timestamp": "2019-05-21 23:32:59.809883+08:00",
+  "timestamp": "2019-05-21T23:32:59.809883+08:00",
   "host": "IEWIN7",
   "source": "sysmon",
   "event_id": 11,
@@ -152,11 +153,11 @@
 
 ```json
 {
-  "timestamp": "2019-05-21 23:32:59.389278+08:00",
+  "timestamp": "2019-05-21T23:32:59.389278+08:00",
   "host": "IEWIN7",
   "source": "sysmon",
   "event_id": 3,
-  "event_type": "network_connect",
+  "event_type": "network_connection",
   "user": "IEWIN7\\IEUser",
   "process": "mshta.exe",
   "src_ip": "10.0.2.15",
@@ -166,7 +167,7 @@
   "logon_type": null,
   "session_id": null,
   "cmdline": null,
-  "detail": { "source_port": "49703", "initiated": "True" },
+  "detail": { "src_port": 49703, "initiated": "True" },
   "description": "主机发起tcp连接 → 108.179.232.58:443（进程: mshta.exe）",
   "anomaly_flags": [],
   "severity": 0,
@@ -179,7 +180,7 @@
 
 ```json
 {
-  "timestamp": "2020-10-14 07:06:02.889793+08:00",
+  "timestamp": "2020-10-14T07:06:02.889793+08:00",
   "host": "MSEDGEWIN10",
   "source": "sysmon",
   "event_id": 13,
@@ -188,7 +189,7 @@
   "process": "svchost.exe",
   "src_ip": null, "dst_ip": null, "dst_port": null, "protocol": null,
   "logon_type": null, "session_id": null, "cmdline": null,
-  "detail": { "registry_key": "HKLM\\System\\CurrentControlSet\\Services\\LanmanServer\\Shares\\staging", "value": "Binary Data", "event_type_name": "SetValue" },
+  "detail": { "registry_key": "HKLM\\System\\CurrentControlSet\\Services\\LanmanServer\\Shares\\staging", "registry_value_name": "staging", "registry_value_data": "Binary Data", "registry_operation": "SetValue" },
   "description": "注册表写入: HKLM\\System\\CurrentControlSet\\Services\\LanmanServer\\Shares\\staging = Binary Data",
   "anomaly_flags": [],
   "severity": 0,
@@ -219,6 +220,22 @@
 
 （✓=有值；—=该事件类型本来就没有，恒null）
 
+### detail 键报备清单（V2规定"例如"非穷举，以下是我实际产出的全部键，D取数对照用）
+
+| 事件 | detail键 |
+|---|---|
+| 4624 登录成功 | `logon_id`、`domain`、`src_port`（IpPort是源端口，故放detail不冒充dst_port） |
+| 4625 登录失败 | `substatus`、`substatus_desc`（人话：密码错误/用户不存在等）、`failure_reason`、`workstation` |
+| 4688 进程创建 | `parent_process`、`creator_process_id`、`new_process_id`、`token_elevation` |
+| Sysmon 1 进程创建 | `parent_process`、`parent_cmdline`、`hashes` |
+| Sysmon 3 网络连接 | `src_port`、`initiated` |
+| Sysmon 11 文件创建 | `file_path`、`creation_utc_time` |
+| Sysmon 13 注册表 | `registry_key`、`registry_value_name`、`registry_value_data`、`registry_operation`（V2统一命名） |
+
+### 待A拍板的一件事
+
+时间戳我保留了**微秒**（如 `2019-03-19T06:15:49.692402+08:00`，ISO8601合法，evtx里本来就是微秒精度的真实数据）。你的示例只写到秒——如果后端标准化要截断到秒，你那边处理即可，我这边不截（截了就丢真实精度）。
+
 ## 四、Schema统一建议（请你定夺）
 
 1. **公共字段建议在 timestamp/host/event_type/description 基础上增加**：`source`（区分windows_evtx/sysmon/linux_*，排查数据问题必需）、`event_id`（溯源到原始日志）、`user`（登录/进程的核心实体，D必用）、`raw_log`（前端"查证据"直接展示原文）、`detail`（JSON字符串列，放各类日志的特有字段，避免为每个小字段建列）。
@@ -230,7 +247,7 @@
 
 ```json
 {
-  "event_type": "login_failure",
+  "event_type": "login_failed",
   "user": "Administrator",
   "src_ip": "10.0.2.17",
   "anomaly_flags": ["brute_force"],

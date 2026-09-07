@@ -22,10 +22,10 @@ import Evtx.Evtx as evtx
 from schema import make_event
 from windows_evtx import NS, to_utc8, _clean, _basename
 
-# Sysmon事件ID → event_type
+# Sysmon事件ID → event_type（词表按D《Event V2 event_type规范》）
 SUPPORTED = {
-    1: "process_create",
-    3: "network_connect",
+    1: "process_start",
+    3: "network_connection",
     11: "file_create",
     13: "registry_set",
 }
@@ -83,9 +83,10 @@ def _record_to_event(record) -> dict:
         dst_ip = _clean(data.get("DestinationIp"))
         dst_port = _clean(data.get("DestinationPort"))
         protocol = _clean(data.get("Protocol"))
+        src_port = _clean(data.get("SourcePort"))
         tail = f":{dst_port}" if dst_port else ""
         description = f"主机发起{protocol or ''}连接 → {dst_ip}{tail}（进程: {image}）"
-        detail = {"source_port": _clean(data.get("SourcePort")),
+        detail = {"src_port": int(src_port) if src_port and src_port.isdigit() else src_port,
                   "initiated": _clean(data.get("Initiated"))}
         extra = dict(dst_ip=dst_ip,
                      dst_port=int(dst_port) if dst_port else None,
@@ -98,13 +99,16 @@ def _record_to_event(record) -> dict:
                   "creation_utc_time": _clean(data.get("CreationUtcTime"))}
         extra = dict()
 
-    else:  # ID 13 注册表键值修改
+    else:  # ID 13 注册表键值修改（detail键名按Event V2契约）
         target = _clean(data.get("TargetObject"))
         value = _clean(data.get("Details"))
+        # TargetObject形如 HKLM\...\Shares\staging，末段就是值名称
+        value_name = target.rsplit("\\", 1)[-1] if target else None
         description = f"注册表写入: {target} = {value}"
         detail = {"registry_key": target,
-                  "value": value,
-                  "event_type_name": _clean(data.get("EventType"))}
+                  "registry_value_name": value_name,
+                  "registry_value_data": value,
+                  "registry_operation": _clean(data.get("EventType"))}
         extra = dict()
 
     return make_event(

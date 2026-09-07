@@ -29,11 +29,11 @@ from schema import make_event, LOGON_TYPES, SUB_STATUS
 NS = "{http://schemas.microsoft.com/win/2004/08/events/event}"
 UTC8 = timezone(timedelta(hours=8))  # 全组约定的统一时区
 
-# 本文件当前关心的事件ID → event_type 映射
+# 本文件当前关心的事件ID → event_type 映射（词表按D《Event V2 event_type规范》）
 SUPPORTED = {
     4624: "login_success",
-    4625: "login_failure",
-    4688: "process_create",
+    4625: "login_failed",
+    4688: "process_start",
 }
 
 
@@ -48,7 +48,8 @@ def to_utc8(dt: datetime) -> str:
         return None
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)  # evtx内部时间就是UTC，补上时区标记
-    return dt.astimezone(UTC8).isoformat(sep=" ")  # → "2026-09-08 13:05:02+08:00"
+    # Event V2：ISO8601 T分隔格式（2026-09-08T13:10:00+08:00），保留微秒（真实精度）
+    return dt.astimezone(UTC8).isoformat()
 
 
 def _clean(value):
@@ -145,15 +146,16 @@ def _record_to_event(record) -> dict:
 
     lt_desc = LOGON_TYPES.get(logon_type, f"类型{logon_type}")
     if event_id == 4624:
-        event_type = "login_success"
+        event_type = SUPPORTED[event_id]
         # 会话重建（Day2）的配对键：同一(host, LogonId)的4624↔4634配成一对
         session_id = f"{host}:{logon_id}" if logon_id else None
         description = f"用户 {user} 登录成功（{lt_desc}）"
+        src_port = _clean(data.get("IpPort"))  # 远程登录时的来源端口
         detail = {"logon_id": logon_id,
                   "domain": _clean(data.get("TargetDomainName")),
-                  "src_port": _clean(data.get("IpPort"))}  # 远程登录时的来源端口
+                  "src_port": int(src_port) if src_port and src_port.isdigit() else src_port}
     elif event_id == 4625:  # 登录失败
-        event_type = "login_failure"
+        event_type = SUPPORTED[event_id]
         session_id = None  # 登录失败没有会话
         sub = _clean(data.get("SubStatus"))
         sub_desc = SUB_STATUS.get(_norm_substatus(sub), sub)
@@ -161,8 +163,8 @@ def _record_to_event(record) -> dict:
         detail = {"substatus": sub, "substatus_desc": sub_desc,
                   "failure_reason": _clean(data.get("FailureReason")),
                   "workstation": _clean(data.get("WorkstationName"))}
-    else:  # 4688 进程创建
-        event_type = "process_create"
+    else:  # 4688 进程启动
+        event_type = SUPPORTED[event_id]
         # 4688没有TargetUserName，发起进程的账号是SubjectUserName
         user = _clean(data.get("SubjectUserName"))
         process = _basename(_clean(data.get("NewProcessName")))

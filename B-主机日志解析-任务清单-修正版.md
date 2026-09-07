@@ -21,7 +21,7 @@
 - [ ] **任务1：对齐数据格式（与A、D开小会，30分钟，今天最重要的一件事）**
   定死四件事，之后谁都不许单方面改：
   - **JSON契约**（见文末附录A的标准事件结构）；
-  - **event_type 枚举**（统一词表，和C共用一套）：`login_success / login_failure / logoff / process_create / file_create / registry_set / network_connect / account_created / log_cleared`；
+  - **event_type 枚举**（统一词表，和C共用一套，以D《Event V2 event_type 规范》冻结词表为准）：`login_success / login_failed / logout / process_start / network_connection / file_create / registry_set / user_created / ...`；
   - **host 命名规则**：统一用靶机主机名（如 `web-server`），Windows取evtx的Computer字段，需要的话配一张"主机名↔IP"映射表给D——D的关联引擎全靠这个字段join；
   - **时区约定**：所有事件统一输出 **UTC+8**（`2026-09-08 13:05:02+08:00`），同步给C，否则时间线对不齐、凌晨规则全错。
   - 顺带建议A：导入接口支持**一次POST一个数组**，别一条一POST。
@@ -74,9 +74,11 @@
     | `username_enumeration` | SubStatus=0xC0000064 密集出现 | 3 |
     | `encoded_exec` | 命令行含 `powershell -enc/-EncodedCommand`、`-w hidden` | 3 |
     | `remote_download` | 命令行含 `wget`/`curl`/`certutil -urlcache`/`Invoke-WebRequest` | 2 |
-- [ ] **任务8b：低成本高回报事件（新增）**
-  - **1102**（审计日志被清——攻击者抹痕迹的标志动作，演示效果好）；
-  - **4720**（新建账号）。
+- [ ] **任务8b：低成本高回报事件（按D"最小依赖集合"补齐）**
+  - **1102**（审计日志被清——攻击者抹痕迹的标志动作，event_type=`log_cleared`，已向D申请加入枚举）；
+  - **4720**（新建账号→`user_created`）、**4728**（加入组→`group_member_added`）、**4673**（权限使用→`privilege_change`）；
+  - **7045**（服务安装→`service_created`）、**4698**（计划任务→`scheduled_task_created`）——全是D关联规则要吃的持久化/提权证据，每个约10行；
+  - detail命名照D规范：`detail.target_user` / `detail.group_name` / `detail.service_name` / `detail.task_name`。
 - [ ] **任务9：全量导入E的靶场数据**
   - 跑通整个文件夹，几十上百条不崩；
   - ⚠️ **try-except 按"条"包，不按"文件"包**——一条坏记录不能废掉整个文件；
@@ -149,9 +151,9 @@
 | Sysmon ID 11 | TargetFilename | detail.file_path |
 | Sysmon ID 13 | TargetObject / Details | detail.registry_key / detail.value |
 | Sysmon ID 3 | SourceIp / DestinationIp / DestinationPort | src_ip / dst_ip / dst_port |
-| Windows 1102 / 4720 | — | event_type=`log_cleared` / `account_created` |
-| Linux auth.log | `Accepted password for u from IP` / `Failed password for u from IP` | event_type=`login_success`/`login_failure`，user / src_ip |
-| Linux auditd | `type=USER_CMD`（sudo） / `type=SYSCALL`+`PATH` | event_type=`sudo_exec` / `file_access`，user / detail |
+| Windows 1102 / 4720 | — | event_type=`log_cleared`（待D确认）/ `user_created` |
+| Linux auth.log | `Accepted password for u from IP` / `Failed password for u from IP` | event_type=`login_success`/`login_failed`，user / src_ip |
+| Linux auditd | `type=USER_CMD`（sudo） / `type=SYSCALL`+`PATH` | event_type=`process_start`（sudo信息放detail）/ `file_read`/`file_write`，user / detail |
 
 ## 附录C：事件ID速查
 
