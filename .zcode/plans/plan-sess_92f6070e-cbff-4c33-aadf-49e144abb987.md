@@ -1,47 +1,47 @@
-# 成员C今日任务：网络流量解析模块（network event parser）
+# 解决 pull 冲突（3 个文件）+ 合并 README
 
-## 目标
+## 冲突原因
+本地（成员C：网络流量模块）与远端（成员A：FastAPI 后端 + 成员B：主机日志解析）分叉，`.gitignore`/`requirements.txt` 两边都改了，根 `Readme.md` 两边各写了一版。
 
-一次性完成分工中 C 的 Day 1 + Day 2 任务：交付一个**可独立运行的网络流量解析与异常检测模块**，输入 PCAP（及 Zeek 日志/CSV 连接日志），输出统一格式安全事件 JSON，覆盖任务书要求的四点：流量捕获与解析、网络会话重建、异常协议行为建模、隐蔽信道检测（DNS/HTTP/ICMP）。
+## 解决方案：三个文件全部做并集合并
 
-## 技术选型
+### 1. `.gitignore` —— 合并两边所有条目（去重）
+```
+E/
+__pycache__/
+*.pyc
+.pytest_cache/
+out/
+tmp/
+.zcode/
+.venv/
+venv/
+.env
+*.db
+*.sqlite
+*.sqlite3
+data/output/
+Thumbs.db
+.DS_Store
+```
+（本地贡献：.pytest_cache/out/tmp；远端贡献：.venv/venv/.env/*.db/data/output/.zcode/Thumbs.db/.DS_Store）
 
-- **scapy**（pip 安装，Windows 离线读 pcap 无需管理员权限）做 PCAP 包解析——分工建议的 Zeek 在 Windows 上安装困难，改为：包解析用 scapy，同时提供 Zeek conn.log/dns.log/http.log 读取器，若队友在 Linux 上产出 Zeek 日志可直接导入，两种输入都支持。
-- 检测逻辑纯 Python 标准库，无重型依赖。
+### 2. `requirements.txt` —— 后端依赖(A) + 网络模块依赖(C) 合并
+保留 A 的完整 pin 版本列表（fastapi/uvicorn/pydantic 等 13 项），追加网络模块的 scapy 和 pytest（带注释分区）。B 的依赖在 `b_host_parser/requirements.txt` 里独立存在，不受影响。
 
-## 实施步骤
+### 3. `Readme.md` —— 按你之前的要求"合并总结"
+写成一版**项目级总览 README**（取代两边的冲突版本）：
+- 项目标题（题3）+ 一段系统定位
+- 架构图（后端A / 主机解析B / 网络解析C / 关联D / 靶场E / 前端F + 数据流）
+- 目录结构说明
+- 快速开始：后端启动（uvicorn、/docs、/health）+ 网络解析 CLI + 主机解析入口
+- Event V2 契约摘要（19 字段、severity 0-3、UTC+8、null 语义、source 枚举）——A 的旧版还写着 Event V1，合并版统一为已冻结的 V2
+- 详细文档链接：`backend/parsers/network/README.md`、`b_host_parser/README.md`、`docs/`
 
-1. **搭目录**：`backend/parsers/network/`（模块代码）、`data/network_logs/`（样例数据）、`scripts/`（工具脚本），`requirements.txt` 加入 scapy。
+网络模块的详细 README 仍保留在 `backend/parsers/network/README.md`，根 README 只做总览+引用，不丢任何细节。
 
-2. **样例数据生成器 `scripts/gen_sample_pcap.py`**：用 scapy 生成模拟"企业内网完整攻击链"的 PCAP（Case 01），同时输出 `data/hosts.csv`（IP→主机名映射，与E的8节点拓扑对齐，可改）：
-   - 正常背景流量（办公机浏览网页、DNS查询、邮件）
-   - 攻击者 203.0.113.66 → Web服务器 10.0.0.5：端口扫描 → HTTP攻击请求 → 反弹Shell到攻击者:4444
-   - 横向移动 Web → 办公机 10.0.0.21（SMB/RDP）→ 核心服务器 10.0.0.10
-   - 核心服务器 → C2 185.199.108.153:8443 周期性心跳（beacon）
-   - DNS隧道探测（超长高熵子域名/TXT查询）+ 大流量数据外传 + 异常ICMP大包
-
-3. **`pcap_parser.py` 流量解析与会话重建**：流式读取 PCAP（不占大内存），按五元组聚合为连接会话（起止时间、包数、字节数、TCP标志），并从载荷中提取 DNS 查询（域名/类型）、HTTP 请求（方法/URI/UA）、ICMP 概要。
-
-4. **`zeek_parser.py`**：解析 Zeek conn.log / dns.log / http.log（TSV 和 JSON 两种格式），转成同样的会话记录。
-
-5. **`detectors.py` 异常检测**：端口扫描（同源大量SYN不同端口）、C2心跳（周期性规律外联）、可疑端口连接（4444等可配置清单）、DNS隧道嫌疑（高熵长域名/TXT查询量）、大流量外传（内→外大字节/长时长）、ICMP隧道嫌疑（超大载荷/周期性）——每条告警带证据字段、严重级别和攻击阶段提示（Reconnaissance/Initial Access/Lateral Movement/Command and Control/Exfiltration）。
-
-6. **`normalize.py` 统一事件输出**：会话记录+告警 → 分工文档定义的统一事件 JSON（timestamp/source/event_type/severity/src_ip/dst_ip/protocol/description/attack_stage/evidence…），host 映射后带主机名，方便D做跨源关联。
-
-7. **`cli.py` 命令行入口**：`python -m backend.parsers.network data/network_logs/case01.pcap --hosts data/hosts.csv --out out/network_events.json`，终端打印统计摘要（包数→会话数→告警数→攻击阶段时间线预览），输出 JSON 直接可用于 POST /api/events/import。
-
-8. **测试**：pytest 覆盖熵计算、端口扫描/心跳/DNS隧道检测、PCAP小样例端到端解析。
-
-9. **集成文档 `backend/parsers/network/README.md`**：用法、输出事件 schema、与A的import接口约定、与D的字段约定（D关联分析可直接依赖哪些字段）。
-
-10. **端到端验证**：生成样例PCAP → 跑CLI → 确认能自动检出全部预埋攻击行为并输出事件JSON；pytest 通过。
-
-## 交付物
-
-- 可运行的 network parser 模块 + 测试
-- 一套覆盖完整攻击链的样例 PCAP 与 hosts 映射（后续E真实靶场数据产出后可直接替换重跑）
-- 集成说明文档（A/D 对接用）
-
-## 明确不做（今天）
-
-- 报告章节/PPT（Day 3）、真实靶场数据采集（E负责）、FastAPI集成（A负责，本模块只保证接口约定清晰）。
+## 收尾步骤
+1. `git add .gitignore requirements.txt Readme.md` 标记冲突已解决
+2. `git commit` 完成合并提交（信息：合并远程分支，统一依赖与 README）
+3. 验证：`git status` 干净、`python -m pytest tests -q` 全绿、`python -m backend.parsers.network ...` 契约自检通过
+4. `git push` 同步回远端（如你想先自己检查再推，最后这步可以跳过）
