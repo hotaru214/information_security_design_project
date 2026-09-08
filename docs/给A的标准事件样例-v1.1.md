@@ -249,12 +249,18 @@
 
 时间戳我保留了**微秒**（如 `2019-03-19T06:15:49.692402+08:00`，ISO8601合法，evtx里本来就是微秒精度的真实数据）。你的示例只写到秒——如果后端标准化要截断到秒，你那边处理即可，我这边不截（截了就丢真实精度）。
 
-## 四、Schema统一建议（请你定夺）
+## 四、Schema对齐结果（✅ A已落实，2026-09-08实测闭环）
 
-1. **公共字段建议在 timestamp/host/event_type/description 基础上增加**：`source`（区分windows_evtx/sysmon/linux_*，排查数据问题必需）、`event_id`（溯源到原始日志）、`user`（登录/进程的核心实体，D必用）、`raw_log`（前端"查证据"直接展示原文）、`detail`（JSON字符串列，放各类日志的特有字段，避免为每个小字段建列）。
-2. **网络侧对齐**：我这边契约已加 `dst_port`/`protocol`，只有Sysmon ID 3会填（见附A），主机登录类恒null。4624里的IpPort是**源**端口，我放在 `detail.src_port`，没有冒充dst_port。
-3. **null语义**：`=null` 表示"该事件类型本来就没有这个数据"；不使用 "unknown"/0/空字符串。如果你那边DB列有NOT NULL约束，改列约束，我这边不改数据。
-4. **异常预标记**：`anomaly_flags`(数组)+`severity`(0-3) 由我在解析侧按规则填（凌晨登录/爆破/编码执行等，Day2），D的关联引擎也可以直接用。规则名清单见《数据格式契约-v1.md》。
+本节原为B的4条Schema建议。**A已在后端全部落实**（`backend/schemas/event.py` + `routers/events.py`），并经B用220条E真实事件实测验证（`POST /api/events/import` 全部入库、GET核对无损）：
+
+1. **公共字段**：`source`/`event_id`/`user`/`raw_log`/`detail` 全部在 `EventCreate` 中，detail 按JSON字符串列存 ✅
+2. **网络侧对齐**：`dst_port`/`protocol` 已收，Sysmon ID 3 与 C 的网络事件同构 ✅
+3. **null语义**：可选字段全部 `| None`，不再有必填校验拒绝null的问题 ✅
+4. **异常预标记**：`anomaly_flags`/`severity` 已入库 ✅
+
+A额外做的（超出契约）：`timestamp` 强制校验 +08:00 时区（pydantic validator）；**`hosts` 表（hostname/ip/role）+ `/api/hosts` 路由**——任务1约定的"主机名↔IP映射表"有了正式落点，E的 `data/hosts.csv` 12行可用 `POST /api/hosts/batch` 直接灌入。
+
+**仍待A提供**：`POST /api/db/reset` 清库接口（Day3任务10回归测试要用）。
 
 ## 五、异常预标记（Day2已实现）
 
