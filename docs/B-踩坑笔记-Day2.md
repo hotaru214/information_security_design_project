@@ -51,3 +51,13 @@ Day1晚上的对齐提交（97e55c0）改了两个解析器的 `SUPPORTED` 字�
 ## 7. 工程位置变化
 
 B模块从仓库根 `b_host_parser/` 移到了 `backend/b_host_parser/`（与A的后端同仓）。所有"项目根"路径（`run_parse.py` 的 `PROJECT_ROOT`、`verify_day*.py` 的 `PROJECT`）从"上一级"改成"上两级"——移动目录时最容易漏的就是这种**隐式相对路径**，verify 脚本一跑就现形（Day1的 t2 检查样例文件存在性，路径错了立刻 FAIL）。
+
+## 8. `re.findall` 对未参与的捕获组返回 `''` 而不是 `None`
+
+auditd 的字段是 `key="value"`（带引号）和 `key=value`（裸值）两种形态，我用了一条正则两条分支：`(\w+)=(?:"([^"]*)"|(\S+))`。然后用 `findall` + `v2 if v2 is not None else v3` 取值——**全错**。
+
+原因：`re.findall` 对"没参与匹配的捕获组"返回的是**空字符串 `''`**，不是 `None`。于是 `item=0`（走了裸值分支，group2没参与）拿到的 v2 是 `''`，我的判断 `is not None` 成立，永远选中了空的 group2——所有裸值字段全变空串，`int('')` 直接炸。
+
+**修复**：改用 `finditer`，`m.group(2) if m.group(2) is not None else m.group(3)`——finditer 的 group 对未参与分支如实返回 None。
+**教训**：`findall` 的"未参与组返回空串"和 `.groups()` 的"返回 None"行为不一致，多分支正则取值一律用 finditer。
+（验证方法：合成样本里两种形态都放，一跑就现形——如果只有带引号的字段解析出来，就是踩了这个。）

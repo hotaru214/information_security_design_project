@@ -51,20 +51,20 @@
 
 **目标：E的全量数据吃得下，D要的"可疑点"标得出。**
 
-- [ ] **任务6：补齐Linux解析器**
+- [x] **任务6：补齐Linux解析器**（✅9/8：linux_log.py，合成攻击样本在data/sample_logs/linux/，E真实数据到位后重跑）
   - `parse_linux_auth(file_path)`：正则抓 sshd 的 `Accepted password`（成功）/ `Failed password`（失败），提取用户、src_ip；
   - `parse_linux_audit(file_path)`：抓 sudo 提权（`USER_CMD`）和敏感文件访问（`SYSCALL`/`PATH`）。
-- [ ] **任务7：扩充Windows解析深度（Sysmon四件套）**
+- [x] **任务7：扩充Windows解析深度（Sysmon四件套）**（✅Day1.5已提前完成，9/8回归验证通过）
   同一套XML解析逻辑，边际成本低，但正好补齐任务书要的"文件、注册表键值"两个实体：
   - **ID 1** 进程创建：`CommandLine`、`ParentImage`（父进程）、`ParentCommandLine`——D分析恶意执行全靠这个；
   - **ID 11** 文件创建：`TargetFilename`；
   - **ID 13** 注册表键值：`TargetObject`、`Details`；
   - **ID 3** 网络连接：`SourceIp`/`DestinationIp`/`DestinationPort`——顺手桥接C的网络数据，D做主机↔流量关联省大事；
   - 无Sysmon时用 **4688**（进程创建）兜底。
-- [ ] **任务7b：登录会话重建（任务书硬要求，新增）**
+- [x] **任务7b：登录会话重建（任务书硬要求，新增）**（✅9/8：sessions.py，rebuild_sessions配对+all_sessions.json汇总）
   - 解析 **4634/4647（注销）**，用 `(host, LogonId)` 把 4624登录 ↔ 4634注销 配对成会话；
   - 每条登录/注销事件都带上 `session_id`（=`主机名:LogonId`），D就能直接算"谁、从哪个IP、何时上机、活跃多久"——横向移动分析的原料。
-- [ ] **任务8：异常预标记（与D确认规则后实现）**
+- [x] **任务8：异常预标记（与D确认规则后实现）**（✅9/8：anomaly.py，5条规则+幂等；username_enumeration的"密集"阈值暂定同src_ip5分钟≥3次待D复核）
   - `is_anomaly` 布尔改成 **`"anomaly_flags": ["规则名", ...]` + `"severity": 0-3`**——对D的关联引擎有用得多，报告里也好写；
   - 首版规则：
     | 规则ID | 条件 | severity |
@@ -74,12 +74,12 @@
     | `username_enumeration` | SubStatus=0xC0000064 密集出现 | 3 |
     | `encoded_exec` | 命令行含 `powershell -enc/-EncodedCommand`、`-w hidden` | 3 |
     | `remote_download` | 命令行含 `wget`/`curl`/`certutil -urlcache`/`Invoke-WebRequest` | 2 |
-- [ ] **任务8b：低成本高回报事件（按D"最小依赖集合"补齐）**
+- [x] **任务8b：低成本高回报事件（按D"最小依赖集合"补齐）**（✅9/8：8个新ID全接入；log_cleared已经D确认入枚举）
   - **1102**（审计日志被清——攻击者抹痕迹的标志动作，event_type=`log_cleared`，已向D申请加入枚举）；
   - **4720**（新建账号→`user_created`）、**4728**（加入组→`group_member_added`）、**4673**（权限使用→`privilege_change`）；
   - **7045**（服务安装→`service_created`）、**4698**（计划任务→`scheduled_task_created`）——全是D关联规则要吃的持久化/提权证据，每个约10行；
   - detail命名照D规范：`detail.target_user` / `detail.group_name` / `detail.service_name` / `detail.task_name`。
-- [ ] **任务9：全量导入E的靶场数据**
+- [x] **任务9：全量导入E的靶场数据**（✅9/8：run_parse --dir；双层容错（按条+按文件）+无记录文件告警；E全量数据到位后重跑一遍抄数字）
   - 跑通整个文件夹，几十上百条不崩；
   - ⚠️ **try-except 按"条"包，不按"文件"包**——一条坏记录不能废掉整个文件；
   - 每次导入末尾打印统计：`成功N条 / 失败M条 / 跳过K条（按文件分组）`——这些数字直接抄进《测试分析报告》。

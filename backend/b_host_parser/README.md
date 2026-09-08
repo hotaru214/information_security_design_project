@@ -21,8 +21,8 @@
 | Sysmon .evtx | ID 3 网络连接 | network_connection（src/dst IP+端口+协议，对齐网络事件字段） |
 | Sysmon .evtx | ID 11 文件创建 | file_create |
 | Sysmon .evtx | ID 13 注册表键值 | registry_set |
-| Linux auth.log | sshd Accepted/Failed | login_success / login_failed（E数据到位后联调） |
-| Linux audit.log | sudo USER_CMD / 敏感文件 | process_start(带sudo detail) / file_read（E数据到位后联调） |
+| Linux auth.log | sshd Accepted/Failed | login_success / login_failed（含invalid_user线索；合成样本见 data/sample_logs/linux/，E真实数据到位后重跑） |
+| Linux audit.log | sudo USER_CMD / 敏感文件 | process_start（sudo信息放detail，D决议） / file_read（SYSCALL+PATH按审计序号配对） |
 
 附加能力（Day2）：
 - **会话重建**（`sessions.py`）：4624↔4634/4647 按 `(host, LogonId)` 配对成会话，登录事件补 `logout_time/session_duration_s`，未注销标 `active`，孤儿注销标 `no_login_record`；整批汇总存 `all_sessions.json`。

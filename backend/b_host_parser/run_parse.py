@@ -30,9 +30,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from windows_evtx import parse_windows_evtx, NS   # noqa: E402
 from sysmon import parse_sysmon_evtx              # noqa: E402
+from linux_log import parse_linux_auth, parse_linux_audit, detect_linux_parser  # noqa: E402
 from sessions import rebuild_sessions, print_session_summary  # noqa: E402
 from anomaly import apply_anomaly_rules                       # noqa: E402
 from import_client import save_jsonl, post_to_backend         # noqa: E402
+
+# 解析器名 → 解析函数（detect_parser_for返回的键）
+PARSE_FNS = {
+    "windows": parse_windows_evtx,
+    "sysmon": parse_sysmon_evtx,
+    "linux_auth": parse_linux_auth,
+    "linux_audit": parse_linux_audit,
+}
+LOG_SUFFIXES = (".evtx", ".log", ".out", ".txt")
 
 # 项目根目录 = backend/b_host_parser 的上两级（2026-09-08起本模块移入backend/下，
 # 所有默认路径都相对仓库根，避免写死盘符）
@@ -53,6 +63,17 @@ def detect_parser(path) -> str:
             except Exception:
                 continue  # 第一条坏了看下一条
     return "windows"
+
+
+def detect_parser_for(path) -> str:
+    """统一格式探测：.evtx按Provider识别（windows/sysmon）；
+    文本日志（.log等）按首行内容识别Linux类型（linux_auth/linux_audit）。
+    认不出返回None（调用方跳过并提示，不硬猜）。"""
+    if path.suffix.lower() == ".evtx":
+        return detect_parser(path)
+    if path.suffix.lower() in LOG_SUFFIXES:
+        return detect_linux_parser(path)
+    return None
 
 
 def enrich(events: list):
@@ -85,10 +106,13 @@ def post(args, events):
 
 def run_single(args, in_path: Path):
     """单文件模式：解析 → enrich → 落地 → 可选POST → 打印样例。"""
-    if args.parser == "auto":
-        args.parser = detect_parser(in_path)
-    parse_fn = parse_sysmon_evtx if args.parser == "sysmon" else parse_windows_evtx
-    print(f"[1/3] 解析 {in_path.name}（解析器: {args.parser}）...")
+    kind = detect_parser_for(in_path)
+    if kind is None:
+        print(f"[错误] 无法识别 {in_path.name} 的日志格式"
+              f"（.evtx 或 .log/.out/.txt 文本日志才支持）")
+        sys.exit(1)
+    parse_fn = PARSE_FNS[kind]
+    print(f"[1/3] 解析 {in_path.name}（解析器: {kind}）...")
     stats = {}
     events = parse_fn(str(in_path), stats)
     if args.limit:
@@ -120,22 +144,29 @@ def run_dir(args, dir_path: Path):
     """任务9：全量导入文件夹。双层保险——
     第1层：每个解析器内部按"条"try-except（一条坏记录不废整个文件）；
     第2层：本函数按"文件"try-except（一个文件损坏/不是evtx，不废整批）。"""
-    files = sorted(p for p in dir_path.rglob("*.evtx") if p.is_file())
+    files = sorted(p for p in dir_path.rglob("*")
+                   if p.is_file() and p.suffix.lower() in LOG_SUFFIXES)
     if not files:
-        print(f"[错误] {dir_path} 下（含子目录）没有找到 .evtx 文件")
+        print(f"[错误] {dir_path} 下（含子目录）没有找到 "
+              f"{','.join(LOG_SUFFIXES)} 日志文件")
         sys.exit(1)
 
-    print(f"[1/3] 发现 {len(files)} 个 .evtx 文件，开始全量解析...")
+    print(f"[1/3] 发现 {len(files)} 个日志文件，开始全量解析...")
     all_events = []
     total = {"parsed": 0, "skipped_other": 0, "failed": 0}
     broken_files = []
     no_record_files = []  # 打开成功但一条记录都没读到的文件（截断/空日志）——报告里要看得见
+    unrecognized = []     # 扩展名/内容都认不出的文件
     for f in files:
         try:
-            parser = detect_parser(f) if args.parser == "auto" else args.parser
-            parse_fn = parse_sysmon_evtx if parser == "sysmon" else parse_windows_evtx
+            kind = detect_parser_for(f)
+            if kind is None:
+                print(f"  [跳过] {f.name}: 无法识别的日志格式"
+                      f"（既不是evtx，首行也不像auth/audit日志）")
+                unrecognized.append(f.name)
+                continue
             st = {}
-            events = parse_fn(str(f), st)
+            events = PARSE_FNS[kind](str(f), st)
         except Exception as e:
             broken_files.append(f.name)
             print(f"  [损坏文件，跳过] {f.name}: {type(e).__name__}: {e}")
@@ -167,7 +198,7 @@ def run_dir(args, dir_path: Path):
     # ===== 末尾统计：数字直接抄进《测试分析报告》 =====
     print("\n===== 全量导入统计 =====")
     print(f"  文件总数: {len(files)}（损坏跳过 {len(broken_files)} 个, "
-          f"无记录 {len(no_record_files)} 个）")
+          f"无记录 {len(no_record_files)} 个, 无法识别 {len(unrecognized)} 个）")
     print(f"  事件总计: 成功 {total['parsed']} 条 / 解析失败 {total['failed']} 条 / "
           f"跳过其他事件 {total['skipped_other']} 条")
     print(f"  会话: {len(sessions)} 个 | 异常标记: {anomaly_stats['flagged']} 条 "
@@ -177,7 +208,7 @@ def run_dir(args, dir_path: Path):
         post(args, all_events)
 
     return {"files": len(files), "broken_files": broken_files,
-            "no_record_files": no_record_files,
+            "no_record_files": no_record_files, "unrecognized": unrecognized,
             "parsed": total["parsed"], "failed": total["failed"],
             "skipped_other": total["skipped_other"],
             "events": len(all_events), "sessions": len(sessions),

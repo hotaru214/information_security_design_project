@@ -350,6 +350,57 @@ def t6():
 check("契约2", "全量跑批产物(all_events.jsonl): 19键齐全+raw_log/detail/flags/severity类型正确", t6)
 
 
+# ---------- t7：任务6 Linux 解析器（auth + audit） ----------
+def t7():
+    from linux_log import parse_linux_auth, parse_linux_audit
+    from anomaly import apply_anomaly_rules
+
+    auth_path = PROJECT / "data" / "sample_logs" / "linux" / "web-server_auth.log"
+    audit_path = PROJECT / "data" / "sample_logs" / "linux" / "web-server_audit.log"
+    assert auth_path.exists() and audit_path.exists(), "Linux合成样本缺失"
+
+    # --- auth.log：SSH爆破→成功登录的完整片段 ---
+    st = {}
+    evs = parse_linux_auth(str(auth_path), st)
+    assert st["parsed"] == 5 and st["failed"] == 0 and st["skipped_other"] == 3, st
+    assert st["by_event_id"] == {"sshd:failed": 4, "sshd:accepted": 1}
+    fails = [e for e in evs if e["event_type"] == "login_failed"]
+    ok = next(e for e in evs if e["event_type"] == "login_success")
+    assert len(fails) == 4 and all(e["src_ip"] == "203.0.113.66" for e in fails)
+    assert ok["user"] == "admin" and ok["src_ip"] == "203.0.113.66"
+    assert ok["detail"]["src_port"] == 41012 and ok["detail"]["method"] == "password"
+    # "invalid user"前缀 → 用户名不存在线索（Linux版的0xC0000064）
+    assert any(e["user"] == "oracle" and e["detail"]["invalid_user"] for e in fails)
+    # 时间统一UTC+8（auth.log本地时间直接打时区标记）
+    assert all(e["timestamp"].endswith("+08:00") for e in evs)
+    assert all(e["source"] == "linux_auth" and e["event_id"] is None for e in evs)
+
+    # --- audit.log：sudo提权 + 敏感文件访问（SYSCALL/PATH配对） ---
+    st2 = {}
+    evs2 = parse_linux_audit(str(audit_path), st2)
+    assert st2["parsed"] == 3 and st2["failed"] == 0 and st2["skipped_other"] == 2, st2
+    assert st2["by_event_id"] == {"USER_CMD": 1, "SYSCALL": 2}
+    sudo_ev = evs2[0]
+    assert sudo_ev["event_type"] == "process_start"  # D决议：sudo→process_start不加新词
+    assert sudo_ev["process"] == "cat" and sudo_ev["detail"]["sudo_command"] == "cat /etc/shadow"
+    assert sudo_ev["detail"]["res"] == "success" and sudo_ev["host"] == "web-server"
+    fr = [e for e in evs2 if e["event_type"] == "file_read"]
+    assert {e["detail"]["file_path"] for e in fr} == {"/etc/shadow", "/etc/passwd"}
+    shadow = next(e for e in fr if e["detail"]["file_path"] == "/etc/shadow")
+    assert shadow["detail"]["audit_key"] == "sensitive", "audit规则key要保留（E配置的监控点）"
+    assert shadow["process"] == "cat" and shadow["detail"]["syscall"] == "open"
+
+    # --- Linux事件直接吃异常规则：root三连败→brute_force，凌晨登录→offhour ---
+    stats = apply_anomaly_rules(evs + evs2)
+    assert stats["by_rule"]["brute_force"] == 3, f"root三连败应命中: {stats}"
+    assert stats["by_rule"]["offhour_login"] == 1, f"凌晨02:55登录应命中: {stats}"
+    assert stats["flagged"] == 4
+
+
+check("任务6", "Linux解析: sshd登录成功/失败+invalid_user线索 / sudo USER_CMD(hex解码)→process_start / "
+               "SYSCALL+PATH配对→file_read / 异常规则对Linux事件同样生效", t7)
+
+
 # ---------- 汇总 ----------
 print("-" * 56)
 if all(results):
