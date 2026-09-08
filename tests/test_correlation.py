@@ -75,3 +75,74 @@ def test_graph_node_type_uses_ip_for_both_endpoints(ip, hostname, expected):
     else:
         assert graph["nodes"] == [{"id": hostname or ip, "label": hostname or ip, "type": expected}]
         assert graph["edges"][0]["evidence_event_ids"] == [101]
+
+
+FINAL_NETWORKS = ["10.10.20.0/24", "10.10.30.0/24"]
+
+
+@pytest.mark.parametrize("ip,internal", [
+    ("10.10.10.10", False), ("10.10.10.20", False),
+    ("10.10.20.10", True), ("10.10.20.20", True),
+    ("10.10.30.10", True), ("10.10.30.20", True), ("8.8.8.8", False),
+])
+def test_scenario_zone(ip, internal):
+    from backend.analysis.correlation import is_internal_ip, is_external_ip
+    assert is_internal_ip(ip, FINAL_NETWORKS) is internal
+    assert is_external_ip(ip, FINAL_NETWORKS) is (not internal)
+
+
+@pytest.mark.parametrize("ip", [None, "", "invalid"])
+def test_unknown_zone_safe(ip):
+    from backend.analysis.correlation import is_internal_ip, is_external_ip
+    assert not is_internal_ip(ip, FINAL_NETWORKS)
+    assert not is_external_ip(ip, FINAL_NETWORKS)
+
+
+def test_empty_configuration_is_not_legacy():
+    from backend.analysis.correlation import is_internal_ip, is_external_ip
+    assert is_internal_ip("10.10.10.10")
+    assert not is_internal_ip("10.10.10.10", [])
+    assert is_external_ip("10.10.10.10", [])
+    with pytest.raises(ValueError):
+        correlate_events([], internal_networks=["bad-cidr"])
+
+
+@pytest.mark.parametrize("stage,technique,changes", [
+    ("Initial Access", "T1190", dict(event_type="http_request", src_ip="10.10.10.10",
+        dst_ip="10.10.20.10", dst_port=80, detail={"uri": "/shell"})),
+    ("Lateral Movement", "T1021", dict(src_ip="10.10.20.10", dst_ip="10.10.30.10", dst_port=445)),
+    ("Command and Control", "T1071", dict(src_ip="10.10.30.10", dst_ip="10.10.10.20", dst_port=4444)),
+    ("Exfiltration", "T1041", dict(src_ip="10.10.30.20", dst_ip="10.10.10.20",
+        anomaly_flags=["exfiltration"])),
+    ("Command and Control", "T1071", dict(event_type="dns_query", src_ip="10.10.30.10",
+        dst_ip="10.10.10.20", detail={"domain": "example.com"}, anomaly_flags=["c2"])),
+])
+def test_scenario_detectors_and_wrong_direction(stage, technique, changes):
+    event = network_event(**changes)
+    steps = correlate_events([event], internal_networks=FINAL_NETWORKS)
+    assert any(s["stage"] == stage and s["technique_id"] == technique for s in steps)
+    assert all(s["evidence_event_ids"] == [101] for s in steps)
+    # An unrelated hostname mapping must not change zone decisions.
+    mapped = correlate_events([event], {event["src_ip"]: "arbitrary"}, FINAL_NETWORKS)
+    assert [s["stage"] for s in mapped] == [s["stage"] for s in steps]
+    if stage == "Initial Access":
+        event["dst_ip"] = "10.10.10.20"
+    else:
+        event["src_ip"] = "10.10.10.10"
+    assert not any(s["stage"] == stage for s in correlate_events([event], internal_networks=FINAL_NETWORKS))
+
+
+def test_graph_zone_and_original_demo():
+    import json
+    from pathlib import Path
+    from backend.analysis import find_attack_paths
+    sample = json.loads((Path(__file__).resolve().parents[1] /
+                         "data/sample_events/d_attack_chain_events.json").read_text(encoding="utf-8"))
+    steps = correlate_events(sample["events"], sample["host_map"])
+    graph = build_attack_graph(steps)
+    assert (len(steps), len(graph["nodes"]), len(graph["edges"]), len(find_attack_paths(steps))) == (11, 5, 11, 1)
+    step = dict(steps[0], source_host=None, source_ip="10.10.10.10",
+                target_host=None, target_ip="10.10.20.10")
+    graph = build_attack_graph([step], FINAL_NETWORKS)
+    assert {n["id"]: n["type"] for n in graph["nodes"]} == {
+        "10.10.10.10": "external_ip", "10.10.20.10": "host"}

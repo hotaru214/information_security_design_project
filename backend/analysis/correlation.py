@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict, deque
 from datetime import datetime
-from ipaddress import ip_address
+from ipaddress import IPv4Network, IPv6Network, ip_address, ip_network
 from typing import Any
 
 
@@ -115,7 +115,8 @@ INITIAL_ACCESS_URI_KEYWORDS = [
 
 
 def correlate_events(
-    events: list[dict[str, Any]], host_map: dict[str, str] | None = None
+    events: list[dict[str, Any]], host_map: dict[str, str] | None = None,
+    internal_networks: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Convert standardized EventOut records into ATT&CK attack steps.
 
@@ -123,10 +124,12 @@ def correlate_events(
     internal ``id`` field, not the original ``source_event_id``.
     """
 
+    # Explicit CIDRs define the scenario boundary, independently of host names.
     host_map = host_map or {}
     normalized = preprocess_events(events)
     normalized.sort(key=lambda event: event["_time"])
     context = build_context(normalized, host_map)
+    context["internal_networks"] = compile_internal_networks(internal_networks)
 
     steps: list[dict[str, Any]] = []
     detectors = [
@@ -233,6 +236,7 @@ def build_context(
 def detect_initial_access(
     events: list[dict[str, Any]], context: dict[str, Any], host_map: dict[str, str]
 ) -> list[dict[str, Any]]:
+    networks = context.get("internal_networks")
     steps = []
 
     for event in events:
@@ -241,7 +245,10 @@ def detect_initial_access(
 
         src_ip = get_value(event, "src_ip")
         dst_ip = get_value(event, "dst_ip")
-        if not is_external_ip(src_ip):
+        if not is_external_ip(src_ip, networks):
+            continue
+
+        if networks is not None and not is_internal_ip(dst_ip, networks):
             continue
 
         uri = as_text(get_detail(event, "uri")).lower()
@@ -453,6 +460,7 @@ def detect_privilege_escalation(
 def detect_lateral_movement(
     events: list[dict[str, Any]], context: dict[str, Any], host_map: dict[str, str]
 ) -> list[dict[str, Any]]:
+    networks = context.get("internal_networks")
     steps = []
 
     for event in events:
@@ -465,7 +473,7 @@ def detect_lateral_movement(
 
         src_ip = get_value(event, "src_ip")
         dst_ip = get_value(event, "dst_ip")
-        if not is_internal_ip(src_ip) or not is_internal_ip(dst_ip):
+        if not is_internal_ip(src_ip, networks) or not is_internal_ip(dst_ip, networks):
             continue
 
         source_host = resolve_host(src_ip, host_map)
@@ -571,6 +579,7 @@ def detect_collection(
 def detect_c2(
     events: list[dict[str, Any]], context: dict[str, Any], host_map: dict[str, str]
 ) -> list[dict[str, Any]]:
+    networks = context.get("internal_networks")
     steps = []
     grouped_connections: dict[tuple[str | None, str | None, int | None], list[dict[str, Any]]] = defaultdict(list)
 
@@ -581,7 +590,7 @@ def detect_c2(
         src_ip = get_value(event, "src_ip")
         dst_ip = get_value(event, "dst_ip")
         dst_port = int_value(get_value(event, "dst_port"))
-        if not is_internal_ip(src_ip) or not is_external_ip(dst_ip):
+        if not is_internal_ip(src_ip, networks) or not is_external_ip(dst_ip, networks):
             continue
 
         source_host = resolve_host(src_ip, host_map) or event["_host"] or None
@@ -620,6 +629,11 @@ def detect_c2(
             continue
 
         src_ip = get_value(event, "src_ip")
+        if networks is not None and (
+            not is_internal_ip(src_ip, networks)
+            or not is_external_ip(get_value(event, "dst_ip"), networks)
+        ):
+            continue
         source_host = resolve_host(src_ip, host_map) or event["_host"] or None
         steps.append(
             make_step(
@@ -641,6 +655,7 @@ def detect_c2(
 def detect_exfiltration(
     events: list[dict[str, Any]], context: dict[str, Any], host_map: dict[str, str]
 ) -> list[dict[str, Any]]:
+    networks = context.get("internal_networks")
     steps = []
 
     for event in events:
@@ -649,7 +664,7 @@ def detect_exfiltration(
 
         src_ip = get_value(event, "src_ip")
         dst_ip = get_value(event, "dst_ip")
-        if not is_internal_ip(src_ip) or not is_external_ip(dst_ip):
+        if not is_internal_ip(src_ip, networks) or not is_external_ip(dst_ip, networks):
             continue
 
         bytes_out = int_value(get_detail(event, "bytes_out"))
@@ -747,7 +762,8 @@ def make_step(
     }
 
 
-def build_attack_graph(attack_steps: list[dict[str, Any]]) -> dict[str, Any]:
+def build_attack_graph(attack_steps: list[dict[str, Any]], internal_networks=None) -> dict[str, Any]:
+    networks = compile_internal_networks(internal_networks)
     nodes: dict[str, dict[str, Any]] = {}
     edges = []
 
@@ -761,7 +777,7 @@ def build_attack_graph(attack_steps: list[dict[str, Any]]) -> dict[str, Any]:
                 {
                     "id": source_id,
                     "label": source_id,
-                    "type": "host" if (step.get("source_host") or is_internal_ip(step.get("source_ip"))) else "external_ip",
+                    "type": "host" if (step.get("source_host") or is_internal_ip(step.get("source_ip"), networks)) else "external_ip",
                 },
             )
         if target_id:
@@ -770,7 +786,7 @@ def build_attack_graph(attack_steps: list[dict[str, Any]]) -> dict[str, Any]:
                 {
                     "id": target_id,
                     "label": target_id,
-                    "type": "host" if (step.get("target_host") or is_internal_ip(step.get("target_ip"))) else "external_ip",
+                    "type": "host" if (step.get("target_host") or is_internal_ip(step.get("target_ip"), networks)) else "external_ip",
                 },
             )
         if source_id and target_id:
@@ -789,8 +805,8 @@ def build_attack_graph(attack_steps: list[dict[str, Any]]) -> dict[str, Any]:
     return {"nodes": list(nodes.values()), "edges": edges}
 
 
-def find_attack_paths(attack_steps: list[dict[str, Any]], max_depth: int = 8) -> list[list[str]]:
-    graph = build_attack_graph(attack_steps)
+def find_attack_paths(attack_steps: list[dict[str, Any]], max_depth: int = 8, internal_networks=None) -> list[list[str]]:
+    graph = build_attack_graph(attack_steps, internal_networks)
     adjacency: dict[str, list[str]] = defaultdict(list)
     incoming: set[str] = set()
     nodes = {node["id"] for node in graph["nodes"]}
@@ -979,23 +995,36 @@ def parse_timestamp(value: Any) -> datetime | None:
         return None
 
 
-def is_internal_ip(value: Any) -> bool:
+def compile_internal_networks(networks):
+    """Parse CIDRs once per analysis; None preserves legacy classification."""
+    if networks is None:
+        return None
+    return tuple(n if isinstance(n, (IPv4Network, IPv6Network)) else ip_network(n)
+                 for n in networks)
+
+
+def is_internal_ip(value: Any, internal_networks=None) -> bool:
     if not value:
         return False
     try:
         parsed = ip_address(str(value))
     except ValueError:
         return False
+    if internal_networks is not None:
+        return any(parsed in (n if isinstance(n, (IPv4Network, IPv6Network)) else ip_network(n))
+                   for n in internal_networks)
     return parsed.is_private
 
 
-def is_external_ip(value: Any) -> bool:
+def is_external_ip(value: Any, internal_networks=None) -> bool:
     if not value:
         return False
     try:
         parsed = ip_address(str(value))
     except ValueError:
         return False
+    if internal_networks is not None:
+        return not is_internal_ip(value, internal_networks)
     return not (
         parsed.is_private
         or parsed.is_loopback

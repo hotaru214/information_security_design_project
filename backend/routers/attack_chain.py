@@ -1,16 +1,19 @@
-from ipaddress import ip_address
-
 from fastapi import APIRouter
 
 from backend.analysis import correlate_events
+from backend.analysis.correlation import compile_internal_networks, is_internal_ip, is_external_ip
 from backend.database import get_events, get_hosts
 
+
+# Fixed final scenario: simulated WAN 10.10.10.0/24 is outside these networks.
+DEFAULT_INTERNAL_NETWORKS = ["10.10.20.0/24", "10.10.30.0/24"]
 
 router = APIRouter(prefix="/api/attack-chain")
 
 
-def build_chain_view(attack_steps, event_count, hosts):
+def build_chain_view(attack_steps, event_count, hosts, internal_networks=None):
     """Adapt domain attack steps without changing their evidence or endpoints."""
+    networks = compile_internal_networks(internal_networks)
     assets = {host["hostname"]: host for host in hosts}
     nodes = {}
     links = []
@@ -22,10 +25,10 @@ def build_chain_view(attack_steps, event_count, hosts):
         asset = assets.get(host, {})
         category = "host" if host is not None else None
         if category is None and ip:
-            try:
-                category = "host" if ip_address(ip).is_private else "external_ip"
-            except ValueError:
-                pass
+            if is_internal_ip(ip, networks):
+                category = "host"
+            elif is_external_ip(ip, networks):
+                category = "external_ip"
         node = nodes.setdefault(node_id, {
             "id": node_id, "host": host, "ip": ip or asset.get("ip"),
             "role": asset.get("role"), "category": category,
@@ -62,5 +65,5 @@ def read_attack_chain():
     events = get_events()
     hosts = get_hosts()
     host_map = {host["ip"]: host["hostname"] for host in hosts}
-    attack_steps = correlate_events(events, host_map)
-    return build_chain_view(attack_steps, len(events), hosts)
+    attack_steps = correlate_events(events, host_map, internal_networks=DEFAULT_INTERNAL_NETWORKS)
+    return build_chain_view(attack_steps, len(events), hosts, DEFAULT_INTERNAL_NETWORKS)
