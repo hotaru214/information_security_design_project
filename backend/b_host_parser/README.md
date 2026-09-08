@@ -21,8 +21,14 @@
 | Sysmon .evtx | ID 3 网络连接 | network_connection（src/dst IP+端口+协议，对齐网络事件字段） |
 | Sysmon .evtx | ID 11 文件创建 | file_create |
 | Sysmon .evtx | ID 13 注册表键值 | registry_set |
-| Linux auth.log | sshd Accepted/Failed | login_success / login_failed（含invalid_user线索；合成样本见 data/sample_logs/linux/，E真实数据到位后重跑） |
-| Linux audit.log | sudo USER_CMD / 敏感文件 | process_start（sudo信息放detail，D决议） / file_read（SYSCALL+PATH按审计序号配对） |
+| Linux auth.log | sshd Accepted/Failed | login_success / login_failed（含invalid_user线索；合成样本见 data/sample_logs/linux/） |
+| Linux audit.log | sudo USER_CMD（HEX命令解码） | process_start（sudo信息放detail，D决议） |
+| Linux audit（原始/ausearch -i解释 双格式） | execve + EXECVE | process_start（完整命令行cmdline） |
+| Linux audit（同上） | open/openat + PATH/CWD | file_read（相对路径自动拼CWD成绝对路径） |
+| Linux audit（同上） | connect/accept + SOCKADDR(仅inet) | network_connection（本地unix socket噪音自动跳过） |
+| Linux audit（同上） | SERVICE_START / SERVICE_STOP | service_started / service_stopped |
+
+auditd双格式说明：E交付的 `audit.log` 是原始格式（epoch+数字字段+行尾AUID富字段），`ausearch -i` 导出的txt是解释格式（中文locale时间戳+名字字段）——两种都直接吃，同一事件跨文件按审计序号自动去重。E真实数据样例在 `data/e_case01_linux/`。
 
 附加能力（Day2）：
 - **会话重建**（`sessions.py`）：4624↔4634/4647 按 `(host, LogonId)` 配对成会话，登录事件补 `logout_time/session_duration_s`，未注销标 `active`，孤儿注销标 `no_login_record`；整批汇总存 `all_sessions.json`。

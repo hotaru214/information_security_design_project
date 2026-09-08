@@ -65,6 +65,31 @@ def detect_parser(path) -> str:
     return "windows"
 
 
+def dedupe_linux_audit(events: list):
+    """auditd事件跨文件去重。
+
+    E的证据包里，同一个auditd事件（同审计序号）会同时出现在原始audit.log和
+    ausearch按规则提取的.txt里——全量导入时不去重的话D看到的是双份时间线。
+    以 (event_type, detail.audit_serial, timestamp) 为键；非auditd事件不动。
+    返回 (去重后列表, 移除条数)。
+    """
+    seen = set()
+    out = []
+    removed = 0
+    for ev in events:
+        serial = (ev.get("detail") or {}).get("audit_serial")
+        if serial is None:
+            out.append(ev)
+            continue
+        key = (ev["event_type"], serial, ev["timestamp"])
+        if key in seen:
+            removed += 1
+            continue
+        seen.add(key)
+        out.append(ev)
+    return out, removed
+
+
 def detect_parser_for(path) -> str:
     """统一格式探测：.evtx按Provider识别（windows/sysmon）；
     文本日志（.log等）按首行内容识别Linux类型（linux_auth/linux_audit）。
@@ -104,6 +129,14 @@ def post(args, events):
         print(f"      [发送失败] {e}")
 
 
+def parse_file(path: Path, kind: str, linux_host=None):
+    """按解析器名解析一个文件，返回 (events, stats)。Linux解析器多带一个host参数。"""
+    st = {}
+    if kind in ("linux_auth", "linux_audit"):
+        return PARSE_FNS[kind](str(path), st, host=linux_host), st
+    return PARSE_FNS[kind](str(path), st), st
+
+
 def run_single(args, in_path: Path):
     """单文件模式：解析 → enrich → 落地 → 可选POST → 打印样例。"""
     kind = detect_parser_for(in_path)
@@ -111,10 +144,8 @@ def run_single(args, in_path: Path):
         print(f"[错误] 无法识别 {in_path.name} 的日志格式"
               f"（.evtx 或 .log/.out/.txt 文本日志才支持）")
         sys.exit(1)
-    parse_fn = PARSE_FNS[kind]
+    events, stats = parse_file(in_path, kind, linux_host=args.linux_host)
     print(f"[1/3] 解析 {in_path.name}（解析器: {kind}）...")
-    stats = {}
-    events = parse_fn(str(in_path), stats)
     if args.limit:
         events = events[:args.limit]
     print(f"      成功 {stats['parsed']} 条 | 其他事件(暂不处理) "
@@ -165,8 +196,7 @@ def run_dir(args, dir_path: Path):
                       f"（既不是evtx，首行也不像auth/audit日志）")
                 unrecognized.append(f.name)
                 continue
-            st = {}
-            events = PARSE_FNS[kind](str(f), st)
+            events, st = parse_file(f, kind, linux_host=args.linux_host)
         except Exception as e:
             broken_files.append(f.name)
             print(f"  [损坏文件，跳过] {f.name}: {type(e).__name__}: {e}")
@@ -182,7 +212,11 @@ def run_dir(args, dir_path: Path):
         print(f"  {f.name}: 成功 {st['parsed']} 条 / 解析失败 {st['failed']} 条 / "
               f"跳过其他事件 {st['skipped_other']} 条  事件ID分布: {st['by_event_id']}")
 
-    print(f"\n[2/3] 会话重建 + 异常预标记（合并{len(all_events)}条后统一跑）...")
+    print(f"\n[2/3] 去重 + 会话重建 + 异常预标记（合并{len(all_events)}条后统一跑）...")
+    all_events, dedup_removed = dedupe_linux_audit(all_events)
+    if dedup_removed:
+        print(f"      跨文件去重: 移除 {dedup_removed} 条"
+              f"（同一auditd事件在原始log和ausearch提取的txt里重复）")
     all_events, sessions, anomaly_stats = enrich(all_events)
     print_enrich_stats(sessions, anomaly_stats)
 
@@ -200,7 +234,8 @@ def run_dir(args, dir_path: Path):
     print(f"  文件总数: {len(files)}（损坏跳过 {len(broken_files)} 个, "
           f"无记录 {len(no_record_files)} 个, 无法识别 {len(unrecognized)} 个）")
     print(f"  事件总计: 成功 {total['parsed']} 条 / 解析失败 {total['failed']} 条 / "
-          f"跳过其他事件 {total['skipped_other']} 条")
+          f"跳过其他事件 {total['skipped_other']} 条"
+          + (f" / 跨文件去重 {dedup_removed} 条" if dedup_removed else ""))
     print(f"  会话: {len(sessions)} 个 | 异常标记: {anomaly_stats['flagged']} 条 "
           f"{anomaly_stats['by_rule']}")
 
@@ -210,7 +245,7 @@ def run_dir(args, dir_path: Path):
     return {"files": len(files), "broken_files": broken_files,
             "no_record_files": no_record_files, "unrecognized": unrecognized,
             "parsed": total["parsed"], "failed": total["failed"],
-            "skipped_other": total["skipped_other"],
+            "skipped_other": total["skipped_other"], "dedup_removed": dedup_removed,
             "events": len(all_events), "sessions": len(sessions),
             "anomaly": anomaly_stats}
 
@@ -229,6 +264,9 @@ def main():
                     help="单文件模式：只解析前N条记录（冒烟测试用）")
     ap.add_argument("--parser", choices=["auto", "windows", "sysmon"], default="auto",
                     help="解析器选择：auto=按日志Provider自动识别（默认）")
+    ap.add_argument("--linux-host", default=None,
+                    help="Linux日志的主机名覆盖（auditd行内没有主机名，"
+                         "建议传E提供的靶机主机名，如 --linux-host ubuntu-vm）")
     args = ap.parse_args()
 
     if args.dir:
