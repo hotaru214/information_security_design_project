@@ -7,15 +7,21 @@
 
 Day 1 支持的事件:
     4624  登录成功  → event_type = login_success
-    4625  登录失败  → event_type = login_failure
-Day 1.5 追加（应用A同学"要进程启动样例"的需求，从Day2提前）:
-    4688  进程创建  → event_type = process_create（无Sysmon时的兜底来源）
-Day 2 待扩展: 4634/4647(注销→会话重建)、1102、4720、Linux auth.log/auditd
+    4625  登录失败  → event_type = login_failed
+Day 1.5 追加（应A同学"要进程启动样例"的需求，从Day2提前）:
+    4688  进程创建  → event_type = process_start（无Sysmon时的兜底来源）
+Day 2 追加（任务7b会话重建 + 任务8b低成本高回报事件）:
+    4634  注销(系统发起) → logout        4647 注销(用户发起) → logout  ←与4624按(host,LogonId)配对
+    1102  审计日志被清除  → log_cleared  （T1070.002，D已于2026-09-08确认加入枚举）
+    4720  新建账号        → user_created            4728 成员加入组   → group_member_added
+    4673  权限使用        → privilege_change        7045 服务安装     → service_created
+    4698  计划任务创建    → scheduled_task_created
 Sysmon 的 1/3/11/13 在 sysmon.py 里（Security日志和Sysmon日志分开解析）。
+登录/注销的配对成会话逻辑在 sessions.py 的 rebuild_sessions()。
 
 用法:
     from windows_evtx import parse_windows_evtx
-    events = parse_windows_evtx(r"..\data\sample_logs\sample_4624_4625.evtx")
+    events = parse_windows_evtx(r"..\..\data\sample_logs\sample_4624_4625.evtx")
 """
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -31,9 +37,22 @@ UTC8 = timezone(timedelta(hours=8))  # 全组约定的统一时区
 
 # 本文件当前关心的事件ID → event_type 映射（词表按D《Event V2 event_type规范》）
 SUPPORTED = {
+    # 登录与会话
     4624: "login_success",
     4625: "login_failed",
-    4688: "process_start",
+    4634: "logout",              # 注销（系统发起）
+    4647: "logout",              # 注销（用户主动发起）
+    # 进程
+    4688: "process_start",       # 无Sysmon时的进程创建兜底
+    # 防御规避
+    1102: "log_cleared",         # 审计日志被清除（T1070.002）
+    # 账户与权限
+    4720: "user_created",
+    4728: "group_member_added",
+    4673: "privilege_change",
+    # 服务与计划任务（持久化证据）
+    7045: "service_created",
+    4698: "scheduled_task_created",
 }
 
 
@@ -86,12 +105,16 @@ def _norm_substatus(sub):
 
 
 def _record_to_event(record) -> dict:
-    """把单条evtx记录(record)转成标准事件dict。
+    """python-evtx的record适配层：取出XML文本交给纯函数处理。"""
+    return xml_to_event(record.xml())
+
+
+def xml_to_event(xml_text: str) -> dict:
+    """把单条evtx记录的XML文本转成标准事件dict（纯函数，不依赖evtx二进制，方便离线测试）。
 
     返回 None 表示这条记录不是我们关心的事件ID（由调用方计入 skipped_other）。
     解析异常会抛出（由调用方按"条"捕获，一条坏了不能影响整个文件）。
     """
-    xml_text = record.xml()  # 原始XML，留作raw_log证据
     root = ET.fromstring(xml_text)
 
     # --- System节点：事件ID、时间、主机名 ---
@@ -142,6 +165,7 @@ def _record_to_event(record) -> dict:
     logon_type = int(logon_type) if logon_type else None
     process = _basename(_clean(data.get("ProcessName")))
     logon_id = _clean(data.get("TargetLogonId"))
+    subject = _clean(data.get("SubjectUserName"))  # 操作者账号（1102/4673/4698/4728等的"谁干的"）
     cmdline = None  # 登录类事件没有命令行；只有4688分支会赋真值
 
     lt_desc = LOGON_TYPES.get(logon_type, f"类型{logon_type}")
@@ -163,7 +187,7 @@ def _record_to_event(record) -> dict:
         detail = {"substatus": sub, "substatus_desc": sub_desc,
                   "failure_reason": _clean(data.get("FailureReason")),
                   "workstation": _clean(data.get("WorkstationName"))}
-    else:  # 4688 进程启动
+    elif event_id == 4688:  # 进程启动（无Sysmon时的兜底）
         event_type = SUPPORTED[event_id]
         # 4688没有TargetUserName，发起进程的账号是SubjectUserName
         user = _clean(data.get("SubjectUserName"))
@@ -180,6 +204,90 @@ def _record_to_event(record) -> dict:
                   "creator_process_id": _clean(data.get("ProcessId")),
                   "new_process_id": _clean(data.get("NewProcessId")),
                   "token_elevation": _clean(data.get("TokenElevationType"))}
+
+    elif event_id in (4634, 4647):  # 注销：4634系统发起/4647用户主动发起，与4624配对成会话
+        event_type = SUPPORTED[event_id]
+        # 会话重建（任务7b）：配对键与4624完全一致——"主机名:TargetLogonId"
+        session_id = f"{host}:{logon_id}" if logon_id else None
+        if event_id == 4634:
+            description = f"用户 {user} 注销（{lt_desc}）"
+        else:
+            description = f"用户 {user} 主动发起注销"
+        detail = {"logon_id": logon_id,
+                  "domain": _clean(data.get("TargetDomainName"))}
+
+    elif event_id == 1102:  # 审计日志被清除：攻击者抹痕迹的标志动作（T1070.002）
+        event_type = SUPPORTED[event_id]
+        session_id = None
+        user = subject  # 操作者在SubjectUserName（本事件没有TargetUserName）
+        actor = f"操作者: {user}" if user else "操作者未记录"
+        description = f"审计日志被清除（{actor}）——抹痕迹标志动作"
+        detail = {"domain": _clean(data.get("SubjectDomainName"))}
+
+    elif event_id == 4720:  # 新建账号：权限维持的证据
+        event_type = SUPPORTED[event_id]
+        user = _clean(data.get("TargetUserName"))  # 主体实体是新建的账号本身
+        session_id = None
+        creator = f"（操作者: {subject}）" if subject else ""
+        description = f"新建账号: {user}{creator}"
+        detail = {"target_user": user,
+                  "target_sid": _clean(data.get("TargetUserSid")),
+                  "target_domain": _clean(data.get("TargetDomainName")),
+                  "creator": subject}
+
+    elif event_id == 4728:  # 成员加入安全组：提权/权限维持的证据
+        event_type = SUPPORTED[event_id]
+        group = _clean(data.get("TargetUserName"))  # ⚠️ 4728里TargetUserName是"组名"，不是用户
+        # MemberName可能是DN（CN=xx,DC=...）或SAM账号名，为"-"时退回MemberSid
+        user = _clean(data.get("MemberName")) or _clean(data.get("MemberSid"))
+        session_id = None
+        creator = f"（操作者: {subject}）" if subject else ""
+        description = f"用户 {user} 加入组 {group}{creator}"
+        detail = {"target_user": user,
+                  "group_name": group,
+                  "member_sid": _clean(data.get("MemberSid")),
+                  "group_domain": _clean(data.get("TargetDomainName"))}
+
+    elif event_id == 4673:  # 特权服务调用（权限使用）
+        event_type = SUPPORTED[event_id]
+        user = subject  # 操作者在SubjectUserName
+        session_id = None
+        obj_server = _clean(data.get("ObjectServer"))
+        proc_desc = process if process else "进程未记录"
+        description = f"权限使用: {user} 调用 {obj_server or '系统'} 特权服务（进程: {proc_desc}）"
+        detail = {"privileges": _clean(data.get("PrivilegeList")),
+                  "object_server": obj_server,
+                  "object_name": _clean(data.get("ObjectName")),
+                  "service_name": _clean(data.get("ServiceName"))}
+
+    elif event_id == 7045:  # 新服务安装（System日志/SCM提供者）：持久化的经典手法
+        event_type = SUPPORTED[event_id]
+        service = _clean(data.get("ServiceName"))
+        image = _clean(data.get("ImagePath") or data.get("FileName"))  # 部分系统字段叫FileName
+        user = _clean(data.get("AccountName"))
+        process = _basename(image) if image else None  # 服务可执行文件名，也是进程实体
+        session_id = None
+        image_desc = image if image else "路径未记录"
+        start_desc = _clean(data.get("StartType")) or "未记录"
+        description = f"安装新服务: {service}（程序: {image_desc}，启动类型: {start_desc}）"
+        detail = {"service_name": service,
+                  "service_file": image,
+                  "service_type": _clean(data.get("ServiceType")),
+                  "start_type": _clean(data.get("StartType")),
+                  "account": _clean(data.get("AccountName"))}
+
+    elif event_id == 4698:  # 计划任务创建：持久化证据
+        event_type = SUPPORTED[event_id]
+        task = _clean(data.get("TaskName"))
+        user = subject  # 创建者在SubjectUserName
+        session_id = None
+        creator = f"（操作者: {user}）" if user else ""
+        description = f"创建计划任务: {task}{creator}"
+        detail = {"task_name": task,
+                  "task_content": _clean(data.get("TaskContent"))}
+
+    else:  # SUPPORTED里加了ID但忘了写分支——宁可炸掉这一条（计入failed），也不静默产出错误数据
+        raise ValueError(f"事件ID {event_id} 在SUPPORTED里但没有对应解析分支")
 
     return make_event(
         timestamp=ts,

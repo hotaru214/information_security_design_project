@@ -38,19 +38,49 @@ STANDARD_FIELDS = [
     "raw_log",       # str  原始XML片段（截断），F的前端"查看证据"用
 ]
 
-# event_type 枚举：和C同学共用，任务1开小会定稿后不许再私自加词
+# event_type 枚举：Event V2 冻结词表（2026-09-07 A发布；2026-09-08 D确认补充 log_cleared）
+# 全组共用，不许私造新词。Linux sudo提权按D决议映射为 process_start（sudo信息放detail），
+# 文件访问按 D 的细分（file_read/write/modify/delete），不使用笼统的 sudo_exec/file_access。
 EVENT_TYPES = [
-    "login_success",    # 登录成功        (4624 / sshd Accepted)
-    "login_failure",    # 登录失败        (4625 / sshd Failed)
-    "logoff",           # 注销            (4634/4647)
-    "process_create",   # 进程创建        (Sysmon 1 / 4688)
-    "file_create",      # 文件创建        (Sysmon 11 / auditd)
-    "registry_set",     # 注册表键值修改  (Sysmon 13)
-    "network_connect",  # 主机发起的网络连接 (Sysmon 3，桥接C的流量数据)
-    "account_created",  # 新建账号        (4720)
-    "log_cleared",      # 审计日志被清除  (1102，攻击者抹痕迹)
-    "sudo_exec",        # sudo提权        (Linux auditd)
-    "file_access",      # 文件访问        (Linux auditd)
+    # 登录与会话
+    "login_success",         # 登录成功        (4624 / sshd Accepted)
+    "login_failed",          # 登录失败        (4625 / sshd Failed)
+    "logout",                # 注销            (4634/4647，会话重建用)
+    # 进程
+    "process_start",         # 进程创建        (Sysmon 1 / 4688 / Linux sudo USER_CMD)
+    "process_end",           # 进程结束        (Sysmon 5，暂不解析)
+    # 网络
+    "network_connection",    # 主机发起的网络连接 (Sysmon 3 + C的流量事件)
+    "dns_query",             # DNS查询         (C)
+    "http_request",          # HTTP请求        (C)
+    # 文件
+    "file_create",           # 文件创建        (Sysmon 11)
+    "file_read",             # 文件读取        (Linux auditd SYSCALL/PATH)
+    "file_write",            # 文件写入        (Linux auditd)
+    "file_modify",           # 文件修改        (Linux auditd)
+    "file_delete",           # 文件删除        (Linux auditd)
+    # 注册表
+    "registry_set",          # 注册表键值修改  (Sysmon 13)
+    "registry_create",       # 注册表键创建    (Sysmon 12，暂不解析)
+    "registry_delete",       # 注册表键删除    (Sysmon 12，暂不解析)
+    "registry_query",        # 注册表查询      (Sysmon 15，暂不解析)
+    # 账户与权限
+    "user_created",          # 新建账号        (4720)
+    "user_deleted",          # 删除账号        (4726)
+    "user_modified",         # 修改账号        (4738)
+    "group_member_added",    # 成员加入组      (4728)
+    "group_member_removed",  # 成员移出组      (4729)
+    "privilege_change",      # 权限使用/提权   (4673)
+    # 服务与计划任务
+    "service_created",       # 服务安装        (7045，持久化证据)
+    "service_started",       # 服务启动        (7036)
+    "service_stopped",       # 服务停止        (7036)
+    "service_deleted",       # 服务删除        (7026)
+    "scheduled_task_created",# 计划任务创建    (4698，持久化证据)
+    "scheduled_task_run",    # 计划任务执行    (4699)
+    "scheduled_task_deleted",# 计划任务删除    (4700)
+    # 防御规避
+    "log_cleared",           # 审计日志被清除  (1102，攻击者抹痕迹，ATT&CK T1070.002；D已于2026-09-08确认加入)
 ]
 
 # source 枚举：这条事件是从哪类日志里解析出来的

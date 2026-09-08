@@ -14,8 +14,8 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent   # b_host_parser/
-PROJECT = HERE.parent                    # 项目根目录
+HERE = Path(__file__).resolve().parent        # backend/b_host_parser/
+PROJECT = HERE.parent.parent                  # 仓库根目录（模块已移入backend/下）
 sys.path.insert(0, str(HERE))
 
 results = []

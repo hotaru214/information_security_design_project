@@ -1,0 +1,936 @@
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:01:47.717:340) : proctitle=/sbin/auditctl -R /etc/audit/audit.rules 
+type=SOCKADDR msg=audit(2026年09月08日 10:01:47.717:340) : saddr={ saddr_fam=netlink nlnk-fam=16 nlnk-pid=0 } 
+type=SYSCALL msg=audit(2026年09月08日 10:01:47.717:340) : arch=x86_64 syscall=sendto success=yes exit=1076 a0=0x3 a1=0x7ffd5b9422c0 a2=0x434 a3=0x0 items=0 ppid=4612 pid=4626 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=auditctl exe=/usr/sbin/auditctl subj=unconfined key=(null) 
+type=CONFIG_CHANGE msg=audit(2026年09月08日 10:01:47.717:340) : auid=mxy ses=2 subj=unconfined op=add_rule key=case01_process_exec list=exit res=yes 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:01:47.726:344) : proctitle=grep --color=auto case01 
+type=PATH msg=audit(2026年09月08日 10:01:47.726:344) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:01:47.726:344) : item=0 name=/usr/bin/grep inode=787284 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:01:47.726:344) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:01:47.726:344) : argc=3 a0=grep a1=--color=auto a2=case01 
+type=SYSCALL msg=audit(2026年09月08日 10:01:47.726:344) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f4fa0 a1=0x5d35237f5050 a2=0x5d35237f22f0 a3=0x1 items=2 ppid=3066 pid=4634 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=grep exe=/usr/bin/grep subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:01:47.726:345) : proctitle=sudo auditctl -l 
+type=PATH msg=audit(2026年09月08日 10:01:47.726:345) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:01:47.726:345) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:01:47.726:345) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:01:47.726:345) : argc=3 a0=sudo a1=auditctl a2=-l 
+type=SYSCALL msg=audit(2026年09月08日 10:01:47.726:345) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f4f60 a1=0x5d35237f4fa0 a2=0x5d35237f22f0 a3=0x1 items=2 ppid=3066 pid=4633 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:01:47.756:360) : proctitle=auditctl -l 
+type=PATH msg=audit(2026年09月08日 10:01:47.756:360) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:01:47.756:360) : item=0 name=/usr/sbin/auditctl inode=812910 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:01:47.756:360) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:01:47.756:360) : argc=2 a0=auditctl a1=-l 
+type=SYSCALL msg=audit(2026年09月08日 10:01:47.756:360) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5794e48daac8 a1=0x5794e48cdf40 a2=0x5794e48e0af0 a3=0x64 items=2 ppid=4635 pid=4636 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=auditctl exe=/usr/sbin/auditctl subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:02:18.067:363) : proctitle=sudo augenrules --check 
+type=PATH msg=audit(2026年09月08日 10:02:18.067:363) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:02:18.067:363) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:02:18.067:363) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:02:18.067:363) : argc=3 a0=sudo a1=augenrules a2=--check 
+type=SYSCALL msg=audit(2026年09月08日 10:02:18.067:363) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f5000 a1=0x5d35237f4eb0 a2=0x5d35237f22f0 a3=0x5d35237f4e70 items=2 ppid=3066 pid=4639 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:02:18.099:378) : proctitle=/bin/sh /usr/sbin/augenrules --check 
+type=PATH msg=audit(2026年09月08日 10:02:18.099:378) : item=2 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:02:18.099:378) : item=1 name=/bin/sh inode=787083 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:02:18.099:378) : item=0 name=/usr/sbin/augenrules inode=812912 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:02:18.099:378) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:02:18.099:378) : argc=3 a0=/bin/sh a1=/usr/sbin/augenrules a2=--check 
+type=SYSCALL msg=audit(2026年09月08日 10:02:18.099:378) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x606bd416cac8 a1=0x606bd415ff40 a2=0x606bd4172af0 a3=0x64 items=3 ppid=4640 pid=4641 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=augenrules exe=/usr/bin/dash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:02:18.102:379) : proctitle=mktemp /tmp/aurules.XXXXXXXX 
+type=PATH msg=audit(2026年09月08日 10:02:18.102:379) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:02:18.102:379) : item=0 name=/usr/bin/mktemp inode=787515 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:02:18.102:379) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:02:18.102:379) : argc=2 a0=mktemp a1=/tmp/aurules.XXXXXXXX 
+type=SYSCALL msg=audit(2026年09月08日 10:02:18.102:379) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x610fe8002868 a1=0x610fd54e45f0 a2=0x610fd54e4608 a3=0x1 items=2 ppid=4641 pid=4642 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=mktemp exe=/usr/bin/mktemp subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:02:18.106:380) : proctitle=awk \012BEGIN   {\012        minus_e = "";\012        minus_D = "";\012        minus_f = "";\012        minus_b = "";\012        rest = 0;\012} {\012    
+type=PATH msg=audit(2026年09月08日 10:02:18.106:380) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:02:18.106:380) : item=0 name=/usr/bin/awk inode=787493 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:02:18.106:380) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:02:18.106:380) : argc=2 a0=awk a1=\012BEGIN   {\012        minus_e = "";\012        minus_D = "";\012        minus_f = "";\012        minus_b = "";\012        rest = 0;\012} {\012        sub(/\r$/, "");\012        if (length($0) < 1) { next; }\012        if (match($0, "^\\s*#")) { next; }\012        if (match($0, "^\\s*-e")) { minus_e = $0; next; }\012        if (match($0, "^\\s*-D\\s*$")) { minus_D = $0; next; }\012        if (match($0, "^\\s*-f")) { minus_f = $0; next; }\012        if (match($0, "^\\s*-b")) { minus_b = $0; next; }\012        rules[rest++] = $0;\012}\012END     {\012        printf "%s\n%s\n%s\n", minus_D, minus_b, minus_f;\012        for (i = 0; i < rest; i++) { printf "%s\n", rules[i]; }\012        printf "%s\n", minus_e;\012} 
+type=SYSCALL msg=audit(2026年09月08日 10:02:18.106:380) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x610fe80030b8 a1=0x610fe8002fe0 a2=0x610fe8003020 a3=0x1b6 items=2 ppid=4641 pid=4644 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=awk exe=/usr/bin/mawk subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:02:18.107:381) : proctitle=/bin/ls -1v /etc/audit/rules.d 
+type=PATH msg=audit(2026年09月08日 10:02:18.107:381) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:02:18.107:381) : item=0 name=/bin/ls inode=787461 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:02:18.107:381) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:02:18.107:381) : argc=3 a0=/bin/ls a1=-1v a2=/etc/audit/rules.d 
+type=SYSCALL msg=audit(2026年09月08日 10:02:18.107:381) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x610fe8005878 a1=0x610fe80058d8 a2=0x610fe80058f8 a3=0x0 items=2 ppid=4645 pid=4646 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=ls exe=/usr/bin/ls subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:02:18.108:382) : proctitle=grep \.rules$ 
+type=PATH msg=audit(2026年09月08日 10:02:18.108:382) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:02:18.108:382) : item=0 name=/usr/bin/grep inode=787284 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:02:18.108:382) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:02:18.108:382) : argc=2 a0=grep a1=\.rules$ 
+type=SYSCALL msg=audit(2026年09月08日 10:02:18.108:382) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x610fe8005968 a1=0x610fe80058b8 a2=0x610fe80058d0 a3=0x610fe8005a00 items=2 ppid=4645 pid=4647 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=grep exe=/usr/bin/grep subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:02:18.112:383) : proctitle=cat /etc/audit/rules.d/audit.rules 
+type=PATH msg=audit(2026年09月08日 10:02:18.112:383) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:02:18.112:383) : item=0 name=/usr/bin/cat inode=787035 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:02:18.112:383) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:02:18.112:383) : argc=2 a0=cat a1=/etc/audit/rules.d/audit.rules 
+type=SYSCALL msg=audit(2026年09月08日 10:02:18.112:383) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x610fe80059c0 a1=0x610fe8005910 a2=0x610fe8005928 a3=0x8 items=2 ppid=4643 pid=4648 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=cat exe=/usr/bin/cat subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:02:18.115:384) : proctitle=cat /etc/audit/rules.d/case01.rules 
+type=PATH msg=audit(2026年09月08日 10:02:18.115:384) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:02:18.115:384) : item=0 name=/usr/bin/cat inode=787035 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:02:18.115:384) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:02:18.115:384) : argc=2 a0=cat a1=/etc/audit/rules.d/case01.rules 
+type=SYSCALL msg=audit(2026年09月08日 10:02:18.115:384) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x610fe80059c0 a1=0x610fe8005910 a2=0x610fe8005928 a3=0x8 items=2 ppid=4643 pid=4649 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=cat exe=/usr/bin/cat subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:02:18.121:385) : proctitle=cmp -s /tmp/aurules.0g5w1cFY /etc/audit/audit.rules 
+type=PATH msg=audit(2026年09月08日 10:02:18.121:385) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:02:18.121:385) : item=0 name=/usr/bin/cmp inode=787064 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:02:18.121:385) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:02:18.121:385) : argc=4 a0=cmp a1=-s a2=/tmp/aurules.0g5w1cFY a3=/etc/audit/audit.rules 
+type=SYSCALL msg=audit(2026年09月08日 10:02:18.121:385) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x610fe8002b40 a1=0x610fe8002a60 a2=0x610fe8002aa8 a3=0x8 items=2 ppid=4641 pid=4650 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=cmp exe=/usr/bin/cmp subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:02:18.124:386) : proctitle=rm -f /tmp/aurules.0g5w1cFY 
+type=PATH msg=audit(2026年09月08日 10:02:18.124:386) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:02:18.124:386) : item=0 name=/usr/bin/rm inode=787730 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:02:18.124:386) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:02:18.124:386) : argc=3 a0=rm a1=-f a2=/tmp/aurules.0g5w1cFY 
+type=SYSCALL msg=audit(2026年09月08日 10:02:18.124:386) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x610fe80033b0 a1=0x610fe80032f8 a2=0x610fe8003318 a3=0x8 items=2 ppid=4641 pid=4651 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=rm exe=/usr/bin/rm subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:02:27.606:389) : proctitle=/usr/bin/nautilus --gapplication-service 
+type=PATH msg=audit(2026年09月08日 10:02:27.606:389) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:02:27.606:389) : item=0 name=/usr/bin/nautilus inode=787532 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:02:27.606:389) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:02:27.606:389) : argc=2 a0=/usr/bin/nautilus a1=--gapplication-service 
+type=SYSCALL msg=audit(2026年09月08日 10:02:27.606:389) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x62c68ee74450 a1=0x62c68ee74b80 a2=0x62c68ee48e80 a3=0x0 items=2 ppid=4653 pid=4654 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=nautilus exe=/usr/bin/nautilus subj=nautilus key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:04:03.901:416) : proctitle=sudo systemctl restart auditd 
+type=PATH msg=audit(2026年09月08日 10:04:03.901:416) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:04:03.901:416) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:04:03.901:416) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:04:03.901:416) : argc=4 a0=sudo a1=systemctl a2=restart a3=auditd 
+type=SYSCALL msg=audit(2026年09月08日 10:04:03.901:416) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f4db0 a1=0x5d35237f4ca0 a2=0x5d35237f22f0 a3=0x5d35237f4ca0 items=2 ppid=3066 pid=4693 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:04:03.933:431) : proctitle=systemctl restart auditd 
+type=PATH msg=audit(2026年09月08日 10:04:03.933:431) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:04:03.933:431) : item=0 name=/usr/bin/systemctl inode=800236 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:04:03.933:431) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:04:03.933:431) : argc=3 a0=systemctl a1=restart a2=auditd 
+type=SYSCALL msg=audit(2026年09月08日 10:04:03.933:431) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x6542a6ef1ac8 a1=0x6542a6ee4f40 a2=0x6542a6ef7af0 a3=0x64 items=2 ppid=4694 pid=4695 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=systemctl exe=/usr/bin/systemctl subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:04:03.944:434) : proctitle=/usr/bin/systemd-tty-ask-password-agent --watch 
+type=PATH msg=audit(2026年09月08日 10:04:03.944:434) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:04:03.944:434) : item=0 name=/usr/bin/systemd-tty-ask-password-agent inode=800263 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:04:03.944:434) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:04:03.944:434) : argc=2 a0=/usr/bin/systemd-tty-ask-password-agent a1=--watch 
+type=SYSCALL msg=audit(2026年09月08日 10:04:03.944:434) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5b62a04e3090 a1=0x7fff3de299b0 a2=0x7fff3de2a238 a3=0x0 items=2 ppid=4695 pid=4696 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=systemd-tty-ask exe=/usr/bin/systemd-tty-ask-password-agent subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:04:04.097:447) : proctitle=/sbin/auditctl -R /etc/audit/audit.rules 
+type=SOCKADDR msg=audit(2026年09月08日 10:04:04.097:447) : saddr={ saddr_fam=netlink nlnk-fam=16 nlnk-pid=0 } 
+type=SYSCALL msg=audit(2026年09月08日 10:04:04.097:447) : arch=x86_64 syscall=sendto success=yes exit=1076 a0=0x3 a1=0x7ffc77a21ff0 a2=0x434 a3=0x0 items=0 ppid=4703 pid=4715 auid=unset uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=(none) ses=unset comm=auditctl exe=/usr/sbin/auditctl subj=unconfined key=(null) 
+type=CONFIG_CHANGE msg=audit(2026年09月08日 10:04:04.097:447) : auid=unset ses=unset subj=unconfined op=remove_rule key=case01_process_exec list=exit res=yes 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:04:04.099:453) : proctitle=/sbin/auditctl -R /etc/audit/audit.rules 
+type=SOCKADDR msg=audit(2026年09月08日 10:04:04.099:453) : saddr={ saddr_fam=netlink nlnk-fam=16 nlnk-pid=0 } 
+type=SYSCALL msg=audit(2026年09月08日 10:04:04.099:453) : arch=x86_64 syscall=sendto success=yes exit=1076 a0=0x3 a1=0x7ffc77a24490 a2=0x434 a3=0x0 items=0 ppid=4703 pid=4715 auid=unset uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=(none) ses=unset comm=auditctl exe=/usr/sbin/auditctl subj=unconfined key=(null) 
+type=CONFIG_CHANGE msg=audit(2026年09月08日 10:04:04.099:453) : auid=unset ses=unset subj=unconfined op=add_rule key=case01_process_exec list=exit res=yes 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:04:11.665:458) : proctitle=sudo auditctl -l 
+type=PATH msg=audit(2026年09月08日 10:04:11.665:458) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:04:11.665:458) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:04:11.665:458) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:04:11.665:458) : argc=3 a0=sudo a1=auditctl a2=-l 
+type=SYSCALL msg=audit(2026年09月08日 10:04:11.665:458) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f5110 a1=0x5d35237f4f60 a2=0x5d35237f22f0 a3=0x8 items=2 ppid=3066 pid=4724 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:04:11.665:459) : proctitle=grep --color=auto case01 
+type=PATH msg=audit(2026年09月08日 10:04:11.665:459) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:04:11.665:459) : item=0 name=/usr/bin/grep inode=787284 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:04:11.665:459) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:04:11.665:459) : argc=3 a0=grep a1=--color=auto a2=case01 
+type=SYSCALL msg=audit(2026年09月08日 10:04:11.665:459) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f5120 a1=0x5d35237f51d0 a2=0x5d35237f22f0 a3=0x1 items=2 ppid=3066 pid=4725 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=grep exe=/usr/bin/grep subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:04:11.695:474) : proctitle=auditctl -l 
+type=PATH msg=audit(2026年09月08日 10:04:11.695:474) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:04:11.695:474) : item=0 name=/usr/sbin/auditctl inode=812910 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:04:11.695:474) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:04:11.695:474) : argc=2 a0=auditctl a1=-l 
+type=SYSCALL msg=audit(2026年09月08日 10:04:11.695:474) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x62ffce9e6ac8 a1=0x62ffce9d9f40 a2=0x62ffce9ecaf0 a3=0x64 items=2 ppid=4726 pid=4727 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=auditctl exe=/usr/sbin/auditctl subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:05:46.432:489) : proctitle=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop /usr/bin/gnome-terminal --window 
+type=PATH msg=audit(2026年09月08日 10:05:46.432:489) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:46.432:489) : item=0 name=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop inode=791133 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:05:46.432:489) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:05:46.432:489) : argc=3 a0=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop a1=/usr/bin/gnome-terminal a2=--window 
+type=SYSCALL msg=audit(2026年09月08日 10:05:46.432:489) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d301428e250 a1=0x5d3012452210 a2=0x5d3012a6c330 a3=0x0 items=2 ppid=1770 pid=4737 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gio-launch-desk exe=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:05:46.439:491) : proctitle=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop /usr/bin/gnome-terminal --window 
+type=PATH msg=audit(2026年09月08日 10:05:46.439:491) : item=2 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:46.439:491) : item=1 name=/usr/bin/python3 inode=788383 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:46.439:491) : item=0 name=/usr/bin/gnome-terminal inode=787266 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:05:46.439:491) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:05:46.439:491) : argc=3 a0=/usr/bin/python3 a1=/usr/bin/gnome-terminal a2=--window 
+type=SYSCALL msg=audit(2026年09月08日 10:05:46.439:491) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x7fffb76f8865 a1=0x7fffb76f71f0 a2=0x55c44850a2a0 a3=0x7fffb76f6f8c items=3 ppid=1770 pid=4737 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gnome-terminal exe=/usr/bin/python3.12 subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:05:46.564:492) : proctitle=/usr/bin/gnome-terminal.real --window 
+type=PATH msg=audit(2026年09月08日 10:05:46.564:492) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:46.564:492) : item=0 name=/usr/bin/gnome-terminal.real inode=787267 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:05:46.564:492) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:05:46.564:492) : argc=2 a0=/usr/bin/gnome-terminal.real a1=--window 
+type=SYSCALL msg=audit(2026年09月08日 10:05:46.564:492) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x7737c9f5f650 a1=0x7737c9e7d470 a2=0x7ffe50616bb8 a3=0x7737cb0148a8 items=2 ppid=4737 pid=4739 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gnome-terminal. exe=/usr/bin/gnome-terminal.real subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:05:46.798:497) : proctitle=bash 
+type=PATH msg=audit(2026年09月08日 10:05:46.798:497) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:46.798:497) : item=0 name=/bin/bash inode=787002 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:05:46.798:497) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:05:46.798:497) : argc=1 a0=bash 
+type=SYSCALL msg=audit(2026年09月08日 10:05:46.798:497) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5f3fb3150aa0 a1=0x5f3fb31d0cd0 a2=0x5f3fb31538d0 a3=0x8 items=2 ppid=3058 pid=4745 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts1 ses=2 comm=bash exe=/usr/bin/bash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:05:46.808:500) : proctitle=/bin/sh /usr/bin/lesspipe 
+type=PATH msg=audit(2026年09月08日 10:05:46.808:500) : item=2 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:46.808:500) : item=1 name=/bin/sh inode=787083 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:46.808:500) : item=0 name=/usr/bin/lesspipe inode=787431 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:05:46.808:500) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:05:46.808:500) : argc=2 a0=/bin/sh a1=/usr/bin/lesspipe 
+type=SYSCALL msg=audit(2026年09月08日 10:05:46.808:500) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x6010abd985e0 a1=0x6010abd9db60 a2=0x6010abd97220 a3=0x8 items=3 ppid=4745 pid=4747 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts1 ses=2 comm=lesspipe exe=/usr/bin/dash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:05:46.814:501) : proctitle=basename /usr/bin/lesspipe 
+type=PATH msg=audit(2026年09月08日 10:05:46.814:501) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:46.814:501) : item=0 name=/usr/bin/basename inode=787000 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:05:46.814:501) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:05:46.814:501) : argc=2 a0=basename a1=/usr/bin/lesspipe 
+type=SYSCALL msg=audit(2026年09月08日 10:05:46.814:501) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x59144cb07f08 a1=0x59143df68600 a2=0x59144cb07d98 a3=0x1 items=2 ppid=4747 pid=4748 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts1 ses=2 comm=basename exe=/usr/bin/basename subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:05:46.820:502) : proctitle=dirname /usr/bin/lesspipe 
+type=PATH msg=audit(2026年09月08日 10:05:46.820:502) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:46.820:502) : item=0 name=/usr/bin/dirname inode=787123 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:05:46.820:502) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:05:46.820:502) : argc=2 a0=dirname a1=/usr/bin/lesspipe 
+type=SYSCALL msg=audit(2026年09月08日 10:05:46.820:502) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x59144cb13e88 a1=0x59144cb13d00 a2=0x59144cb13d18 a3=0x1 items=2 ppid=4752 pid=4753 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts1 ses=2 comm=dirname exe=/usr/bin/dirname subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:05:46.830:503) : proctitle=dircolors -b 
+type=PATH msg=audit(2026年09月08日 10:05:46.830:503) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:46.830:503) : item=0 name=/usr/bin/dircolors inode=787120 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:05:46.830:503) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:05:46.830:503) : argc=2 a0=dircolors a1=-b 
+type=SYSCALL msg=audit(2026年09月08日 10:05:46.830:503) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x6010abd96d60 a1=0x6010abd9f850 a2=0x6010abd9ea20 a3=0x8 items=2 ppid=4745 pid=4757 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts1 ses=2 comm=dircolors exe=/usr/bin/dircolors subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:05:57.936:514) : proctitle=bash 
+type=PATH msg=audit(2026年09月08日 10:05:57.936:514) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:57.936:514) : item=0 name=/bin/bash inode=787002 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:05:57.936:514) : cwd=/home/mxy/case01-core 
+type=EXECVE msg=audit(2026年09月08日 10:05:57.936:514) : argc=1 a0=bash 
+type=SYSCALL msg=audit(2026年09月08日 10:05:57.936:514) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5f3fb31217d0 a1=0x5f3fb303c220 a2=0x5f3fb2e9f750 a3=0x8 items=2 ppid=3058 pid=4766 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts1 ses=2 comm=bash exe=/usr/bin/bash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:05:57.946:517) : proctitle=/bin/sh /usr/bin/lesspipe 
+type=PATH msg=audit(2026年09月08日 10:05:57.946:517) : item=2 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:57.946:517) : item=1 name=/bin/sh inode=787083 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:57.946:517) : item=0 name=/usr/bin/lesspipe inode=787431 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:05:57.946:517) : cwd=/home/mxy/case01-core 
+type=EXECVE msg=audit(2026年09月08日 10:05:57.946:517) : argc=2 a0=/bin/sh a1=/usr/bin/lesspipe 
+type=SYSCALL msg=audit(2026年09月08日 10:05:57.946:517) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5abb233cca00 a1=0x5abb233d1fc0 a2=0x5abb233cb640 a3=0x8 items=3 ppid=4766 pid=4767 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts1 ses=2 comm=lesspipe exe=/usr/bin/dash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:05:57.950:518) : proctitle=basename /usr/bin/lesspipe 
+type=PATH msg=audit(2026年09月08日 10:05:57.950:518) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:57.950:518) : item=0 name=/usr/bin/basename inode=787000 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:05:57.950:518) : cwd=/home/mxy/case01-core 
+type=EXECVE msg=audit(2026年09月08日 10:05:57.950:518) : argc=2 a0=basename a1=/usr/bin/lesspipe 
+type=SYSCALL msg=audit(2026年09月08日 10:05:57.950:518) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x61470d5b0f88 a1=0x6146f32b7600 a2=0x61470d5b0e08 a3=0x1 items=2 ppid=4767 pid=4768 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts1 ses=2 comm=basename exe=/usr/bin/basename subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:05:57.956:519) : proctitle=dirname /usr/bin/lesspipe 
+type=PATH msg=audit(2026年09月08日 10:05:57.956:519) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:57.956:519) : item=0 name=/usr/bin/dirname inode=787123 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:05:57.956:519) : cwd=/home/mxy/case01-core 
+type=EXECVE msg=audit(2026年09月08日 10:05:57.956:519) : argc=2 a0=dirname a1=/usr/bin/lesspipe 
+type=SYSCALL msg=audit(2026年09月08日 10:05:57.956:519) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x61470d5bcfa8 a1=0x61470d5bcd70 a2=0x61470d5bcd88 a3=0x1 items=2 ppid=4769 pid=4770 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts1 ses=2 comm=dirname exe=/usr/bin/dirname subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:05:57.962:520) : proctitle=dircolors -b 
+type=PATH msg=audit(2026年09月08日 10:05:57.962:520) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:05:57.962:520) : item=0 name=/usr/bin/dircolors inode=787120 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:05:57.962:520) : cwd=/home/mxy/case01-core 
+type=EXECVE msg=audit(2026年09月08日 10:05:57.962:520) : argc=2 a0=dircolors a1=-b 
+type=SYSCALL msg=audit(2026年09月08日 10:05:57.962:520) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5abb233d2d40 a1=0x5abb233cdca0 a2=0x5abb233d2da0 a3=0x8 items=2 ppid=4766 pid=4771 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts1 ses=2 comm=dircolors exe=/usr/bin/dircolors subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:06:02.444:521) : proctitle=ls --color=auto 
+type=PATH msg=audit(2026年09月08日 10:06:02.444:521) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:06:02.444:521) : item=0 name=/usr/bin/ls inode=787461 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:06:02.444:521) : cwd=/home/mxy/case01-core 
+type=EXECVE msg=audit(2026年09月08日 10:06:02.444:521) : argc=2 a0=ls a1=--color=auto 
+type=SYSCALL msg=audit(2026年09月08日 10:06:02.444:521) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5abb233cd8a0 a1=0x5abb233d1310 a2=0x5abb234b24b0 a3=0x5abb233d1310 items=2 ppid=4766 pid=4772 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts1 ses=2 comm=ls exe=/usr/bin/ls subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:06:17.730:522) : proctitle=python3 core_server.py 
+type=PATH msg=audit(2026年09月08日 10:06:17.730:522) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:06:17.730:522) : item=0 name=/usr/bin/python3 inode=788383 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:06:17.730:522) : cwd=/home/mxy/case01-core 
+type=EXECVE msg=audit(2026年09月08日 10:06:17.730:522) : argc=2 a0=python3 a1=core_server.py 
+type=SYSCALL msg=audit(2026年09月08日 10:06:17.730:522) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5abb234a00c0 a1=0x5abb234a0370 a2=0x5abb234b24b0 a3=0x5abb234a0370 items=2 ppid=4766 pid=4773 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts1 ses=2 comm=python3 exe=/usr/bin/python3.12 subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:07:05.807:531) : proctitle=sudo ausearch -k case01_demo_file -i 
+type=PATH msg=audit(2026年09月08日 10:07:05.807:531) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:07:05.807:531) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:07:05.807:531) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:07:05.807:531) : argc=5 a0=sudo a1=ausearch a2=-k a3=case01_demo_file a4=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:07:05.807:531) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f51c0 a1=0x5d352370dcc0 a2=0x5d35237f22f0 a3=0x5d35237f4b40 items=2 ppid=3066 pid=4780 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:07:05.838:546) : proctitle=ausearch -k case01_demo_file -i 
+type=PATH msg=audit(2026年09月08日 10:07:05.838:546) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:07:05.838:546) : item=0 name=/usr/sbin/ausearch inode=812917 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:07:05.838:546) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:07:05.838:546) : argc=4 a0=ausearch a1=-k a2=case01_demo_file a3=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:07:05.838:546) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x60190b8dbac8 a1=0x60190b8cf210 a2=0x60190b8e1af0 a3=0x64 items=2 ppid=4781 pid=4782 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=ausearch exe=/usr/sbin/ausearch subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:07:37.184:551) : proctitle=sudo ausearch -k case01_process_exec -i 
+type=PATH msg=audit(2026年09月08日 10:07:37.184:551) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:07:37.184:551) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:07:37.184:551) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:07:37.184:551) : argc=5 a0=sudo a1=ausearch a2=-k a3=case01_process_exec a4=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:07:37.184:551) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f5200 a1=0x5d352370dcc0 a2=0x5d35237f22f0 a3=0x5d35237f4f90 items=2 ppid=3066 pid=4784 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:07:37.217:566) : proctitle=ausearch -k case01_process_exec -i 
+type=PATH msg=audit(2026年09月08日 10:07:37.217:566) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:07:37.217:566) : item=0 name=/usr/sbin/ausearch inode=812917 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:07:37.217:566) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:07:37.217:566) : argc=4 a0=ausearch a1=-k a2=case01_process_exec a3=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:07:37.217:566) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5590186bcb08 a1=0x5590186b0210 a2=0x5590186c2b30 a3=0x64 items=2 ppid=4785 pid=4786 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=ausearch exe=/usr/sbin/ausearch subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:08:03.767:571) : proctitle=sudo ausearch -k case01_network -i 
+type=PATH msg=audit(2026年09月08日 10:08:03.767:571) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:08:03.767:571) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:08:03.767:571) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:08:03.767:571) : argc=5 a0=sudo a1=ausearch a2=-k a3=case01_network a4=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:08:03.767:571) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f5240 a1=0x5d352370dcc0 a2=0x5d35237f22f0 a3=0x5d35237f4b10 items=2 ppid=3066 pid=4788 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:08:03.798:586) : proctitle=ausearch -k case01_network -i 
+type=PATH msg=audit(2026年09月08日 10:08:03.798:586) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:08:03.798:586) : item=0 name=/usr/sbin/ausearch inode=812917 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:08:03.798:586) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:08:03.798:586) : argc=4 a0=ausearch a1=-k a2=case01_network a3=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:08:03.798:586) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x57277c0e6ac8 a1=0x57277c0da210 a2=0x57277c0ecaf0 a3=0x64 items=2 ppid=4789 pid=4790 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=ausearch exe=/usr/sbin/ausearch subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:08:38.854:591) : proctitle=mkdir -p /home/mxy/case01-core/evidence 
+type=PATH msg=audit(2026年09月08日 10:08:38.854:591) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:08:38.854:591) : item=0 name=/usr/bin/mkdir inode=787509 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:08:38.854:591) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:08:38.854:591) : argc=3 a0=mkdir a1=-p a2=/home/mxy/case01-core/evidence 
+type=SYSCALL msg=audit(2026年09月08日 10:08:38.854:591) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f4dd0 a1=0x5d35237f4f30 a2=0x5d35237f22f0 a3=0x5d35237f4f30 items=2 ppid=3066 pid=4792 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=mkdir exe=/usr/bin/mkdir subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:08:38.859:592) : proctitle=sudo ausearch -k case01_demo_file -i 
+type=PATH msg=audit(2026年09月08日 10:08:38.859:592) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:08:38.859:592) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:08:38.859:592) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:08:38.859:592) : argc=5 a0=sudo a1=ausearch a2=-k a3=case01_demo_file a4=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:08:38.859:592) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237d6ff0 a1=0x5d35237f4cd0 a2=0x5d35237f22f0 a3=0x5d35237f4cd0 items=2 ppid=3066 pid=4793 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:08:38.889:607) : proctitle=ausearch -k case01_demo_file -i 
+type=PATH msg=audit(2026年09月08日 10:08:38.889:607) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:08:38.889:607) : item=0 name=/usr/sbin/ausearch inode=812917 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:08:38.889:607) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:08:38.889:607) : argc=4 a0=ausearch a1=-k a2=case01_demo_file a3=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:08:38.889:607) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5a8b7ca15ac8 a1=0x5a8b7ca09210 a2=0x5a8b7ca1baf0 a3=0x64 items=2 ppid=4795 pid=4796 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=ausearch exe=/usr/sbin/ausearch subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:08:38.901:612) : proctitle=sudo ausearch -k case01_process_exec -i 
+type=PATH msg=audit(2026年09月08日 10:08:38.901:612) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:08:38.901:612) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:08:38.901:612) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:08:38.901:612) : argc=5 a0=sudo a1=ausearch a2=-k a3=case01_process_exec a4=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:08:38.901:612) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f5720 a1=0x5d35237f4cd0 a2=0x5d35237f22f0 a3=0x5d35237f4cd0 items=2 ppid=3066 pid=4797 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:08:38.930:627) : proctitle=ausearch -k case01_process_exec -i 
+type=PATH msg=audit(2026年09月08日 10:08:38.930:627) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:08:38.930:627) : item=0 name=/usr/sbin/ausearch inode=812917 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:08:38.930:627) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:08:38.930:627) : argc=4 a0=ausearch a1=-k a2=case01_process_exec a3=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:08:38.930:627) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5f49670d6b08 a1=0x5f49670ca210 a2=0x5f49670dcb30 a3=0x64 items=2 ppid=4798 pid=4799 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=ausearch exe=/usr/sbin/ausearch subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:08:38.949:632) : proctitle=sudo ausearch -k case01_network -i 
+type=PATH msg=audit(2026年09月08日 10:08:38.949:632) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:08:38.949:632) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:08:38.949:632) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:08:38.949:632) : argc=5 a0=sudo a1=ausearch a2=-k a3=case01_network a4=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:08:38.949:632) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237d6fc0 a1=0x5d35237f4cd0 a2=0x5d35237f22f0 a3=0x5d35237f4cd0 items=2 ppid=3066 pid=4800 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:08:38.978:647) : proctitle=ausearch -k case01_network -i 
+type=PATH msg=audit(2026年09月08日 10:08:38.978:647) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:08:38.978:647) : item=0 name=/usr/sbin/ausearch inode=812917 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:08:38.978:647) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:08:38.978:647) : argc=4 a0=ausearch a1=-k a2=case01_network a3=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:08:38.978:647) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5f5678e2fac8 a1=0x5f5678e23210 a2=0x5f5678e35af0 a3=0x64 items=2 ppid=4801 pid=4802 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=ausearch exe=/usr/sbin/ausearch subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:08:39.008:652) : proctitle=sudo cp /var/log/audit/audit.log /home/mxy/case01-core/evidence/audit.log 
+type=PATH msg=audit(2026年09月08日 10:08:39.008:652) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:08:39.008:652) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:08:39.008:652) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:08:39.008:652) : argc=4 a0=sudo a1=cp a2=/var/log/audit/audit.log a3=/home/mxy/case01-core/evidence/audit.log 
+type=SYSCALL msg=audit(2026年09月08日 10:08:39.008:652) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f4fe0 a1=0x5d35237f4f30 a2=0x5d35237f22f0 a3=0x5d35237dec30 items=2 ppid=3066 pid=4803 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:08:39.038:667) : proctitle=cp /var/log/audit/audit.log /home/mxy/case01-core/evidence/audit.log 
+type=PATH msg=audit(2026年09月08日 10:08:39.038:667) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:08:39.038:667) : item=0 name=/usr/bin/cp inode=787073 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:08:39.038:667) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:08:39.038:667) : argc=3 a0=cp a1=/var/log/audit/audit.log a2=/home/mxy/case01-core/evidence/audit.log 
+type=SYSCALL msg=audit(2026年09月08日 10:08:39.038:667) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5ce41db24b38 a1=0x5ce41db33f40 a2=0x5ce41db46b60 a3=0x64 items=2 ppid=4804 pid=4805 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=cp exe=/usr/bin/cp subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:08:56.571:670) : proctitle=ls --color=auto -lh /home/mxy/case01-core/evidence 
+type=PATH msg=audit(2026年09月08日 10:08:56.571:670) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:08:56.571:670) : item=0 name=/usr/bin/ls inode=787461 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:08:56.571:670) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:08:56.571:670) : argc=4 a0=ls a1=--color=auto a2=-lh a3=/home/mxy/case01-core/evidence 
+type=SYSCALL msg=audit(2026年09月08日 10:08:56.571:670) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f5880 a1=0x5d35237f4ca0 a2=0x5d35237f22f0 a3=0x5d35237f4d10 items=2 ppid=3066 pid=4809 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=ls exe=/usr/bin/ls subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:09:12.211:675) : proctitle=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop /usr/bin/gnome-text-editor /home/mxy/case01-core/evidence/audit.log 
+type=PATH msg=audit(2026年09月08日 10:09:12.211:675) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:09:12.211:675) : item=0 name=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop inode=791133 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:09:12.211:675) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:09:12.211:675) : argc=3 a0=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop a1=/usr/bin/gnome-text-editor a2=/home/mxy/case01-core/evidence/audit.log 
+type=SYSCALL msg=audit(2026年09月08日 10:09:12.211:675) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x61c33cf7c0d0 a1=0x61c33cb92c10 a2=0x61c33cb92a80 a3=0x0 items=2 ppid=1770 pid=4812 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gio-launch-desk exe=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop subj=nautilus key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:09:12.216:677) : proctitle=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop /usr/bin/gnome-text-editor /home/mxy/case01-core/evidence/audit.log 
+type=PATH msg=audit(2026年09月08日 10:09:12.216:677) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:09:12.216:677) : item=0 name=/usr/bin/gnome-text-editor inode=787269 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:09:12.216:677) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:09:12.216:677) : argc=2 a0=/usr/bin/gnome-text-editor a1=/home/mxy/case01-core/evidence/audit.log 
+type=SYSCALL msg=audit(2026年09月08日 10:09:12.216:677) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x7fff2b7d37e4 a1=0x7fff2b7d2830 a2=0x5e59f5d292a0 a3=0x7fff2b7d25cc items=2 ppid=1770 pid=4812 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gnome-text-edit exe=/usr/bin/gnome-text-editor subj=nautilus key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:09:14.986:683) : proctitle=/bin/sh -c pkexec /usr/libexec/gvfsd-admin "$@" --address $DBUS_SESSION_BUS_ADDRESS --dir $XDG_RUNTIME_DIR gvfsd-admin --spawner 
+type=PATH msg=audit(2026年09月08日 10:09:14.986:683) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:09:14.986:683) : item=0 name=/bin/sh inode=787083 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:09:14.986:683) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:09:14.986:683) : argc=7 a0=/bin/sh a1=-c a2=pkexec /usr/libexec/gvfsd-admin "$@" --address $DBUS_SESSION_BUS_ADDRESS --dir $XDG_RUNTIME_DIR a3=gvfsd-admin a4=--spawner a5=:1.20 a6=/org/gtk/gvfs/exec_spaw/9 
+type=SYSCALL msg=audit(2026年09月08日 10:09:14.986:683) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5bde44f64620 a1=0x5bde44f58ff0 a2=0x7ffc1a91bf08 a3=0x0 items=2 ppid=1950 pid=4837 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=sh exe=/usr/bin/dash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:09:14.989:684) : proctitle=pkexec /usr/libexec/gvfsd-admin --spawner :1.20 /org/gtk/gvfs/exec_spaw/9 --address unix:path=/run/user/1000/bus --dir /run/user 
+type=PATH msg=audit(2026年09月08日 10:09:14.989:684) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:09:14.989:684) : item=0 name=/usr/bin/pkexec inode=787632 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:09:14.989:684) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:09:14.989:684) : argc=9 a0=pkexec a1=/usr/libexec/gvfsd-admin a2=--spawner a3=:1.20 a4=/org/gtk/gvfs/exec_spaw/9 a5=--address a6=unix:path=/run/user/1000/bus a7=--dir a8=/run/user/1000 
+type=SYSCALL msg=audit(2026年09月08日 10:09:14.989:684) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5820aa35ae00 a1=0x5820aa35ab00 a2=0x5820aa35ace8 a3=0x1 items=2 ppid=4837 pid=4838 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=pkexec exe=/usr/bin/pkexec subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:09:15.067:693) : proctitle=pkexec /usr/libexec/gvfsd-admin --spawner :1.20 /org/gtk/gvfs/exec_spaw/9 --address unix:path=/run/user/1000/bus --dir /run/user 
+type=PATH msg=audit(2026年09月08日 10:09:15.067:693) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:09:15.067:693) : item=0 name=/usr/libexec/gvfsd-admin inode=802741 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:09:15.067:693) : cwd=/root 
+type=EXECVE msg=audit(2026年09月08日 10:09:15.067:693) : argc=8 a0=/usr/libexec/gvfsd-admin a1=--spawner a2=:1.20 a3=/org/gtk/gvfs/exec_spaw/9 a4=--address a5=unix:path=/run/user/1000/bus a6=--dir a7=/run/user/1000 
+type=SYSCALL msg=audit(2026年09月08日 10:09:15.067:693) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5c5a56bd51b0 a1=0x7ffd4f7cea80 a2=0x5c5a56bd5500 a3=0x5c5a56c1fb90 items=2 ppid=4837 pid=4838 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=(none) ses=2 comm=gvfsd-admin exe=/usr/libexec/gvfsd-admin subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:09:15.194:699) : proctitle=/usr/lib/polkit-1/polkit-agent-helper-1 mxy 
+type=PATH msg=audit(2026年09月08日 10:09:15.194:699) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:09:15.194:699) : item=0 name=/usr/lib/polkit-1/polkit-agent-helper-1 inode=789209 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:09:15.194:699) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:09:15.194:699) : argc=2 a0=/usr/lib/polkit-1/polkit-agent-helper-1 a1=mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:09:15.194:699) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x74795867fe20 a1=0x7fffa23f4da0 a2=0x5d300fb44ab0 a3=0x8 items=2 ppid=1993 pid=4853 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=polkit-agent-he exe=/usr/lib/polkit-1/polkit-agent-helper-1 subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:09:24.811:712) : proctitle=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop /usr/bin/gnome-text-editor /home/mxy/case01-core/evidence/audit-file-acces 
+type=PATH msg=audit(2026年09月08日 10:09:24.811:712) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:09:24.811:712) : item=0 name=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop inode=791133 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:09:24.811:712) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:09:24.811:712) : argc=3 a0=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop a1=/usr/bin/gnome-text-editor a2=/home/mxy/case01-core/evidence/audit-file-access.txt 
+type=SYSCALL msg=audit(2026年09月08日 10:09:24.811:712) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x61c33d0a4df0 a1=0x61c33cfb8a90 a2=0x61c33cfb7240 a3=0x0 items=2 ppid=1770 pid=4883 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gio-launch-desk exe=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop subj=nautilus key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:09:24.815:714) : proctitle=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop /usr/bin/gnome-text-editor /home/mxy/case01-core/evidence/audit-file-acces 
+type=PATH msg=audit(2026年09月08日 10:09:24.815:714) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:09:24.815:714) : item=0 name=/usr/bin/gnome-text-editor inode=787269 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:09:24.815:714) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:09:24.815:714) : argc=2 a0=/usr/bin/gnome-text-editor a1=/home/mxy/case01-core/evidence/audit-file-access.txt 
+type=SYSCALL msg=audit(2026年09月08日 10:09:24.815:714) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x7ffe0e3017d8 a1=0x7ffe0e300c10 a2=0x556107d3e2a0 a3=0x7ffe0e3009ac items=2 ppid=1770 pid=4883 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gnome-text-edit exe=/usr/bin/gnome-text-editor subj=nautilus key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:09:25.982:722) : proctitle=/usr/lib/polkit-1/polkit-agent-helper-1 mxy 
+type=PATH msg=audit(2026年09月08日 10:09:25.982:722) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:09:25.982:722) : item=0 name=/usr/lib/polkit-1/polkit-agent-helper-1 inode=789209 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:09:25.982:722) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:09:25.982:722) : argc=2 a0=/usr/lib/polkit-1/polkit-agent-helper-1 a1=mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:09:25.982:722) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x74795867fe20 a1=0x7fffa23f4da0 a2=0x5d300fb44ab0 a3=0x8 items=2 ppid=1993 pid=4907 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=polkit-agent-he exe=/usr/lib/polkit-1/polkit-agent-helper-1 subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:10:38.633:739) : proctitle=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop /usr/bin/gnome-text-editor /home/mxy/case01-core/evidence/audit-network.tx 
+type=PATH msg=audit(2026年09月08日 10:10:38.633:739) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:10:38.633:739) : item=0 name=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop inode=791133 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:10:38.633:739) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:10:38.633:739) : argc=3 a0=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop a1=/usr/bin/gnome-text-editor a2=/home/mxy/case01-core/evidence/audit-network.txt 
+type=SYSCALL msg=audit(2026年09月08日 10:10:38.633:739) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x61c33cf7b430 a1=0x61c33ca84640 a2=0x61c33d1af420 a3=0x0 items=2 ppid=1770 pid=4947 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gio-launch-desk exe=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop subj=nautilus key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:10:38.638:741) : proctitle=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop /usr/bin/gnome-text-editor /home/mxy/case01-core/evidence/audit-network.tx 
+type=PATH msg=audit(2026年09月08日 10:10:38.638:741) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:10:38.638:741) : item=0 name=/usr/bin/gnome-text-editor inode=787269 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:10:38.638:741) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:10:38.638:741) : argc=2 a0=/usr/bin/gnome-text-editor a1=/home/mxy/case01-core/evidence/audit-network.txt 
+type=SYSCALL msg=audit(2026年09月08日 10:10:38.638:741) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x7ffc223d27dc a1=0x7ffc223d2040 a2=0x5e5ded1fa2a0 a3=0x7ffc223d1ddc items=2 ppid=1770 pid=4947 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gnome-text-edit exe=/usr/bin/gnome-text-editor subj=nautilus key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:10:39.861:749) : proctitle=/usr/lib/polkit-1/polkit-agent-helper-1 mxy 
+type=PATH msg=audit(2026年09月08日 10:10:39.861:749) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:10:39.861:749) : item=0 name=/usr/lib/polkit-1/polkit-agent-helper-1 inode=789209 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:10:39.861:749) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:10:39.861:749) : argc=2 a0=/usr/lib/polkit-1/polkit-agent-helper-1 a1=mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:10:39.861:749) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x74795867fe20 a1=0x7fffa23f4da0 a2=0x5d300fb44ab0 a3=0x8 items=2 ppid=1993 pid=4974 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=polkit-agent-he exe=/usr/lib/polkit-1/polkit-agent-helper-1 subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:12:29.036:762) : proctitle=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop /usr/bin/gnome-text-editor /home/mxy/case01-core/evidence/audit-process-ex 
+type=PATH msg=audit(2026年09月08日 10:12:29.036:762) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:12:29.036:762) : item=0 name=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop inode=791133 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:12:29.036:762) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:12:29.036:762) : argc=3 a0=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop a1=/usr/bin/gnome-text-editor a2=/home/mxy/case01-core/evidence/audit-process-exec.txt 
+type=SYSCALL msg=audit(2026年09月08日 10:12:29.036:762) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x61c33d5027b0 a1=0x61c33d61ab00 a2=0x61c33d61c360 a3=0x0 items=2 ppid=1770 pid=5033 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gio-launch-desk exe=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop subj=nautilus key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:12:29.040:764) : proctitle=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop /usr/bin/gnome-text-editor /home/mxy/case01-core/evidence/audit-process-ex 
+type=PATH msg=audit(2026年09月08日 10:12:29.040:764) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:12:29.040:764) : item=0 name=/usr/bin/gnome-text-editor inode=787269 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:12:29.040:764) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:12:29.040:764) : argc=2 a0=/usr/bin/gnome-text-editor a1=/home/mxy/case01-core/evidence/audit-process-exec.txt 
+type=SYSCALL msg=audit(2026年09月08日 10:12:29.040:764) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x7ffcc37cb7d7 a1=0x7ffcc37ca970 a2=0x5b7d25b492a0 a3=0x7ffcc37ca70c items=2 ppid=1770 pid=5033 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gnome-text-edit exe=/usr/bin/gnome-text-editor subj=nautilus key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:12:30.257:772) : proctitle=/usr/lib/polkit-1/polkit-agent-helper-1 mxy 
+type=PATH msg=audit(2026年09月08日 10:12:30.257:772) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:12:30.257:772) : item=0 name=/usr/lib/polkit-1/polkit-agent-helper-1 inode=789209 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:12:30.257:772) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:12:30.257:772) : argc=2 a0=/usr/lib/polkit-1/polkit-agent-helper-1 a1=mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:12:30.257:772) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x74795867fe20 a1=0x7fffa23f4da0 a2=0x5d300fb44ab0 a3=0x8 items=2 ppid=1993 pid=5061 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=polkit-agent-he exe=/usr/lib/polkit-1/polkit-agent-helper-1 subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:13:51.410:785) : proctitle=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop /usr/bin/gnome-text-editor /home/mxy/case01-core/evidence/audit.log 
+type=PATH msg=audit(2026年09月08日 10:13:51.410:785) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:13:51.410:785) : item=0 name=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop inode=791133 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:13:51.410:785) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:13:51.410:785) : argc=3 a0=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop a1=/usr/bin/gnome-text-editor a2=/home/mxy/case01-core/evidence/audit.log 
+type=SYSCALL msg=audit(2026年09月08日 10:13:51.410:785) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x61c33d50c550 a1=0x61c33d507870 a2=0x61c33d3b2a90 a3=0x0 items=2 ppid=1770 pid=5084 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gio-launch-desk exe=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop subj=nautilus key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:13:51.415:787) : proctitle=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop /usr/bin/gnome-text-editor /home/mxy/case01-core/evidence/audit.log 
+type=PATH msg=audit(2026年09月08日 10:13:51.415:787) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:13:51.415:787) : item=0 name=/usr/bin/gnome-text-editor inode=787269 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:13:51.415:787) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:13:51.415:787) : argc=2 a0=/usr/bin/gnome-text-editor a1=/home/mxy/case01-core/evidence/audit.log 
+type=SYSCALL msg=audit(2026年09月08日 10:13:51.415:787) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x7ffc1d4ad7e4 a1=0x7ffc1d4abfa0 a2=0x5a3c8fece2a0 a3=0x7ffc1d4abd3c items=2 ppid=1770 pid=5084 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gnome-text-edit exe=/usr/bin/gnome-text-editor subj=nautilus key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:13:52.689:795) : proctitle=/usr/lib/polkit-1/polkit-agent-helper-1 mxy 
+type=PATH msg=audit(2026年09月08日 10:13:52.689:795) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:13:52.689:795) : item=0 name=/usr/lib/polkit-1/polkit-agent-helper-1 inode=789209 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:13:52.689:795) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:13:52.689:795) : argc=2 a0=/usr/lib/polkit-1/polkit-agent-helper-1 a1=mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:13:52.689:795) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x74795867fe20 a1=0x7fffa23f4da0 a2=0x5d300fb44ab0 a3=0x8 items=2 ppid=1993 pid=5112 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=polkit-agent-he exe=/usr/lib/polkit-1/polkit-agent-helper-1 subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:20:55.536:842) : proctitle=gdm-session-worker [pam/gdm-autologin] 
+type=PATH msg=audit(2026年09月08日 10:20:55.536:842) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:20:55.536:842) : item=0 name=/usr/libexec/gdm-session-worker inode=802685 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:20:55.536:842) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:20:55.536:842) : argc=1 a0=gdm-session-worker [pam/gdm-password] 
+type=SYSCALL msg=audit(2026年09月08日 10:20:55.536:842) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5775ad052db0 a1=0x5775ad052e18 a2=0x5775ad0541d0 a3=0x8 items=2 ppid=1762 pid=5203 auid=mxy uid=root gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=1 comm=gdm-session-wor exe=/usr/libexec/gdm-session-worker subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:20:58.553:864) : proctitle=/usr/bin/env gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@ 
+type=PATH msg=audit(2026年09月08日 10:20:58.553:864) : item=2 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:20:58.553:864) : item=1 name=/usr/bin/env inode=787149 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:20:58.553:864) : item=0 name=/usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js inode=816988 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:20:58.553:864) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:20:58.553:864) : argc=6 a0=/usr/bin/env a1=gjs a2=/usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js a3=-E a4=-P a5=/usr/share/gnome-shell/extensions/ding@rastersoft.com/app 
+type=SYSCALL msg=audit(2026年09月08日 10:20:58.553:864) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d301274f100 a1=0x5d3013974cf0 a2=0x5d301122acc0 a3=0x0 items=3 ppid=1993 pid=5217 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=ding.js exe=/usr/bin/env subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:20:58.561:865) : proctitle=/usr/bin/env gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@ 
+type=PATH msg=audit(2026年09月08日 10:20:58.561:865) : item=0 name=/usr/local/sbin/gjs nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:20:58.561:865) : cwd=/home/mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:20:58.561:865) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x7fff79b2bcf0 a1=0x7fff79b2c0a0 a2=0x7fff79b2c0d0 a3=0x5e31ee6925d1 items=1 ppid=1993 pid=5217 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=ding.js exe=/usr/bin/env subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:20:58.561:866) : proctitle=/usr/bin/env gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@ 
+type=PATH msg=audit(2026年09月08日 10:20:58.561:866) : item=0 name=/usr/local/bin/gjs nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:20:58.561:866) : cwd=/home/mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:20:58.561:866) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x7fff79b2bcf0 a1=0x7fff79b2c0a0 a2=0x7fff79b2c0d0 a3=0x5e31ee6925d1 items=1 ppid=1993 pid=5217 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=ding.js exe=/usr/bin/env subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:20:58.561:867) : proctitle=/usr/bin/env gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@ 
+type=PATH msg=audit(2026年09月08日 10:20:58.561:867) : item=0 name=/usr/sbin/gjs nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:20:58.561:867) : cwd=/home/mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:20:58.561:867) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x7fff79b2bcf0 a1=0x7fff79b2c0a0 a2=0x7fff79b2c0d0 a3=0x5e31ee6925d1 items=1 ppid=1993 pid=5217 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=ding.js exe=/usr/bin/env subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:20:58.561:868) : proctitle=/usr/bin/env gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@ 
+type=PATH msg=audit(2026年09月08日 10:20:58.561:868) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:20:58.561:868) : item=0 name=/usr/bin/gjs inode=787244 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:20:58.561:868) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:20:58.561:868) : argc=5 a0=gjs a1=/usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js a2=-E a3=-P a4=/usr/share/gnome-shell/extensions/ding@rastersoft.com/app 
+type=SYSCALL msg=audit(2026年09月08日 10:20:58.561:868) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x7fff79b2bcf0 a1=0x7fff79b2c0a0 a2=0x7fff79b2c0d0 a3=0x5e31ee6925d1 items=2 ppid=1993 pid=5217 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gjs exe=/usr/bin/gjs-console subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:20:59.129:873) : proctitle=gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@rastersoft.co 
+type=PATH msg=audit(2026年09月08日 10:20:59.129:873) : item=0 name=/usr/local/sbin/nautilus nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:20:59.129:873) : cwd=/home/mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:20:59.129:873) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x7ffd28298d3d a1=0x5ce2a86f06c0 a2=0x7ffd2829cb98 a3=0x0 items=1 ppid=5217 pid=5245 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gjs exe=/usr/bin/gjs-console subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:20:59.129:874) : proctitle=gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@rastersoft.co 
+type=PATH msg=audit(2026年09月08日 10:20:59.129:874) : item=0 name=/usr/local/bin/nautilus nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:20:59.129:874) : cwd=/home/mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:20:59.129:874) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x7ffd28298d3e a1=0x5ce2a86f06c0 a2=0x7ffd2829cb98 a3=0x743a387f09c8 items=1 ppid=5217 pid=5245 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gjs exe=/usr/bin/gjs-console subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:20:59.129:875) : proctitle=gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@rastersoft.co 
+type=PATH msg=audit(2026年09月08日 10:20:59.129:875) : item=0 name=/usr/sbin/nautilus nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:20:59.129:875) : cwd=/home/mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:20:59.129:875) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x7ffd28298d43 a1=0x5ce2a86f06c0 a2=0x7ffd2829cb98 a3=0x743a387f09c8 items=1 ppid=5217 pid=5245 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gjs exe=/usr/bin/gjs-console subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:20:59.129:876) : proctitle=gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@rastersoft.co 
+type=PATH msg=audit(2026年09月08日 10:20:59.129:876) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:20:59.129:876) : item=0 name=/usr/bin/nautilus inode=787532 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:20:59.129:876) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:20:59.129:876) : argc=2 a0=nautilus a1=--version 
+type=SYSCALL msg=audit(2026年09月08日 10:20:59.129:876) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x7ffd28298d44 a1=0x5ce2a86f06c0 a2=0x7ffd2829cb98 a3=0x743a387f09c8 items=2 ppid=5217 pid=5245 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=nautilus exe=/usr/bin/nautilus subj=nautilus key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:21:01.720:879) : proctitle=/bin/sh /etc/gdm3/PrimeOff/Default 
+type=PATH msg=audit(2026年09月08日 10:21:01.720:879) : item=2 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:21:01.720:879) : item=1 name=/bin/sh inode=787083 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:21:01.720:879) : item=0 name=/etc/gdm3/PrimeOff/Default inode=1181808 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:21:01.720:879) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:21:01.720:879) : argc=2 a0=/bin/sh a1=/etc/gdm3/PrimeOff/Default 
+type=SYSCALL msg=audit(2026年09月08日 10:21:01.720:879) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5775ad053bc0 a1=0x5775ad04bd70 a2=0x5775ad04af90 a3=0x0 items=3 ppid=1762 pid=5263 auid=mxy uid=root gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=1 comm=Default exe=/usr/bin/dash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:44:30.988:1128) : proctitle=gdm-session-worker [pam/gdm-autologin] 
+type=PATH msg=audit(2026年09月08日 10:44:30.988:1128) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:44:30.988:1128) : item=0 name=/usr/libexec/gdm-session-worker inode=802685 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:44:30.988:1128) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:44:30.988:1128) : argc=1 a0=gdm-session-worker [pam/gdm-password] 
+type=SYSCALL msg=audit(2026年09月08日 10:44:30.988:1128) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5775ad04a400 a1=0x5775ad052878 a2=0x5775ad04aed0 a3=0x8 items=2 ppid=1762 pid=5531 auid=mxy uid=root gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=1 comm=gdm-session-wor exe=/usr/libexec/gdm-session-worker subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:44:31.164:1137) : proctitle=/bin/sh /etc/gdm3/PrimeOff/Default 
+type=PATH msg=audit(2026年09月08日 10:44:31.164:1137) : item=2 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:44:31.164:1137) : item=1 name=/bin/sh inode=787083 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:44:31.164:1137) : item=0 name=/etc/gdm3/PrimeOff/Default inode=1181808 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:44:31.164:1137) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:44:31.164:1137) : argc=2 a0=/bin/sh a1=/etc/gdm3/PrimeOff/Default 
+type=SYSCALL msg=audit(2026年09月08日 10:44:31.164:1137) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5775ad05af90 a1=0x5775ad058bc0 a2=0x5775ad05f160 a3=0x0 items=3 ppid=1762 pid=5543 auid=mxy uid=root gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=1 comm=Default exe=/usr/bin/dash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:44:31.183:1141) : proctitle=gdm-session-worker [pam/gdm-autologin] 
+type=PATH msg=audit(2026年09月08日 10:44:31.183:1141) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:44:31.183:1141) : item=0 name=/usr/libexec/gdm-session-worker inode=802685 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:44:31.183:1141) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:44:31.183:1141) : argc=1 a0=gdm-session-worker [pam/gdm-password] 
+type=SYSCALL msg=audit(2026年09月08日 10:44:31.183:1141) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5775ad05e760 a1=0x5775ad056348 a2=0x5775ad05f450 a3=0x8 items=2 ppid=1762 pid=5545 auid=mxy uid=root gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=1 comm=gdm-session-wor exe=/usr/libexec/gdm-session-worker subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:44:33.508:1160) : proctitle=/usr/bin/env gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@ 
+type=PATH msg=audit(2026年09月08日 10:44:33.508:1160) : item=2 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:44:33.508:1160) : item=1 name=/usr/bin/env inode=787149 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:44:33.508:1160) : item=0 name=/usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js inode=816988 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:44:33.508:1160) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:44:33.508:1160) : argc=6 a0=/usr/bin/env a1=gjs a2=/usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js a3=-E a4=-P a5=/usr/share/gnome-shell/extensions/ding@rastersoft.com/app 
+type=SYSCALL msg=audit(2026年09月08日 10:44:33.508:1160) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d301378f150 a1=0x5d301378f230 a2=0x5d301088f400 a3=0x0 items=3 ppid=1993 pid=5555 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=ding.js exe=/usr/bin/env subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:44:33.516:1161) : proctitle=/usr/bin/env gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@ 
+type=PATH msg=audit(2026年09月08日 10:44:33.516:1161) : item=0 name=/usr/local/sbin/gjs nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:44:33.516:1161) : cwd=/home/mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:44:33.516:1161) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x7ffdf262e430 a1=0x7ffdf262e7e0 a2=0x7ffdf262e810 a3=0x5ac1c26af5d1 items=1 ppid=1993 pid=5555 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=ding.js exe=/usr/bin/env subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:44:33.516:1162) : proctitle=/usr/bin/env gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@ 
+type=PATH msg=audit(2026年09月08日 10:44:33.516:1162) : item=0 name=/usr/local/bin/gjs nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:44:33.516:1162) : cwd=/home/mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:44:33.516:1162) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x7ffdf262e430 a1=0x7ffdf262e7e0 a2=0x7ffdf262e810 a3=0x5ac1c26af5d1 items=1 ppid=1993 pid=5555 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=ding.js exe=/usr/bin/env subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:44:33.516:1163) : proctitle=/usr/bin/env gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@ 
+type=PATH msg=audit(2026年09月08日 10:44:33.516:1163) : item=0 name=/usr/sbin/gjs nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:44:33.516:1163) : cwd=/home/mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:44:33.516:1163) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x7ffdf262e430 a1=0x7ffdf262e7e0 a2=0x7ffdf262e810 a3=0x5ac1c26af5d1 items=1 ppid=1993 pid=5555 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=ding.js exe=/usr/bin/env subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:44:33.516:1164) : proctitle=/usr/bin/env gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@ 
+type=PATH msg=audit(2026年09月08日 10:44:33.516:1164) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:44:33.516:1164) : item=0 name=/usr/bin/gjs inode=787244 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:44:33.516:1164) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:44:33.516:1164) : argc=5 a0=gjs a1=/usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js a2=-E a3=-P a4=/usr/share/gnome-shell/extensions/ding@rastersoft.com/app 
+type=SYSCALL msg=audit(2026年09月08日 10:44:33.516:1164) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x7ffdf262e430 a1=0x7ffdf262e7e0 a2=0x7ffdf262e810 a3=0x5ac1c26af5d1 items=2 ppid=1993 pid=5555 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gjs exe=/usr/bin/gjs-console subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:44:34.152:1169) : proctitle=/bin/sh /etc/gdm3/PrimeOff/Default 
+type=PATH msg=audit(2026年09月08日 10:44:34.152:1169) : item=2 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:44:34.152:1169) : item=1 name=/bin/sh inode=787083 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:44:34.152:1169) : item=0 name=/etc/gdm3/PrimeOff/Default inode=1181808 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:44:34.152:1169) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:44:34.152:1169) : argc=2 a0=/bin/sh a1=/etc/gdm3/PrimeOff/Default 
+type=SYSCALL msg=audit(2026年09月08日 10:44:34.152:1169) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5775ad0553d0 a1=0x5775ad020b10 a2=0x5775ad05cda0 a3=0x0 items=3 ppid=1762 pid=5581 auid=mxy uid=root gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=1 comm=Default exe=/usr/bin/dash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:44:34.174:1170) : proctitle=gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@rastersoft.co 
+type=PATH msg=audit(2026年09月08日 10:44:34.174:1170) : item=0 name=/usr/local/sbin/nautilus nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:44:34.174:1170) : cwd=/home/mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:44:34.174:1170) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x7fff2423c6ad a1=0x5c5733a24fc0 a2=0x7fff24240508 a3=0x0 items=1 ppid=5555 pid=5582 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gjs exe=/usr/bin/gjs-console subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:44:34.174:1171) : proctitle=gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@rastersoft.co 
+type=PATH msg=audit(2026年09月08日 10:44:34.174:1171) : item=0 name=/usr/local/bin/nautilus nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:44:34.174:1171) : cwd=/home/mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:44:34.174:1171) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x7fff2423c6ae a1=0x5c5733a24fc0 a2=0x7fff24240508 a3=0x72f1ca25d9c8 items=1 ppid=5555 pid=5582 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gjs exe=/usr/bin/gjs-console subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:44:34.174:1172) : proctitle=gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@rastersoft.co 
+type=PATH msg=audit(2026年09月08日 10:44:34.174:1172) : item=0 name=/usr/sbin/nautilus nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:44:34.174:1172) : cwd=/home/mxy 
+type=SYSCALL msg=audit(2026年09月08日 10:44:34.174:1172) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x7fff2423c6b3 a1=0x5c5733a24fc0 a2=0x7fff24240508 a3=0x72f1ca25d9c8 items=1 ppid=5555 pid=5582 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gjs exe=/usr/bin/gjs-console subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:44:34.174:1173) : proctitle=gjs /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ding.js -E -P /usr/share/gnome-shell/extensions/ding@rastersoft.co 
+type=PATH msg=audit(2026年09月08日 10:44:34.174:1173) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:44:34.174:1173) : item=0 name=/usr/bin/nautilus inode=787532 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:44:34.174:1173) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:44:34.174:1173) : argc=2 a0=nautilus a1=--version 
+type=SYSCALL msg=audit(2026年09月08日 10:44:34.174:1173) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x7fff2423c6b4 a1=0x5c5733a24fc0 a2=0x7fff24240508 a3=0x72f1ca25d9c8 items=2 ppid=5555 pid=5582 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=nautilus exe=/usr/bin/nautilus subj=nautilus key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:44:48.651:1176) : proctitle=date --iso-8601=seconds 
+type=PATH msg=audit(2026年09月08日 10:44:48.651:1176) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:44:48.651:1176) : item=0 name=/usr/bin/date inode=787084 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:44:48.651:1176) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:44:48.651:1176) : argc=2 a0=date a1=--iso-8601=seconds 
+type=SYSCALL msg=audit(2026年09月08日 10:44:48.651:1176) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f5950 a1=0x5d35237f58e0 a2=0x5d35237f22f0 a3=0x5d35237f58e0 items=2 ppid=3066 pid=5600 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=date exe=/usr/bin/date subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:09.632:1191) : proctitle=mkdir -p /home/mxy/case01-core/evidence/old 
+type=PATH msg=audit(2026年09月08日 10:48:09.632:1191) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:09.632:1191) : item=0 name=/usr/bin/mkdir inode=787509 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:09.632:1191) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:48:09.632:1191) : argc=3 a0=mkdir a1=-p a2=/home/mxy/case01-core/evidence/old 
+type=SYSCALL msg=audit(2026年09月08日 10:48:09.632:1191) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f5880 a1=0x5d35237f5a30 a2=0x5d35237f22f0 a3=0x5d35237f5a30 items=2 ppid=3066 pid=5643 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=mkdir exe=/usr/bin/mkdir subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:09.640:1192) : proctitle=sudo cp /var/log/audit/audit.log /home/mxy/case01-core/evidence/old/audit.log.old 
+type=PATH msg=audit(2026年09月08日 10:48:09.640:1192) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:09.640:1192) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:09.640:1192) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:48:09.640:1192) : argc=4 a0=sudo a1=cp a2=/var/log/audit/audit.log a3=/home/mxy/case01-core/evidence/old/audit.log.old 
+type=SYSCALL msg=audit(2026年09月08日 10:48:09.640:1192) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f4fe0 a1=0x5d35237f5a60 a2=0x5d35237f22f0 a3=0x5d35237f5b00 items=2 ppid=3066 pid=5644 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.219:1211) : proctitle=cp /var/log/audit/audit.log /home/mxy/case01-core/evidence/old/audit.log.old 
+type=PATH msg=audit(2026年09月08日 10:48:12.219:1211) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.219:1211) : item=0 name=/usr/bin/cp inode=787073 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.219:1211) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.219:1211) : argc=3 a0=cp a1=/var/log/audit/audit.log a2=/home/mxy/case01-core/evidence/old/audit.log.old 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.219:1211) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x573a43945b38 a1=0x573a43954f40 a2=0x573a439a9a00 a3=0x64 items=2 ppid=5647 pid=5648 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=cp exe=/usr/bin/cp subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.238:1214) : proctitle=sudo service auditd rotate 
+type=PATH msg=audit(2026年09月08日 10:48:12.238:1214) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.238:1214) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.238:1214) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.238:1214) : argc=4 a0=sudo a1=service a2=auditd a3=rotate 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.238:1214) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f5b80 a1=0x5d35237f4f60 a2=0x5d35237f22f0 a3=0x5d35237f4f60 items=2 ppid=3066 pid=5649 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.269:1229) : proctitle=/bin/sh /usr/sbin/service auditd rotate 
+type=PATH msg=audit(2026年09月08日 10:48:12.269:1229) : item=2 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.269:1229) : item=1 name=/bin/sh inode=787083 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.269:1229) : item=0 name=/usr/sbin/service inode=803115 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.269:1229) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.269:1229) : argc=4 a0=/bin/sh a1=/usr/sbin/service a2=auditd a3=rotate 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.269:1229) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5c6291793ac8 a1=0x5c6291786f40 a2=0x5c6291799af0 a3=0x64 items=3 ppid=5650 pid=5651 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=service exe=/usr/bin/dash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.274:1230) : proctitle=basename /usr/sbin/service 
+type=PATH msg=audit(2026年09月08日 10:48:12.274:1230) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.274:1230) : item=0 name=/usr/bin/basename inode=787000 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.274:1230) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.274:1230) : argc=2 a0=basename a1=/usr/sbin/service 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.274:1230) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5748dc0bc6b0 a1=0x5748b1454608 a2=0x5748dc0bc618 a3=0x1 items=2 ppid=5651 pid=5652 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=basename exe=/usr/bin/basename subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.278:1231) : proctitle=basename /usr/sbin/service 
+type=PATH msg=audit(2026年09月08日 10:48:12.278:1231) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.278:1231) : item=0 name=/usr/bin/basename inode=787000 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.278:1231) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.278:1231) : argc=2 a0=basename a1=/usr/sbin/service 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.278:1231) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5748dc0bc6b0 a1=0x5748b1454658 a2=0x5748dc0bc618 a3=0x1 items=2 ppid=5651 pid=5653 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=basename exe=/usr/bin/basename subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.281:1232) : proctitle=/bin/sh /usr/sbin/service auditd rotate 
+type=PATH msg=audit(2026年09月08日 10:48:12.281:1232) : item=0 name=/usr/local/sbin/env nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.281:1232) : cwd=/ 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.281:1232) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x5748dc0beb98 a1=0x5748dc0be9e0 a2=0x5748dc0beaf8 a3=0x5748dc0beee0 items=1 ppid=5650 pid=5651 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=service exe=/usr/bin/dash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.281:1233) : proctitle=/bin/sh /usr/sbin/service auditd rotate 
+type=PATH msg=audit(2026年09月08日 10:48:12.281:1233) : item=0 name=/usr/local/bin/env nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.281:1233) : cwd=/ 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.281:1233) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x5748dc0beb98 a1=0x5748dc0be9e0 a2=0x5748dc0beaf8 a3=0x5748dc0beee0 items=1 ppid=5650 pid=5651 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=service exe=/usr/bin/dash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.281:1234) : proctitle=/bin/sh /usr/sbin/service auditd rotate 
+type=PATH msg=audit(2026年09月08日 10:48:12.281:1234) : item=0 name=/usr/sbin/env nametype=UNKNOWN cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.281:1234) : cwd=/ 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.281:1234) : arch=x86_64 syscall=execve success=no exit=ENOENT(没有那个文件或目录) a0=0x5748dc0beb98 a1=0x5748dc0be9e0 a2=0x5748dc0beaf8 a3=0x5748dc0beee0 items=1 ppid=5650 pid=5651 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=service exe=/usr/bin/dash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.281:1235) : proctitle=/bin/sh /usr/sbin/service auditd rotate 
+type=PATH msg=audit(2026年09月08日 10:48:12.281:1235) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.281:1235) : item=0 name=/usr/bin/env inode=787149 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.281:1235) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.281:1235) : argc=21 a0=env a1=-i a2=LANG=zh_CN.UTF-8 a3=LANGUAGE= a4=LC_CTYPE= a5=LC_NUMERIC= a6=LC_TIME= a7=LC_COLLATE= a8=LC_MONETARY= a9=LC_MESSAGES= a10=LC_PAPER= a11=LC_NAME= a12=LC_ADDRESS= a13=LC_TELEPHONE= a14=LC_MEASUREMENT= a15=LC_IDENTIFICATION= a16=LC_ALL= a17=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin a18=TERM=xterm-256color a19=/etc/init.d/auditd a20=rotate 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.281:1235) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5748dc0beb98 a1=0x5748dc0be9e0 a2=0x5748dc0beaf8 a3=0x5748dc0beee0 items=2 ppid=5650 pid=5651 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=env exe=/usr/bin/env subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.283:1236) : proctitle=/bin/sh /usr/sbin/service auditd rotate 
+type=PATH msg=audit(2026年09月08日 10:48:12.283:1236) : item=2 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.283:1236) : item=1 name=/bin/sh inode=787083 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.283:1236) : item=0 name=/etc/init.d/auditd inode=1182513 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.283:1236) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.283:1236) : argc=3 a0=/bin/sh a1=/etc/init.d/auditd a2=rotate 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.283:1236) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x7ffd0502571d a1=0x7ffd05024800 a2=0x5cb93a982530 a3=0x78d2e4803ac0 items=3 ppid=5650 pid=5651 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=auditd exe=/usr/bin/dash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.288:1237) : proctitle=run-parts --lsbsysinit --list /lib/lsb/init-functions.d 
+type=PATH msg=audit(2026年09月08日 10:48:12.288:1237) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.288:1237) : item=0 name=/bin/run-parts inode=787738 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.288:1237) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.288:1237) : argc=4 a0=run-parts a1=--lsbsysinit a2=--list a3=/lib/lsb/init-functions.d 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.288:1237) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5e42cb109218 a1=0x5e42cb109138 a2=0x5e42cb109180 a3=0x5e42cb108b40 items=2 ppid=5651 pid=5654 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=run-parts exe=/usr/bin/run-parts subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.295:1238) : proctitle=systemctl -p LoadState --value show auditd.service 
+type=PATH msg=audit(2026年09月08日 10:48:12.295:1238) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.295:1238) : item=0 name=/bin/systemctl inode=800236 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.295:1238) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.295:1238) : argc=6 a0=systemctl a1=-p a2=LoadState a3=--value a4=show a5=auditd.service 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.295:1238) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5e42cb114260 a1=0x5e42cb114170 a2=0x5e42cb1141c8 a3=0x5e42cb114f70 items=2 ppid=5651 pid=5655 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=systemctl exe=/usr/bin/systemctl subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.328:1241) : proctitle=readlink -f /etc/init.d/auditd 
+type=PATH msg=audit(2026年09月08日 10:48:12.328:1241) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.328:1241) : item=0 name=/bin/readlink inode=787718 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.328:1241) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.328:1241) : argc=3 a0=readlink a1=-f a2=/etc/init.d/auditd 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.328:1241) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5e42cb1141d8 a1=0x5e42cb114120 a2=0x5e42cb114140 a3=0x1 items=2 ppid=5651 pid=5656 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=readlink exe=/usr/bin/readlink subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.332:1242) : proctitle=systemctl -p CanReload --value show auditd.service 
+type=PATH msg=audit(2026年09月08日 10:48:12.332:1242) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.332:1242) : item=0 name=/bin/systemctl inode=800236 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.332:1242) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.332:1242) : argc=6 a0=systemctl a1=-p a2=CanReload a3=--value a4=show a5=auditd.service 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.332:1242) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5e42cb114290 a1=0x5e42cb1141a0 a2=0x5e42cb1141f8 a3=0x1 items=2 ppid=5651 pid=5657 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=systemctl exe=/usr/bin/systemctl subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.349:1245) : proctitle=plymouth --ping 
+type=PATH msg=audit(2026年09月08日 10:48:12.349:1245) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.349:1245) : item=0 name=/bin/plymouth inode=787638 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.349:1245) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.349:1245) : argc=2 a0=plymouth a1=--ping 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.349:1245) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5e42cb113d70 a1=0x5e42cb113c60 a2=0x5e42cb113cd8 a3=0x8 items=2 ppid=5651 pid=5658 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=plymouth exe=/usr/bin/plymouth subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.354:1248) : proctitle=/usr/bin/tput xenl 
+type=PATH msg=audit(2026年09月08日 10:48:12.354:1248) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.354:1248) : item=0 name=/usr/bin/tput inode=787896 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.354:1248) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.354:1248) : argc=2 a0=/usr/bin/tput a1=xenl 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.354:1248) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5e42cb106e68 a1=0x5e42cb106ea8 a2=0x5e42cb106ff8 a3=0x8 items=2 ppid=5651 pid=5659 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=tput exe=/usr/bin/tput subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.364:1249) : proctitle=/usr/bin/tput cols 
+type=PATH msg=audit(2026年09月08日 10:48:12.364:1249) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.364:1249) : item=0 name=/usr/bin/tput inode=787896 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.364:1249) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.364:1249) : argc=2 a0=/usr/bin/tput a1=cols 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.364:1249) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5e42cb106e80 a1=0x5e42cb106ec0 a2=0x5e42cb106ff8 a3=0x0 items=2 ppid=5651 pid=5660 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=tput exe=/usr/bin/tput subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.367:1250) : proctitle=plymouth --ping 
+type=PATH msg=audit(2026年09月08日 10:48:12.367:1250) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.367:1250) : item=0 name=/bin/plymouth inode=787638 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.367:1250) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.367:1250) : argc=2 a0=plymouth a1=--ping 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.367:1250) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5e42cb107090 a1=0x5e42cb106ee8 a2=0x5e42cb106ff8 a3=0x8 items=2 ppid=5651 pid=5661 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=plymouth exe=/usr/bin/plymouth subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.372:1253) : proctitle=start-stop-daemon --stop --signal USR1 --quiet --pidfile /var/run/auditd.pid --name auditd 
+type=PATH msg=audit(2026年09月08日 10:48:12.372:1253) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.372:1253) : item=0 name=/sbin/start-stop-daemon inode=803124 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.372:1253) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.372:1253) : argc=9 a0=start-stop-daemon a1=--stop a2=--signal a3=USR1 a4=--quiet a5=--pidfile a6=/var/run/auditd.pid a7=--name a8=auditd 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.372:1253) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5e42cb107090 a1=0x5e42cb106ef0 a2=0x5e42cb106ff8 a3=0x8 items=2 ppid=5651 pid=5662 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=start-stop-daem exe=/usr/sbin/start-stop-daemon subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:12.377:1254) : proctitle=plymouth --ping 
+type=PATH msg=audit(2026年09月08日 10:48:12.377:1254) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:12.377:1254) : item=0 name=/bin/plymouth inode=787638 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:12.377:1254) : cwd=/ 
+type=EXECVE msg=audit(2026年09月08日 10:48:12.377:1254) : argc=2 a0=plymouth a1=--ping 
+type=SYSCALL msg=audit(2026年09月08日 10:48:12.377:1254) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5e42cb107090 a1=0x5e42cb106ea8 a2=0x5e42cb106ff8 a3=0x8 items=2 ppid=5651 pid=5663 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=plymouth exe=/usr/bin/plymouth subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:22.173:1259) : proctitle=ls --color=auto -lh /var/log/audit/ 
+type=PATH msg=audit(2026年09月08日 10:48:22.173:1259) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:22.173:1259) : item=0 name=/usr/bin/ls inode=787461 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:22.173:1259) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:48:22.173:1259) : argc=4 a0=ls a1=--color=auto a2=-lh a3=/var/log/audit/ 
+type=SYSCALL msg=audit(2026年09月08日 10:48:22.173:1259) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f5c20 a1=0x5d35237f4f60 a2=0x5d35237f22f0 a3=0x5d35237f4f60 items=2 ppid=3066 pid=5667 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=ls exe=/usr/bin/ls subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:31.017:1264) : proctitle=mv /home/mxy/case01-core/evidence/audit-file-access.txt /home/mxy/case01-core/evidence/old/ 
+type=PATH msg=audit(2026年09月08日 10:48:31.017:1264) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:31.017:1264) : item=0 name=/usr/bin/mv inode=787529 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:31.017:1264) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:48:31.017:1264) : argc=3 a0=mv a1=/home/mxy/case01-core/evidence/audit-file-access.txt a2=/home/mxy/case01-core/evidence/old/ 
+type=SYSCALL msg=audit(2026年09月08日 10:48:31.017:1264) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f4fe0 a1=0x5d35237f4f60 a2=0x5d35237f22f0 a3=0x5d35237f5c40 items=2 ppid=3066 pid=5668 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=mv exe=/usr/bin/mv subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:31.026:1265) : proctitle=mv /home/mxy/case01-core/evidence/audit-network.txt /home/mxy/case01-core/evidence/old/ 
+type=PATH msg=audit(2026年09月08日 10:48:31.026:1265) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:31.026:1265) : item=0 name=/usr/bin/mv inode=787529 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:31.026:1265) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:48:31.026:1265) : argc=3 a0=mv a1=/home/mxy/case01-core/evidence/audit-network.txt a2=/home/mxy/case01-core/evidence/old/ 
+type=SYSCALL msg=audit(2026年09月08日 10:48:31.026:1265) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f5b80 a1=0x5d35237f4f60 a2=0x5d35237f22f0 a3=0x5d35237f59d0 items=2 ppid=3066 pid=5669 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=mv exe=/usr/bin/mv subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:48:31.032:1266) : proctitle=mv /home/mxy/case01-core/evidence/audit-process-exec.txt /home/mxy/case01-core/evidence/old/ 
+type=PATH msg=audit(2026年09月08日 10:48:31.032:1266) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:48:31.032:1266) : item=0 name=/usr/bin/mv inode=787529 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:48:31.032:1266) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:48:31.032:1266) : argc=3 a0=mv a1=/home/mxy/case01-core/evidence/audit-process-exec.txt a2=/home/mxy/case01-core/evidence/old/ 
+type=SYSCALL msg=audit(2026年09月08日 10:48:31.032:1266) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d35237f58e0 a1=0x5d35237f4f60 a2=0x5d35237f22f0 a3=0x5d35237f5e70 items=2 ppid=3066 pid=5670 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=mv exe=/usr/bin/mv subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:49:44.450:1282) : proctitle=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop /usr/bin/gnome-terminal --window 
+type=PATH msg=audit(2026年09月08日 10:49:44.450:1282) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:49:44.450:1282) : item=0 name=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop inode=791133 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:49:44.450:1282) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:49:44.450:1282) : argc=3 a0=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop a1=/usr/bin/gnome-terminal a2=--window 
+type=SYSCALL msg=audit(2026年09月08日 10:49:44.450:1282) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5d3012f6c1b0 a1=0x5d30137faac0 a2=0x5d3013da0860 a3=0x0 items=2 ppid=1770 pid=5714 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gio-launch-desk exe=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:49:44.458:1284) : proctitle=/usr/lib/x86_64-linux-gnu/glib-2.0/gio-launch-desktop /usr/bin/gnome-terminal --window 
+type=PATH msg=audit(2026年09月08日 10:49:44.458:1284) : item=2 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:49:44.458:1284) : item=1 name=/usr/bin/python3 inode=788383 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:49:44.458:1284) : item=0 name=/usr/bin/gnome-terminal inode=787266 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:49:44.458:1284) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:49:44.458:1284) : argc=3 a0=/usr/bin/python3 a1=/usr/bin/gnome-terminal a2=--window 
+type=SYSCALL msg=audit(2026年09月08日 10:49:44.458:1284) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x7ffec462e865 a1=0x7ffec462d2a0 a2=0x5d4fa54482a0 a3=0x7ffec462d03c items=3 ppid=1770 pid=5714 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gnome-terminal exe=/usr/bin/python3.12 subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:49:44.570:1285) : proctitle=/usr/bin/gnome-terminal.real --window 
+type=PATH msg=audit(2026年09月08日 10:49:44.570:1285) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:49:44.570:1285) : item=0 name=/usr/bin/gnome-terminal.real inode=787267 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:49:44.570:1285) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:49:44.570:1285) : argc=2 a0=/usr/bin/gnome-terminal.real a1=--window 
+type=SYSCALL msg=audit(2026年09月08日 10:49:44.570:1285) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x78769ab5f650 a1=0x78769aa5d470 a2=0x7ffd84899308 a3=0x78769bc148a8 items=2 ppid=5714 pid=5716 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=(none) ses=2 comm=gnome-terminal. exe=/usr/bin/gnome-terminal.real subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:49:44.887:1290) : proctitle=bash 
+type=PATH msg=audit(2026年09月08日 10:49:44.887:1290) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:49:44.887:1290) : item=0 name=/bin/bash inode=787002 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:49:44.887:1290) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:49:44.887:1290) : argc=1 a0=bash 
+type=SYSCALL msg=audit(2026年09月08日 10:49:44.887:1290) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x5f3fb29bfd50 a1=0x5f3fb339b160 a2=0x5f3fb33fde90 a3=0x8 items=2 ppid=3058 pid=5722 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=bash exe=/usr/bin/bash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:49:44.907:1293) : proctitle=/bin/sh /usr/bin/lesspipe 
+type=PATH msg=audit(2026年09月08日 10:49:44.907:1293) : item=2 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:49:44.907:1293) : item=1 name=/bin/sh inode=787083 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:49:44.907:1293) : item=0 name=/usr/bin/lesspipe inode=787431 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:49:44.907:1293) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:49:44.907:1293) : argc=2 a0=/bin/sh a1=/usr/bin/lesspipe 
+type=SYSCALL msg=audit(2026年09月08日 10:49:44.907:1293) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x60d6f10505e0 a1=0x60d6f1055b60 a2=0x60d6f104f220 a3=0x8 items=3 ppid=5722 pid=5724 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=lesspipe exe=/usr/bin/dash subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:49:44.911:1294) : proctitle=basename /usr/bin/lesspipe 
+type=PATH msg=audit(2026年09月08日 10:49:44.911:1294) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:49:44.911:1294) : item=0 name=/usr/bin/basename inode=787000 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:49:44.911:1294) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:49:44.911:1294) : argc=2 a0=basename a1=/usr/bin/lesspipe 
+type=SYSCALL msg=audit(2026年09月08日 10:49:44.911:1294) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x57729a9c3f08 a1=0x57728c275600 a2=0x57729a9c3d98 a3=0x1 items=2 ppid=5724 pid=5725 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=basename exe=/usr/bin/basename subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:49:44.918:1295) : proctitle=dirname /usr/bin/lesspipe 
+type=PATH msg=audit(2026年09月08日 10:49:44.918:1295) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:49:44.918:1295) : item=0 name=/usr/bin/dirname inode=787123 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:49:44.918:1295) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:49:44.918:1295) : argc=2 a0=dirname a1=/usr/bin/lesspipe 
+type=SYSCALL msg=audit(2026年09月08日 10:49:44.918:1295) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x57729a9cfe88 a1=0x57729a9cfd00 a2=0x57729a9cfd18 a3=0x1 items=2 ppid=5726 pid=5727 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=dirname exe=/usr/bin/dirname subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:49:44.927:1296) : proctitle=dircolors -b 
+type=PATH msg=audit(2026年09月08日 10:49:44.927:1296) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:49:44.927:1296) : item=0 name=/usr/bin/dircolors inode=787120 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:49:44.927:1296) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:49:44.927:1296) : argc=2 a0=dircolors a1=-b 
+type=SYSCALL msg=audit(2026年09月08日 10:49:44.927:1296) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x60d6f104ed60 a1=0x60d6f1057850 a2=0x60d6f1056a20 a3=0x8 items=2 ppid=5722 pid=5728 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=dircolors exe=/usr/bin/dircolors subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:49:55.443:1297) : proctitle=sudo cp /var/log/audit/audit.log /home/mxy/case01-core/evidence/audit.log 
+type=PATH msg=audit(2026年09月08日 10:49:55.443:1297) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:49:55.443:1297) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:49:55.443:1297) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:49:55.443:1297) : argc=4 a0=sudo a1=cp a2=/var/log/audit/audit.log a3=/home/mxy/case01-core/evidence/audit.log 
+type=SYSCALL msg=audit(2026年09月08日 10:49:55.443:1297) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x60d6f1135c80 a1=0x60d6f104ea10 a2=0x60d6f1136590 a3=0x60d6f1103d60 items=2 ppid=5722 pid=5735 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:49:58.007:1316) : proctitle=cp /var/log/audit/audit.log /home/mxy/case01-core/evidence/audit.log 
+type=PATH msg=audit(2026年09月08日 10:49:58.007:1316) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:49:58.007:1316) : item=0 name=/usr/bin/cp inode=787073 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:49:58.007:1316) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:49:58.007:1316) : argc=3 a0=cp a1=/var/log/audit/audit.log a2=/home/mxy/case01-core/evidence/audit.log 
+type=SYSCALL msg=audit(2026年09月08日 10:49:58.007:1316) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x57ca5254bb38 a1=0x57ca5255af30 a2=0x57ca525af9f0 a3=0x64 items=2 ppid=5736 pid=5737 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=cp exe=/usr/bin/cp subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:50:06.656:1323) : proctitle=sudo ausearch -k case01_demo_file -i 
+type=PATH msg=audit(2026年09月08日 10:50:06.656:1323) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:50:06.656:1323) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:50:06.656:1323) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:50:06.656:1323) : argc=5 a0=sudo a1=ausearch a2=-k a3=case01_demo_file a4=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:50:06.656:1323) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x60d6f11386d0 a1=0x60d6f1138710 a2=0x60d6f1136590 a3=0x60d6f1138710 items=2 ppid=5722 pid=5743 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:50:06.697:1338) : proctitle=ausearch -k case01_demo_file -i 
+type=PATH msg=audit(2026年09月08日 10:50:06.697:1338) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:50:06.697:1338) : item=0 name=/usr/sbin/ausearch inode=812917 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:50:06.697:1338) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:50:06.697:1338) : argc=4 a0=ausearch a1=-k a2=case01_demo_file a3=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:50:06.697:1338) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x57e6e17c7ab8 a1=0x57e6e17bb200 a2=0x57e6e17c9420 a3=0x64 items=2 ppid=5745 pid=5746 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=ausearch exe=/usr/sbin/ausearch subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:50:06.715:1343) : proctitle=sudo ausearch -k case01_process_exec -i 
+type=PATH msg=audit(2026年09月08日 10:50:06.715:1343) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:50:06.715:1343) : item=0 name=/usr/bin/sudo inode=793751 dev=08:02 mode=file,suid,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:50:06.715:1343) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:50:06.715:1343) : argc=5 a0=sudo a1=ausearch a2=-k a3=case01_process_exec a4=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:50:06.715:1343) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x60d6f1138830 a1=0x60d6f104e710 a2=0x60d6f1136590 a3=0x60d6f104e710 items=2 ppid=5722 pid=5747 auid=mxy uid=mxy gid=mxy euid=root suid=root fsuid=root egid=mxy sgid=mxy fsgid=mxy tty=pts0 ses=2 comm=sudo exe=/usr/bin/sudo subj=unconfined key=case01_process_exec 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:50:06.745:1358) : proctitle=ausearch -k case01_process_exec -i 
+type=PATH msg=audit(2026年09月08日 10:50:06.745:1358) : item=1 name=/lib64/ld-linux-x86-64.so.2 inode=797724 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=PATH msg=audit(2026年09月08日 10:50:06.745:1358) : item=0 name=/usr/sbin/ausearch inode=812917 dev=08:02 mode=file,755 ouid=root ogid=root rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:50:06.745:1358) : cwd=/home/mxy 
+type=EXECVE msg=audit(2026年09月08日 10:50:06.745:1358) : argc=4 a0=ausearch a1=-k a2=case01_process_exec a3=-i 
+type=SYSCALL msg=audit(2026年09月08日 10:50:06.745:1358) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x57368ccbfaf8 a1=0x57368ccb3200 a2=0x57368ccc1420 a3=0x64 items=2 ppid=5748 pid=5749 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts2 ses=2 comm=ausearch exe=/usr/sbin/ausearch subj=unconfined key=case01_process_exec 
