@@ -13,7 +13,7 @@ Sysmon 日志解析器（Day2任务7提前完成——应A同学"要进程/文�
 
 用法:
     from sysmon import parse_sysmon_evtx
-    events = parse_sysmon_evtx(r"..\data\sample_logs\sample_sysmon_1_3.evtx")
+    events = parse_sysmon_evtx(r"..\..\data\sample_logs\sample_sysmon_1_3.evtx")
 """
 import xml.etree.ElementTree as ET
 

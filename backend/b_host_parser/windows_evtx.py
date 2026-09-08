@@ -15,7 +15,7 @@ Sysmon 的 1/3/11/13 在 sysmon.py 里（Security日志和Sysmon日志分开解�
 
 用法:
     from windows_evtx import parse_windows_evtx
-    events = parse_windows_evtx(r"..\data\sample_logs\sample_4624_4625.evtx")
+    events = parse_windows_evtx(r"..\..\data\sample_logs\sample_4624_4625.evtx")
 """
 from datetime import datetime, timezone, timedelta
 from pathlib import Path

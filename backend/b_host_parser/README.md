@@ -1,6 +1,6 @@
 # B模块：主机日志解析器
 
-把 Windows/Linux 主机日志解析成全组统一的标准安全事件JSON。**契约：Event V2（2026-09-07冻结，19字段）**，见 `../docs/数据格式契约-v1.md`。
+把 Windows/Linux 主机日志解析成全组统一的标准安全事件JSON。**契约：Event V2（2026-09-07冻结，19字段）**，见 `../../docs/数据格式契约-v1.md`。
 
 ## 当前能力（Day 1.5）
 
@@ -23,11 +23,11 @@ Day 2 待扩展：4634/4647会话重建、按D最小集合补齐4720/4728/4673/7
 # 1. 安装依赖
 pip install -r requirements.txt
 
-# 2. 解析样例（项目自带两份真实攻击样本evtx，见 ../data/sample_logs/）
-python run_parse.py "..\data\sample_logs\sample_4624_4625.evtx"
+# 2. 解析样例（项目自带两份真实攻击样本evtx，见 ../../data/sample_logs/）
+python run_parse.py "..\..\data\sample_logs\sample_4624_4625.evtx"
 
 # 3. 结果落地 .jsonl（A的接口没就绪时的标准用法）
-python run_parse.py "..\data\sample_logs\sample_4624_4625.evtx" --out "..\data\output\events.jsonl"
+python run_parse.py "..\..\data\sample_logs\sample_4624_4625.evtx" --out "..\..\data\output\events.jsonl"
 
 # 4. 联调：直接发给A的后端（A启动FastAPI后）
 python run_parse.py <文件.evtx> --post http://127.0.0.1:8000/api/events/import

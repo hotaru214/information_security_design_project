@@ -28,8 +28,9 @@ from windows_evtx import parse_windows_evtx, NS   # noqa: E402
 from sysmon import parse_sysmon_evtx              # noqa: E402
 from import_client import save_jsonl, post_to_backend  # noqa: E402
 
-# 项目根目录 = b_host_parser 的上一级（所有默认路径都相对它，避免写死盘符）
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# 项目根目录 = backend/b_host_parser 的上两级（2026-09-08起本模块移入backend/下，
+# 所有默认路径都相对仓库根，避免写死盘符）
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 def detect_parser(path) -> str:
