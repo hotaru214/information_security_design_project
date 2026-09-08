@@ -1,0 +1,14 @@
+{
+ "10.0.0.1": "gateway-dns",
+ "10.0.0.5": "web-server",
+ "10.0.0.8": "mail-server",
+ "10.0.0.10": "core-server",
+ "10.0.0.21": "office-pc-01",
+ "10.0.0.22": "office-pc-02",
+ "203.0.113.66": "attacker-external",
+ "185.199.108.153": "c2-server",
+ "45.33.32.156": "exfil-server",
+ "93.184.216.34": "pub-web-01",
+ "23.63.98.210": "update-server",
+ "8.8.8.8": "google-dns"
+}

@@ -1,0 +1,66 @@
+{
+ "meta": {
+  "case": "case01_enterprise_attack",
+  "description": "企业内网攻击行为溯源：外部攻击者 Web 侵入 → 落地执行 → 横向移动 → 数据外传",
+  "generated_from": "out/network_events.json（C 模块真实解析输出）+ 主机样本事件（B 模块）"
+ },
+ "nodes": [
+  { "id": "attacker",     "host": "attacker-external", "ip": "203.0.113.66",    "role": "external",   "category": "attacker" },
+  { "id": "web-server",   "host": "web-server",        "ip": "10.0.0.5",        "role": "dmz",        "category": "host" },
+  { "id": "office-pc-01", "host": "office-pc-01",      "ip": "10.0.0.21",       "role": "office",     "category": "host" },
+  { "id": "core-server",  "host": "core-server",       "ip": "10.0.0.10",       "role": "server-zone","category": "host" },
+  { "id": "c2-server",    "host": "c2-server",         "ip": "185.199.108.153", "role": "external",   "category": "c2" }
+ ],
+ "links": [
+  {
+   "source_host": "attacker-external",
+   "target_host": "web-server",
+   "source_ip": "203.0.113.66",
+   "target_ip": "10.0.0.5",
+   "timestamp": "2026-09-07T09:02:08+08:00",
+   "attack_stage": "Initial Access",
+   "mitre_technique": "T1190",
+   "description": "Web攻击：SQL注入特征(OR 1=1、注释符--) + 代码执行特征(eval)，命中 80 端口 HTTP 请求"
+  },
+  {
+   "source_host": "web-server",
+   "target_host": "web-server",
+   "source_ip": "10.0.0.5",
+   "target_ip": "10.0.0.5",
+   "timestamp": "2026-09-07T09:02:57+08:00",
+   "attack_stage": "Execution",
+   "mitre_technique": "T1059",
+   "description": "执行异常进程：cmd.exe → rundll32 → mshta 远程下载 hotelesms.com/talsk.txt（主机侧 Sysmon 证据）"
+  },
+  {
+   "source_host": "web-server",
+   "target_host": "office-pc-01",
+   "source_ip": "10.0.0.5",
+   "target_ip": "10.0.0.21",
+   "timestamp": "2026-09-07T09:03:20+08:00",
+   "attack_stage": "Lateral Movement",
+   "mitre_technique": "T1021",
+   "description": "横向移动：SMB 445 + RDP 3389 内网横向连接"
+  },
+  {
+   "source_host": "office-pc-01",
+   "target_host": "core-server",
+   "source_ip": "10.0.0.21",
+   "target_ip": "10.0.0.10",
+   "timestamp": "2026-09-07T09:03:50+08:00",
+   "attack_stage": "Lateral Movement",
+   "mitre_technique": "T1021 / T1078",
+   "description": "非法登录：SSH 22 横向连接，随后 core-server 出现 Administrator 有效账户登录"
+  },
+  {
+   "source_host": "core-server",
+   "target_host": "c2-server",
+   "source_ip": "10.0.0.10",
+   "target_ip": "45.33.32.156",
+   "timestamp": "2026-09-07T09:06:40+08:00",
+   "attack_stage": "Exfiltration",
+   "mitre_technique": "T1041",
+   "description": "数据外传：向外部上传 1.2 MB（另观测 8443 C2 心跳 T1071、DNS 隧道 T1071.004、ICMP 隧道 T1095）"
+  }
+ ]
+}

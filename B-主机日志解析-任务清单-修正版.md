@@ -18,14 +18,14 @@
 
 **目标：一条真实Windows日志，今晚出现在前端Dashboard上。**
 
-- [ ] **任务1：对齐数据格式（与A、D开小会，30分钟，今天最重要的一件事）**
+- [x] **任务1：对齐数据格式（与A、D开小会，30分钟，今天最重要的一件事）**（✅9/7：契约V2冻结（A发布）、event_type对齐D词表、时区统一UTC+8；主机名↔IP映射表E已给（data/hosts.csv），A的hosts表承接）
   定死四件事，之后谁都不许单方面改：
   - **JSON契约**（见文末附录A的标准事件结构）；
   - **event_type 枚举**（统一词表，和C共用一套，以D《Event V2 event_type 规范》冻结词表为准）：`login_success / login_failed / logout / process_start / network_connection / file_create / registry_set / user_created / ...`；
   - **host 命名规则**：统一用靶机主机名（如 `web-server`），Windows取evtx的Computer字段，需要的话配一张"主机名↔IP"映射表给D——D的关联引擎全靠这个字段join；
   - **时区约定**：所有事件统一输出 **UTC+8**（`2026-09-08 13:05:02+08:00`），同步给C，否则时间线对不齐、凌晨规则全错。
   - 顺带建议A：导入接口支持**一次POST一个数组**，别一条一POST。
-- [ ] **任务2：搭环境 + 数据不等E**
+- [x] **任务2：搭环境 + 数据不等E**（✅9/7：python-evtx/requests就绪，EVTX-ATTACK-SAMPLES四份样本入库；E已交付auditd数据，Sysmon确认装）
   - `pip install python-evtx requests`（可选：chardet）。
   - **上午就能开跑的样例数据**（任务书原文就要求"收集互联网数据集"，不等E）：
     - 自己电脑的管理员cmd执行 `wevtutil epl Security C:\temp\Security.evtx`，导出本机真实日志；
@@ -34,15 +34,15 @@
     1. Windows靶机**装不装Sysmon**（不装就没有进程/文件/注册表数据，任务7白写，4688只能当兜底）；
     2. 给你的是 `.evtx` 原始文件还是事件查看器导出的XML/文本（**python-evtx只认.evtx**）；
     3. Linux是 `auth.log`(Ubuntu/Debian)、`secure`(CentOS) 还是 journalctl 导出。
-- [ ] **任务3：写第一个解析函数 `parse_windows_evtx(file_path)`**
+- [x] **任务3：写第一个解析函数 `parse_windows_evtx(file_path)`**（✅9/7：4624/4625/4688，UTC+8转换、空IP置None、SubStatus人话翻译）
   - 先做 **4624（登录成功）/ 4625（登录失败）**：提取时间、用户、源IP、LogonType；
   - ⚠️ **源IP只在远程登录（LogonType 3/10）时有值**，本地交互登录该字段是 `-`，必须处理空值（置None），否则入库就炸；
   - ⚠️ EVTX内部时间戳是**UTC**，统一转UTC+8再输出；
   - 4625顺带提取 **SubStatus**：`0xC0000064`=用户不存在、`0xC000006A`=密码错误——能区分"用户名枚举"和"爆破"，答辩加分。
-- [ ] **任务4：入库联调（与A）**
+- [x] **任务4：入库联调（与A）**（✅2026-09-08：A后端已对齐19字段契约+/api/events/import+hosts表；B用220条E真实事件实测入库成功、GET核对无损。F页面侧验证待F完成后补）
   - **A接口没好之前不空等**：先解析落地成本地 `.jsonl` 文件开发，A就绪后再接 `requests.post`；
   - 发1条→A的数据库可见→F的页面能刷出来。打通即收工。
-- [ ] **任务5：踩坑笔记**
+- [x] **任务5：踩坑笔记**（✅9/7：docs/B-踩坑笔记-Day1.md；9/8追加Day2篇）
   记下编码问题、时间格式化方式、python-evtx的API用法，第二天直接复用。
 
 ---

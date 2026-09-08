@@ -72,8 +72,9 @@ backend/b_host_parser/
 └── requirements.txt
 ```
 
-## 给A同学（合并工程时看）
+## 给A同学（联调状态：✅ 已打通）
 
-- 把本目录4个py文件拷进 `backend/parsers/` 即可，无第三方框架依赖，只依赖 `python-evtx` 和 `requests`（requests仅在import_client用到）。
-- 建表按契约的17个字段来，`detail` 用JSON字符串列存。
-- 清库请提供 `POST /api/db/reset`，B不直接操作数据库。
+- **模块已在本仓库 `backend/b_host_parser/`**，与你的 FastAPI 同仓，无框架依赖（只依赖 `python-evtx`、`requests`）。
+- **你的后端已按契约对齐**（19字段 `/api/events/import` + hosts表），2026-09-08 实测：B 解析的 220 条 E 真实事件全部入库，`detail`/`anomaly_flags` JSON 列无损，`GET /api/events` 核对一致。
+- 主机名映射：E 的 `data/hosts.csv` 可用你的 `POST /api/hosts/batch` 直接导入；B 侧 Linux 事件用 `--linux-host` 传主机名（E 的 auditd 行内没有主机名，当前按 hosts.csv 定为 `core-server`，待E最终确认）。
+- **还差的**：`POST /api/db/reset` 清库接口（Day3 任务10 回归测试要用）；F 页面侧验证（任务4的最后一环）。
