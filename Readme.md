@@ -3,10 +3,10 @@
 网络空间安全课程设计 题3：**基于主机日志、主机行为、网络流量的恶意攻击行为溯源分析系统设计与实现**
 
 系统把不同机器产生的安全数据（Windows/Linux 主机日志、主机行为、企业网络流量）采集进来，
-统一为 Event V2 格式入库，自动关联分析后告诉用户：**攻击者什么时候从哪里进来、做了什么、
-经过哪些机器、最后干了什么**。
+后端现已支持 Event V2 多源安全事件校验、SQLite 存储、查询和 Host Mapping。
+攻击关联、AttackStep、ATT&CK Mapping、LLM、前端及靶场联调属于后续目标，未由本次后端实现。
 
-## 架构总览
+## 目标架构（含尚未实现的模块与接口）
 
 ```text
              浏览器（F：Web Dashboard）
@@ -72,28 +72,48 @@ C2 心跳、DNS 隧道、数据外传、ICMP 隧道。详见 [backend/parsers/ne
 解析 Windows EVTX（4624/4625/Sysmon 等）为 Event V2 事件，入口与用法见
 [b_host_parser/README.md](b_host_parser/README.md)。
 
-## Event V2 数据契约（全组冻结，2026-09-07）
+## 当前后端 Event V2 数据契约
 
-所有模块输出的统一事件共 **19 个公共字段**：
+当前后端要求的 Event 输入共 **19 个公共字段**：
 
-`timestamp, host, source, source_event_id, event_type, user, process, src_ip, dst_ip, dst_port, protocol, logon_type, session_id, cmdline, detail, description, anomaly_flags, severity, raw_log`
+`timestamp, host, source, event_id, event_type, user, process, src_ip, dst_ip, dst_port, protocol, logon_type, session_id, cmdline, detail, description, anomaly_flags, severity, raw_log`
 
 要点：
 
-- **时间**：统一 UTC+8，后端标准化为 ISO8601（`2026-09-08T13:10:00+08:00`）。
+- **时间**：必须携带 `+08:00` 时区；缺少时区或使用其他偏移返回 422。按 ISO8601 保存，不转 UTC。
 - **severity**：`0` 正常/未标记、`1` 低、`2` 中、`3` 高。
-- **event_type**：使用全组冻结枚举（30 个值）；网络模块只输出 `network_connection` /
+- **event_type**：后端接受非空字符串，不使用严格 Enum，支持 `log_cleared`；类型名称由团队协调。网络模块输出 `network_connection` /
   `dns_query` / `http_request` 三种，检测规则名放 `anomaly_flags`，protocol 为小写。
-- **缺失即 null**：不允许用 `"unknown"`、`0`、空字符串占位。
+- **可空字段**：缺少值时显式传 `null`；后端不自动把占位字符串或 `0` 转换成 null。
 - **detail 必填对象**：各模块独有字段（`parent_process`、`file_path`、`registry_*`、`src_port`、
   `attack_stage`、`mitre_technique` 等）全部放 `detail`，不再新增公共字段。
 - **anomaly_flags 必填**：无异常 `[]`。
-- **source_event_id 与数据库 id 区分**：`source_event_id` 是原始日志自带编号（Windows 4624 /
+- **event_id 与数据库 id 区分**：`event_id` 是原始日志自带编号（Windows 4624 /
   Sysmon 1 等），网络事件（PCAP/Zeek）传 `null`；后端 SQLite 另生成内部主键 `id`，
   D 的 `evidence_event_ids` 只用这个 `id`。
 - **source 枚举**：`windows_evtx` / `sysmon` / `linux_auth` / `linux_audit` / `network_pcap` / `network_zeek`。
 
-契约变更需全组同步，任何模块不得单方面修改字段。
+所有 19 个输入字段均必填；可空字段需显式传 `null`。`host`、`source`、`event_type`、`description`、`raw_log` 非空；端口非空时为 1～65535，severity 为 0～3。
+
+联调兼容：输入阶段临时接受 C 网络解析器的 `source_event_id`，作为正式字段 `event_id` 的 validation alias。两种名字都允许显式传 `null`，两者都缺失返回 422；若同时提供，以 `event_id` 为准。数据库列和 API 输出统一使用 `event_id`，不输出 `source_event_id`。
+
+### 当前后端 API
+
+- `GET /health`：健康检查。
+- `POST /api/events`：保存单条 Event，返回 201 和含内部 `id` 的 Event。
+- `POST /api/events/batch`：保存数组，返回 `{"inserted": N}`。
+- `POST /api/events/import`：同一批量写入逻辑，返回 `{"imported": N, "failed": 0}`。
+- `GET /api/events`：按内部 `id` 升序返回全部 Event。
+- `GET /api/events/{id}`：按数据库主键取完整证据（含 detail、raw_log），不存在返回 404。
+- `POST /api/hosts`、`POST /api/hosts/batch`：保存 hostname、ip、可空 role；hostname 或 ip 重复返回 409，批量冲突整批回滚。
+- `GET /api/hosts`：全部 Host。
+- `GET /api/hosts/map`：IP 到 hostname 的 JSON 对象，空库返回 `{}`。
+
+Host Mapping 假设一个 hostname 对应一个主要 IP，不做自动更新。D 可调用 `backend.database.get_host_by_ip()` 和 `get_host_map()`。Event 的 detail 和 anomaly_flags 在 SQLite 中保存为 JSON 文本，API 返回对象和数组。
+
+### 从本地 Event V1 升级
+
+如果从早期 Event V1 本地开发环境升级，需要先停止本项目服务，删除本地忽略的 `data/attack_trace.db` 后重新启动；正式提交不包含数据库文件。此方式仅用于可丢弃的开发测试库，不适用于正式数据。不要删除 data 下团队样例文件。
 
 ## 目录结构
 

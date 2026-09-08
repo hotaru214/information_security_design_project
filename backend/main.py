@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from backend.database import init_db
 from backend.routers.events import router
+from backend.routers.hosts import router as hosts_router
 
 
 @asynccontextmanager
@@ -17,6 +18,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.include_router(router)
+app.include_router(hosts_router)
 
 
 @app.get("/health")
