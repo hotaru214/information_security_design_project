@@ -1,0 +1,206 @@
+/* ===== 恶意攻击行为溯源分析系统 · 浅色主题（成员F） ===== */
+:root {
+  --bg: #f4f6fa;
+  --card-bg: #ffffff;
+  --border: #e3e8f0;
+  --text: #1f2937;
+  --text-muted: #6b7280;
+  --primary: #2563eb;
+  --anomaly: #dc2626;      /* 异常信息用红色 */
+  --sev1: #f59e0b;
+  --sev2: #ea580c;
+  --sev3: #dc2626;
+  --shadow: 0 2px 8px rgba(31, 41, 55, 0.08);
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.hidden { display: none !important; }
+.muted { color: var(--text-muted); font-size: 13px; }
+
+/* ---------- 顶栏 ---------- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand .logo { font-size: 30px; }
+.brand h1 { font-size: 19px; }
+.subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+.mode-badge {
+  background: #fef2f2; color: var(--anomaly);
+  border: 1px solid #fecaca; border-radius: 999px;
+  padding: 5px 14px; font-size: 12px; font-weight: 600;
+}
+
+/* ---------- Tabs ---------- */
+.tabs {
+  display: flex; gap: 4px; padding: 10px 24px 0;
+  background: var(--card-bg); border-bottom: 1px solid var(--border);
+}
+.tab {
+  border: none; background: transparent; cursor: pointer;
+  padding: 10px 20px; font-size: 14px; color: var(--text-muted);
+  border-radius: 8px 8px 0 0; border-bottom: 2px solid transparent;
+}
+.tab:hover { color: var(--primary); }
+.tab.active { color: var(--primary); font-weight: 600; border-bottom-color: var(--primary); }
+
+/* ---------- 布局 ---------- */
+main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
+.page { display: none; }
+.page.active { display: block; }
+
+.card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 16px 20px;
+}
+.card h3 { font-size: 14px; margin-bottom: 10px; color: var(--text); }
+
+.footer { text-align: center; color: var(--text-muted); font-size: 12px; padding: 20px 0 28px; }
+
+/* ---------- Dashboard ---------- */
+.stat-cards {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px; margin-bottom: 16px;
+}
+.stat-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 16px 20px;
+}
+.stat-card .num { font-size: 30px; font-weight: 700; }
+.stat-card .num.alert { color: var(--anomaly); }
+.stat-card .label { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+.chart-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px; margin-top: 14px;
+}
+.chart { width: 100%; height: 300px; }
+.chart.tall { height: 460px; }
+
+/* 主机 chip 行（Dashboard）：host_map 主机名 + 事件数，可点击过滤 */
+.host-chips-bar { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.host-chip { cursor: pointer; font-size: 12px; padding: 3px 10px; }
+.host-chip:hover { background: #dbeafe; }
+.host-chip.host-alert { background: #fef2f2; color: var(--anomaly); border: 1px solid #fecaca; }
+.host-chip.host-alert:hover { background: #fee2e2; }
+
+/* 可点击的统计卡片（鼠标手势 + 悬停反馈，提示"能点"） */
+.stat-card.clickable { cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
+.stat-card.clickable:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(31,41,55,0.14); }
+
+/* ---------- 时间线 ---------- */
+.toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+.toolbar label { font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.toolbar select {
+  padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--card-bg); font-size: 13px;
+}
+
+.timeline { position: relative; padding-left: 24px; }
+.timeline::before {
+  content: ""; position: absolute; left: 7px; top: 6px; bottom: 6px;
+  width: 2px; background: var(--border);
+}
+.tl-item {
+  position: relative; padding: 8px 12px 8px 14px; margin-bottom: 8px;
+  border-radius: 10px; cursor: pointer;
+}
+.tl-item:hover { background: #f8fafc; }
+.tl-item::before {
+  content: ""; position: absolute; left: -22px; top: 16px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #94a3b8; border: 2px solid var(--card-bg);
+}
+.tl-item.sev1::before { background: var(--sev1); }
+.tl-item.sev2::before { background: var(--sev2); }
+.tl-item.sev3::before { background: var(--sev3); }
+
+.tl-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tl-time { font-size: 12px; color: var(--text-muted); font-family: Consolas, monospace; }
+.tl-host { font-size: 13px; font-weight: 600; }
+.tl-desc { font-size: 13px; margin-top: 3px; }
+.tl-item.anomalous .tl-desc { color: var(--anomaly); font-weight: 500; }
+
+.chip {
+  display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 999px;
+  background: #eef2ff; color: #4338ca; font-family: Consolas, monospace;
+}
+.chip.flag { background: #fef2f2; color: var(--anomaly); font-weight: 600; }
+.chip.src { background: #ecfdf5; color: #047857; }
+
+/* ---------- 攻击链 ---------- */
+.chain-layout { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; }
+@media (max-width: 960px) { .chain-layout { grid-template-columns: 1fr; } }
+.chain-graph, .chain-links { min-height: 200px; }
+.chain-link-item {
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; margin-bottom: 10px; font-size: 13px;
+}
+.chain-link-item .stage {
+  display: inline-block; font-size: 11px; font-weight: 700; color: #fff;
+  border-radius: 4px; padding: 2px 8px; margin-bottom: 4px;
+}
+.chain-link-item .path { font-weight: 600; margin: 4px 0; }
+.chain-link-item .tid { font-family: Consolas, monospace; color: var(--primary); font-size: 12px; }
+.chain-link-item .desc { color: var(--text-muted); font-size: 12px; margin-top: 3px; }
+
+/* ---------- 分析报告 ---------- */
+.report-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.btn-primary {
+  background: var(--primary); color: #fff; border: none; cursor: pointer;
+  padding: 9px 22px; border-radius: 8px; font-size: 14px; font-weight: 600;
+}
+.btn-primary:hover { background: #1d4ed8; }
+.btn-primary:disabled { background: #93c5fd; cursor: wait; }
+.report h4 {
+  font-size: 14px; margin: 16px 0 8px; padding-left: 10px;
+  border-left: 3px solid var(--primary);
+}
+.report p, .report li { font-size: 13px; line-height: 1.8; }
+.report ul { padding-left: 22px; }
+.report table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.report th, .report td {
+  border: 1px solid var(--border); padding: 6px 10px; font-size: 12px; text-align: left;
+}
+.report th { background: #f8fafc; }
+.caret { display: inline-block; width: 8px; background: var(--primary); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ---------- 弹窗 ---------- */
+.modal {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45);
+  display: flex; align-items: center; justify-content: center; z-index: 50;
+}
+.modal-box { width: min(860px, 92vw); max-height: 84vh; display: flex; flex-direction: column; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; }
+.modal-body { overflow: auto; margin-top: 10px; }
+.btn-close {
+  border: none; background: transparent; font-size: 16px; cursor: pointer;
+  color: var(--text-muted); padding: 4px 8px; border-radius: 6px;
+}
+.btn-close:hover { background: var(--bg); color: var(--text); }
+.kv { width: 100%; border-collapse: collapse; }
+.kv th, .kv td { border: 1px solid var(--border); padding: 5px 10px; font-size: 12px; text-align: left; vertical-align: top; }
+.kv th { width: 140px; background: #f8fafc; font-weight: 600; }
+.kv td.null { color: #9ca3af; font-style: italic; }
+.rawlog {
+  margin-top: 10px; background: #0f172a; color: #e2e8f0;
+  border-radius: 8px; padding: 12px; font-size: 11px; line-height: 1.6;
+  font-family: Consolas, monospace; white-space: pre-wrap; word-break: break-all;
+  max-height: 260px; overflow: auto;
+}
+.rawlog-title { font-size: 12px; font-weight: 600; margin-top: 12px; }
