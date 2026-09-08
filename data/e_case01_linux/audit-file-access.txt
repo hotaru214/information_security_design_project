@@ -1,0 +1,23 @@
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:01:47.717:339) : proctitle=/sbin/auditctl -R /etc/audit/audit.rules 
+type=SYSCALL msg=audit(2026年09月08日 10:01:47.717:339) : arch=x86_64 syscall=sendto success=yes exit=1116 a0=0x3 a1=0x7ffd5b9422c0 a2=0x45c a3=0x0 items=0 ppid=4612 pid=4626 auid=mxy uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=pts1 ses=2 comm=auditctl exe=/usr/sbin/auditctl subj=unconfined key=(null) 
+type=CONFIG_CHANGE msg=audit(2026年09月08日 10:01:47.717:339) : auid=mxy ses=2 subj=unconfined op=add_rule key=case01_demo_file list=exit res=yes 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:04:04.097:446) : proctitle=/sbin/auditctl -R /etc/audit/audit.rules 
+type=SOCKADDR msg=audit(2026年09月08日 10:04:04.097:446) : saddr={ saddr_fam=netlink nlnk-fam=16 nlnk-pid=0 } 
+type=SYSCALL msg=audit(2026年09月08日 10:04:04.097:446) : arch=x86_64 syscall=sendto success=yes exit=1116 a0=0x3 a1=0x7ffc77a21ff0 a2=0x45c a3=0x0 items=0 ppid=4703 pid=4715 auid=unset uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=(none) ses=unset comm=auditctl exe=/usr/sbin/auditctl subj=unconfined key=(null) 
+type=CONFIG_CHANGE msg=audit(2026年09月08日 10:04:04.097:446) : auid=unset ses=unset subj=unconfined op=remove_rule key=case01_demo_file list=exit res=yes 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:04:04.099:452) : proctitle=/sbin/auditctl -R /etc/audit/audit.rules 
+type=SYSCALL msg=audit(2026年09月08日 10:04:04.099:452) : arch=x86_64 syscall=sendto success=yes exit=1116 a0=0x3 a1=0x7ffc77a24490 a2=0x45c a3=0x0 items=0 ppid=4703 pid=4715 auid=unset uid=root gid=root euid=root suid=root fsuid=root egid=root sgid=root fsgid=root tty=(none) ses=unset comm=auditctl exe=/usr/sbin/auditctl subj=unconfined key=(null) 
+type=CONFIG_CHANGE msg=audit(2026年09月08日 10:04:04.099:452) : auid=unset ses=unset subj=unconfined op=add_rule key=case01_demo_file list=exit res=yes 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:06:41.516:530) : proctitle=python3 core_server.py 
+type=PATH msg=audit(2026年09月08日 10:06:41.516:530) : item=0 name=data/finance_demo.txt inode=264115 dev=08:02 mode=file,664 ouid=mxy ogid=mxy rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:06:41.516:530) : cwd=/home/mxy/case01-core 
+type=SYSCALL msg=audit(2026年09月08日 10:06:41.516:530) : arch=x86_64 syscall=openat success=yes exit=5 a0=AT_FDCWD a1=0x78c395b97c10 a2=O_RDONLY|O_CLOEXEC a3=0x0 items=1 ppid=4766 pid=4773 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts1 ses=2 comm=python3 exe=/usr/bin/python3.12 subj=unconfined key=case01_demo_file 
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:49:21.804:1281) : proctitle=python3 core_server.py 
+type=PATH msg=audit(2026年09月08日 10:49:21.804:1281) : item=0 name=data/finance_demo.txt inode=264115 dev=08:02 mode=file,664 ouid=mxy ogid=mxy rdev=00:00 nametype=NORMAL cap_fp=none cap_fi=none cap_fe=0 cap_fver=0 cap_frootid=0 
+type=CWD msg=audit(2026年09月08日 10:49:21.804:1281) : cwd=/home/mxy/case01-core 
+type=SYSCALL msg=audit(2026年09月08日 10:49:21.804:1281) : arch=x86_64 syscall=openat success=yes exit=5 a0=AT_FDCWD a1=0x78c395b97f90 a2=O_RDONLY|O_CLOEXEC a3=0x0 items=1 ppid=4766 pid=4773 auid=mxy uid=mxy gid=mxy euid=mxy suid=mxy fsuid=mxy egid=mxy sgid=mxy fsgid=mxy tty=pts1 ses=2 comm=python3 exe=/usr/bin/python3.12 subj=unconfined key=case01_demo_file 

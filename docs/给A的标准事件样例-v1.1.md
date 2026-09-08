@@ -203,20 +203,20 @@
 |---|---|---|
 | **一定有**（每个事件必填） | timestamp, host, source, event_id, event_type, description, raw_log, detail | 空值只可能出现在detail内部 |
 | **按事件类型有** | user, process, src_ip, logon_type, session_id, cmdline, dst_ip, dst_port, protocol | 见下方"谁有什么"；没有就null |
-| **规则引擎填**（Day2） | anomaly_flags, severity | 现阶段恒为 `[]` 和 `0`（0=未标记异常，合法域值非占位） |
+| **规则引擎填**（Day2已实现） | anomaly_flags, severity | 解析后统一跑规则引擎：命中则`anomaly_flags=["规则名",...]`、`severity=2或3`；未命中恒为 `[]` 和 `0`（0=未标记异常，合法域值非占位） |
 
 各字段"谁有"速查：
 
-| 字段 | 4624/4625 | 4688 | Sysmon1 | Sysmon3 | Sysmon11 | Sysmon13 |
-|---|---|---|---|---|---|---|
-| user | ✓ | ✓ | ✓ | ✓ | 配置决定 | 配置决定 |
-| process | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| src_ip | 远程登录才有 | — | — | ✓ | — | — |
-| logon_type | ✓ | — | — | — | — | — |
-| session_id | 4624有 | — | — | — | — | — |
-| cmdline | — | 看审核策略 | ✓ | — | — | — |
-| dst_ip/dst_port/protocol | — | — | — | ✓ | — | — |
-| detail关键内容 | substatus/域名/源端口 | 父进程/新PID | 父进程+父cmdline+哈希 | 源端口 | 文件路径 | 注册表键值 |
+| 字段 | 4624/4625 | 4688 | 4634/4647 | Sysmon1 | Sysmon3 | Sysmon11 | Sysmon13 |
+|---|---|---|---|---|---|---|---|
+| user | ✓ | ✓ | ✓ | ✓ | ✓ | 配置决定 | 配置决定 |
+| process | ✓ | ✓ | — | ✓ | ✓ | ✓ | ✓ |
+| src_ip | 远程登录才有 | — | — | — | ✓ | — | — |
+| logon_type | ✓ | — | 4634有 | — | — | — | — |
+| session_id | 4624有 | — | ✓（与4624同键） | — | — | — | — |
+| cmdline | — | 看审核策略 | — | ✓ | — | — | — |
+| dst_ip/dst_port/protocol | — | — | — | — | ✓ | — | — |
+| detail关键内容 | substatus/域名/源端口 | 父进程/新PID | logon_id/域名 | 父进程+父cmdline+哈希 | 源端口 | 文件路径 | 注册表键值 |
 
 （✓=有值；—=该事件类型本来就没有，恒null）
 
@@ -224,9 +224,22 @@
 
 | 事件 | detail键 |
 |---|---|
-| 4624 登录成功 | `logon_id`、`domain`、`src_port`（IpPort是源端口，故放detail不冒充dst_port） |
+| 4624 登录成功 | `logon_id`、`domain`、`src_port`（IpPort是源端口，故放detail不冒充dst_port）；会话重建后追加 `logout_time`、`session_duration_s` 或 `session_state="active"` |
 | 4625 登录失败 | `substatus`、`substatus_desc`（人话：密码错误/用户不存在等）、`failure_reason`、`workstation` |
+| 4634/4647 注销 | `logon_id`、`domain`；配对成功追加 `login_time`、`session_duration_s`，孤儿注销追加 `session_state="no_login_record"` |
 | 4688 进程创建 | `parent_process`、`creator_process_id`、`new_process_id`、`token_elevation` |
+| 1102 日志清除 | `domain` |
+| 4720 新建账号 | `target_user`、`target_sid`、`target_domain`、`creator` |
+| 4728 成员加入组 | `target_user`（被加进组的成员）、`group_name`、`member_sid`、`group_domain`（⚠️4728原始字段TargetUserName是**组名**） |
+| 4673 权限使用 | `privileges`、`object_server`、`object_name`、`service_name` |
+| 7045 服务安装 | `service_name`、`service_file`、`service_type`、`start_type`、`account` |
+| 4698 计划任务创建 | `task_name`、`task_content` |
+| Linux sshd登录 | `method`（password/publickey）、`src_port`、`invalid_user`（"invalid user"前缀=用户不存在，Linux版的用户名枚举指纹） |
+| Linux sudo USER_CMD | `sudo_command`（HEX解码后）、`cwd`、`terminal`、`res`、`uid`、`auid`、`audit_serial` |
+| Linux execve | `exe`、`ppid`、`audit_key`（E的审计规则名如case01_process_exec）、`audit_serial` |
+| Linux 文件访问 | `file_path`（相对路径已拼CWD）、`syscall`（open/openat）、`audit_key`、`comm`、`audit_serial` |
+| Linux 网络连接 | `syscall`（connect/accept）、`addr_family`（inet/inet6）、`src_port`（accept时对端端口）、`audit_serial` |
+| Linux SERVICE_START/STOP | `service_name`（systemd unit名）、`res`、`audit_serial` |
 | Sysmon 1 进程创建 | `parent_process`、`parent_cmdline`、`hashes` |
 | Sysmon 3 网络连接 | `src_port`、`initiated` |
 | Sysmon 11 文件创建 | `file_path`、`creation_utc_time` |
@@ -243,7 +256,9 @@
 3. **null语义**：`=null` 表示"该事件类型本来就没有这个数据"；不使用 "unknown"/0/空字符串。如果你那边DB列有NOT NULL约束，改列约束，我这边不改数据。
 4. **异常预标记**：`anomaly_flags`(数组)+`severity`(0-3) 由我在解析侧按规则填（凌晨登录/爆破/编码执行等，Day2），D的关联引擎也可以直接用。规则名清单见《数据格式契约-v1.md》。
 
-## 五、Day2规划形态预告（⚠️非真实数据，仅示意Schema，不会以此入库）
+## 五、异常预标记（Day2已实现）
+
+规则引擎在解析后统一跑，命中的事件 `anomaly_flags` 非空、`severity` 取最高级：
 
 ```json
 {
@@ -255,4 +270,7 @@
   "detail": { "substatus_desc": "密码错误" }
 }
 ```
-> 等Day2规则引擎跑通后，这些字段会填上真实判定结果。规则名枚举：`offhour_login / brute_force / username_enumeration / encoded_exec / remote_download`。
+
+规则名枚举：`offhour_login / brute_force / username_enumeration / encoded_exec / remote_download`。
+severity语义：0=未标记，2=中危（offhour_login/remote_download），3=高危（brute_force/username_enumeration/encoded_exec）。
+另：会话重建已实现——4624登录与4634/4647注销按`session_id`配对，登录事件的`detail.logout_time/session_duration_s`可直接查；整批会话汇总另存 `all_sessions.json` 供D做横向移动分析。

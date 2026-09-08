@@ -1,0 +1,8 @@
+Jan 12 02:55:01 web-server sshd[1201]: Failed password for root from 203.0.113.66 port 41002 ssh2
+Jan 12 02:55:04 web-server sshd[1201]: Failed password for root from 203.0.113.66 port 41004 ssh2
+Jan 12 02:55:07 web-server sshd[1201]: Failed password for root from 203.0.113.66 port 41006 ssh2
+Jan 12 02:55:09 web-server sshd[1202]: Failed password for invalid user oracle from 203.0.113.66 port 41008 ssh2
+Jan 12 02:55:20 web-server sshd[1205]: Accepted password for admin from 203.0.113.66 port 41012 ssh2
+Jan 12 02:55:20 web-server sshd[1205]: pam_unix(sshd:session): session opened for user admin by (uid=0)
+Jan 12 03:01:33 web-server sudo:    admin : TTY=pts/0 ; PWD=/home/admin ; USER=root ; COMMAND=/usr/bin/cat /etc/shadow
+Jan 12 03:02:10 web-server systemd-logind[921]: Removed session 12.

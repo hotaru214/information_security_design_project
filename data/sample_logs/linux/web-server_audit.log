@@ -1,0 +1,8 @@
+type=USER_CMD msg=audit(1736621701.123:501): pid=3101 uid=1001 auid=1001 ses=14 msg='cwd="/home/admin" cmd=636174202f6574632f736861646f77 terminal=pts/0 res=success'
+type=SYSCALL msg=audit(1736621703.456:502): arch=c000003e syscall=2 success=yes exit=4 ppid=3101 uid=1001 auid=1001 ses=14 comm="cat" exe="/usr/bin/cat" key="sensitive"
+type=PATH msg=audit(1736621703.456:502): item=0 name="/etc/" inode=131073 dev=08:01 mode=040755 ouid=0 ogid=0 rdev=00:00 nametype=PARENT
+type=PATH msg=audit(1736621703.456:502): item=1 name="/etc/shadow" inode=131074 dev=08:01 mode=0100640 ouid=0 ogid=42 rdev=00:00 nametype=NORMAL
+type=SYSCALL msg=audit(1736621708.789:503): arch=c000003e syscall=257 success=yes exit=5 ppid=3102 uid=1001 auid=1001 ses=14 comm="curl" exe="/usr/bin/curl" key=(null)
+type=PATH msg=audit(1736621708.789:503): item=0 name="/etc/passwd" inode=131075 dev=08:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
+type=SYSCALL msg=audit(1736621712.000:504): arch=c000003e syscall=59 success=yes exit=0 ppid=3102 uid=1001 auid=1001 ses=14 comm="nc" exe="/tmp/nc" key=(null)
+type=USER_ACCT msg=audit(1736621720.000:505): pid=3103 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_permit acct="admin" exe="/usr/sbin/sshd" hostname=? addr=203.0.113.66 terminal=ssh res=success'

