@@ -224,3 +224,14 @@ async function loadHostMap() {
   }
   return map;
 }
+
+
+/** 精确证据只读取数据库内部 id；失败交给 UI 提示，不回退 mock。 */
+async function loadEventById(id) {
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error("无效证据 ID");
+  const resp = await fetchWithTimeout(`${API_BASE}/api/events/${id}`);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const event = await resp.json();
+  if (!event || event.id !== id) throw new Error("证据 ID 不匹配");
+  return event;
+}

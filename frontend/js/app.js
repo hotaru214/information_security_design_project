@@ -215,10 +215,13 @@ const App = {
   },
 
   /* ---------- 事件详情弹窗：点遮罩/✕ 关闭 ---------- */
+  _evidenceRequest: 0,
+
   bindModal() {
     const modal = document.getElementById("modal");
-    document.getElementById("modal-close").addEventListener("click", () => modal.classList.add("hidden"));
-    modal.addEventListener("click", e => { if (e.target === modal) modal.classList.add("hidden"); });
+    const close = () => { this._evidenceRequest++; modal.classList.add("hidden"); };
+    document.getElementById("modal-close").addEventListener("click", close);
+    modal.addEventListener("click", e => { if (e.target === modal) close(); });
   },
 
   /**
@@ -226,9 +229,52 @@ const App = {
    * 这是"契约逐一对得上"的验收现场：每条事件的所有字段
    * （包括 detail 里的独有键）都能在这里查到，raw_log 完整展示。
    */
+  async openStepEvidence(link) {
+    if (!link) return;
+    const request = ++this._evidenceRequest;
+    const ids = Array.isArray(link.evidence_event_ids) ? link.evidence_event_ids : [];
+    const body = document.getElementById("modal-body");
+    document.getElementById("modal-title").textContent = `攻击步骤 ${link.step_id ?? ""} · 精确证据`;
+    const heading = `<table class="kv">
+      ${this.kvRow("step_id", link.step_id)}
+      ${this.kvRow("attack_stage", link.attack_stage)}
+      ${this.kvRow("mitre_technique", link.mitre_technique)}
+      ${this.kvRow("technique_name", link.technique_name)}
+      ${this.kvRow("timestamp", link.timestamp)}
+      ${this.kvRow("description", link.description)}
+    </table>`;
+    body.innerHTML = heading + '<p class="muted">证据读取中…</p>';
+    document.getElementById("modal").classList.remove("hidden");
+    if (!ids.length) {
+      body.innerHTML = heading + '<p class="muted">该攻击步骤暂无关联证据（演示步骤可能没有精确证据 ID）</p>';
+      return;
+    }
+    const results = await Promise.allSettled(ids.map(id => loadEventById(id)));
+    if (request !== this._evidenceRequest) return;
+    body.innerHTML = heading + results.map((result, index) => {
+      if (result.status === "rejected") {
+        return `<p>Evidence #${this.esc(ids[index])} unavailable：证据读取失败（${this.esc(result.reason?.message ?? "网络错误")}）</p>`;
+      }
+      const event = result.value;
+      return `<div class="chain-link-item">
+        <button type="button" class="btn-primary" data-evidence-index="${index}">查看 Event #${this.esc(event.id)}</button>
+        <p>${this.esc(event.timestamp)} · ${this.esc(event.host)} · ${this.esc(event.event_type)}</p>
+        <p>${this.esc(event.description)}</p>
+      </div>`;
+    }).join("");
+    body.querySelectorAll("[data-evidence-index]").forEach(button => {
+      button.addEventListener("click", () => this.showEventDetail(results[Number(button.dataset.evidenceIndex)].value));
+    });
+  },
+
   openEventDetail(id) {
     const e = this.eventById(id);
     if (!e) return;
+    this.showEventDetail(e);
+  },
+
+  showEventDetail(e) {
+    this._evidenceRequest++;
     const sev = this.SEVERITY[e.severity] || this.SEVERITY[0];
 
     document.getElementById("modal-title").innerHTML =
@@ -253,7 +299,7 @@ const App = {
         ${this.kvRow("timestamp", e.timestamp)}
         ${this.kvRow("host", e.host)}
         ${this.kvRow("source", e.source, v => this.esc(this.SOURCE_LABEL[v] || v))}
-        ${this.kvRow("source_event_id", e.source_event_id)}
+        ${this.kvRow("event_id", e.event_id ?? e.source_event_id ?? null)}
         ${this.kvRow("event_type", e.event_type)}
         ${this.kvRow("user", e.user)}
         ${this.kvRow("process", e.process)}

@@ -128,7 +128,7 @@ function renderChain(data) {
   linksBox.innerHTML = chain.links.map((l, i) => {
     const color = App.STAGE_COLORS[l.attack_stage] || "#64748b";
     return `
-      <div class="chain-link-item">
+      <div class="chain-link-item" role="button" tabindex="0" data-step-index="${i}" style="cursor:pointer">
         <span class="stage" style="background:${color}">${App.esc(l.attack_stage)}</span>
         <span class="tid">${App.esc(l.mitre_technique)}</span>
         <div class="path">${App.esc(l.source_host ?? l.source_ip)} → ${App.esc(l.target_host ?? l.target_ip)}</div>
@@ -136,6 +136,14 @@ function renderChain(data) {
         <div class="desc">${App.esc(l.description)}</div>
       </div>`;
   }).join("");
+
+  linksBox.querySelectorAll("[data-step-index]").forEach(card => {
+    const open = () => App.openStepEvidence(chain.links[Number(card.dataset.stepIndex)]);
+    card.addEventListener("click", open);
+    card.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); }
+    });
+  });
 
   /* ---------- 节点点击：联动展示该节点相关证据事件 ----------
    * 匹配规则：host 同名 或 src_ip/dst_ip 等于节点 IP——
@@ -145,6 +153,10 @@ function renderChain(data) {
   if (old) old.remove();          // 重新渲染时清掉上次的联动面板
   chart.off("click");             // off 再 on，防止重复绑定
   chart.on("click", p => {
+    if (p.dataType === "edge") {
+      App.openStepEvidence(chain.links[p.data.value]);
+      return;
+    }
     if (p.dataType !== "node") return;
     const n = p.data.value;
     if (n.virtual) return;        // 虚拟执行节点没有对应主机，不联动
