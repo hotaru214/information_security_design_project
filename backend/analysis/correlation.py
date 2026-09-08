@@ -468,7 +468,7 @@ def detect_lateral_movement(
         if not is_internal_ip(src_ip) or not is_internal_ip(dst_ip):
             continue
 
-        source_host = resolve_host(src_ip, host_map) or event["_host"] or None
+        source_host = resolve_host(src_ip, host_map)
         target_host = resolve_host(dst_ip, host_map)
         if source_host and target_host and source_host == target_host:
             continue
@@ -653,7 +653,8 @@ def detect_exfiltration(
             continue
 
         bytes_out = int_value(get_detail(event, "bytes_out"))
-        if bytes_out < 5 * 1024 * 1024 and not has_any_flag(event, ["exfiltration", "large_upload"]):
+        large_transfer = bytes_out is not None and bytes_out >= 5 * 1024 * 1024
+        if not large_transfer and not has_any_flag(event, ["exfiltration", "large_upload"]):
             continue
 
         source_host = resolve_host(src_ip, host_map) or event["_host"] or None
@@ -760,7 +761,7 @@ def build_attack_graph(attack_steps: list[dict[str, Any]]) -> dict[str, Any]:
                 {
                     "id": source_id,
                     "label": source_id,
-                    "type": "host" if step.get("source_host") else "external_ip",
+                    "type": "host" if (step.get("source_host") or is_internal_ip(step.get("source_ip"))) else "external_ip",
                 },
             )
         if target_id:
@@ -769,7 +770,7 @@ def build_attack_graph(attack_steps: list[dict[str, Any]]) -> dict[str, Any]:
                 {
                     "id": target_id,
                     "label": target_id,
-                    "type": "host" if step.get("target_host") else "external_ip",
+                    "type": "host" if (step.get("target_host") or is_internal_ip(step.get("target_ip"))) else "external_ip",
                 },
             )
         if source_id and target_id:
