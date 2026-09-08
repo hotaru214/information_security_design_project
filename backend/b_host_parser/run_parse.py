@@ -1,19 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-B模块命令行入口：一条命令跑完"解析 → 标准事件 → 落地/入库"
-=============================================================
-常用命令（在 b_host_parser 目录下执行）:
+B模块命令行入口：一条命令跑完"解析 → 标准事件 → 会话重建 → 异常预标记 → 落地/入库"
+==================================================================================
+常用命令（在 backend/b_host_parser 目录下执行）:
 
   1) 快速看解析效果（打印统计和第一条样例）:
-     python run_parse.py "..\data\sample_logs\sample_4624_4625.evtx"
+     python run_parse.py "..\\..\\data\\sample_logs\\sample_4624_4625.evtx"
 
   2) 解析结果落地成 .jsonl（A的接口没就绪时的标准用法）:
-     python run_parse.py "..\data\sample_logs\sample_4624_4625.evtx" --out "..\data\output\events.jsonl"
+     python run_parse.py <文件.evtx> --out "..\\..\\data\\output\\events.jsonl"
 
-  3) 直接发给A的后端（联调用，A启动FastAPI后）:
+  3) 任务9·全量导入整个文件夹（E的靶场数据到了就用这个）:
+     python run_parse.py --dir "..\\..\\data\\sample_logs"
+     按文件打印 成功/失败/跳过 统计——数字直接抄进《测试分析报告》。
+
+  4) 联调：直接发给A的后端（A启动FastAPI后）:
      python run_parse.py <文件.evtx> --post http://127.0.0.1:8000/api/events/import
 
-  4) 只解析前N条（快速冒烟测试）:
+  5) 只解析前N条（快速冒烟测试）:
      python run_parse.py <文件.evtx> --limit 20
 """
 import argparse
@@ -26,7 +30,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from windows_evtx import parse_windows_evtx, NS   # noqa: E402
 from sysmon import parse_sysmon_evtx              # noqa: E402
-from import_client import save_jsonl, post_to_backend  # noqa: E402
+from sessions import rebuild_sessions, print_session_summary  # noqa: E402
+from anomaly import apply_anomaly_rules                       # noqa: E402
+from import_client import save_jsonl, post_to_backend         # noqa: E402
 
 # 项目根目录 = backend/b_host_parser 的上两级（2026-09-08起本模块移入backend/下，
 # 所有默认路径都相对仓库根，避免写死盘符）
@@ -49,25 +55,36 @@ def detect_parser(path) -> str:
     return "windows"
 
 
-def main():
-    ap = argparse.ArgumentParser(description="主机日志解析器（B模块）")
-    ap.add_argument("file", help=".evtx 文件路径")
-    ap.add_argument("--out", default=None,
-                    help="输出 .jsonl 路径（默认 data/output/events.jsonl）")
-    ap.add_argument("--post", default=None,
-                    help="A的导入接口地址，如 http://127.0.0.1:8000/api/events/import")
-    ap.add_argument("--limit", type=int, default=None,
-                    help="只解析前N条记录（冒烟测试用）")
-    ap.add_argument("--parser", choices=["auto", "windows", "sysmon"], default="auto",
-                    help="解析器选择：auto=按日志Provider自动识别（默认）")
-    args = ap.parse_args()
+def enrich(events: list):
+    """会话重建 + 异常预标记。必须在合并后的整批事件上跑（跨文件才能算出爆破/会话配对）。
+    返回 (events, sessions, anomaly_stats)。"""
+    events, sessions = rebuild_sessions(events)
+    anomaly_stats = apply_anomaly_rules(events)
+    return events, sessions, anomaly_stats
 
-    in_path = Path(args.file)
-    if not in_path.exists():
-        print(f"[错误] 文件不存在: {in_path}")
-        sys.exit(1)
 
-    # ---------- 第1步：解析 ----------
+def print_enrich_stats(sessions: list, anomaly_stats: dict):
+    print(f"      异常预标记: {anomaly_stats['flagged']}条被标记 "
+          f"{anomaly_stats['by_rule']}")
+    print_session_summary(sessions)
+
+
+def post(args, events):
+    """第3步可选：发给A的后端。连不上不算失败——jsonl已落地，不阻塞。"""
+    import requests  # 仅--post联调时需要；纯解析/落地不装requests也能跑
+    print(f"[3/3] 发送给A的后端 {args.post} ...")
+    try:
+        n = post_to_backend(events, args.post)
+        print(f"      完成：A的接口已接收 {n} 条")
+    except requests.exceptions.ConnectionError:
+        print("      [连不上] A的后端大概率没启动。别等他——"
+              "jsonl已经落好地了，先继续开发，A就绪后再发一次。")
+    except Exception as e:
+        print(f"      [发送失败] {e}")
+
+
+def run_single(args, in_path: Path):
+    """单文件模式：解析 → enrich → 落地 → 可选POST → 打印样例。"""
     if args.parser == "auto":
         args.parser = detect_parser(in_path)
     parse_fn = parse_sysmon_evtx if args.parser == "sysmon" else parse_windows_evtx
@@ -80,32 +97,125 @@ def main():
           f"{stats['skipped_other']} 条 | 解析失败 {stats['failed']} 条")
     print(f"      事件ID分布: {stats['by_event_id']}")
 
-    # ---------- 第2步：落地 .jsonl ----------
+    print("[2/3] 会话重建 + 异常预标记 ...")
+    events, sessions, anomaly_stats = enrich(events)
+    print_enrich_stats(sessions, anomaly_stats)
+
     out_path = Path(args.out) if args.out else PROJECT_ROOT / "data" / "output" / "events.jsonl"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     save_jsonl(events, str(out_path))
-    print(f"[2/3] 已落地 {len(events)} 条 → {out_path}")
+    print(f"      已落地 {len(events)} 条 → {out_path}")
 
-    # ---------- 第3步：可选，发给A的后端 ----------
     if args.post:
-        print(f"[3/3] 发送给A的后端 {args.post} ...")
-        try:
-            n = post_to_backend(events, args.post)
-            print(f"      完成：A的接口已接收 {n} 条")
-        except requests.exceptions.ConnectionError:
-            print("      [连不上] A的后端大概率没启动。别等他——"
-                  "jsonl已经落好地了，先继续开发，A就绪后再发一次。")
-        except Exception as e:
-            print(f"      [发送失败] {e}")
+        post(args, events)
     else:
         print("[3/3] 未指定 --post，跳过入库（联调时加上即可）")
 
-    # ---------- 打印第一条样例，肉眼检查格式 ----------
     if events:
         print("\n===== 标准事件样例（第1条）=====")
         print(json.dumps(events[0], ensure_ascii=False, indent=2))
 
 
+def run_dir(args, dir_path: Path):
+    """任务9：全量导入文件夹。双层保险——
+    第1层：每个解析器内部按"条"try-except（一条坏记录不废整个文件）；
+    第2层：本函数按"文件"try-except（一个文件损坏/不是evtx，不废整批）。"""
+    files = sorted(p for p in dir_path.rglob("*.evtx") if p.is_file())
+    if not files:
+        print(f"[错误] {dir_path} 下（含子目录）没有找到 .evtx 文件")
+        sys.exit(1)
+
+    print(f"[1/3] 发现 {len(files)} 个 .evtx 文件，开始全量解析...")
+    all_events = []
+    total = {"parsed": 0, "skipped_other": 0, "failed": 0}
+    broken_files = []
+    no_record_files = []  # 打开成功但一条记录都没读到的文件（截断/空日志）——报告里要看得见
+    for f in files:
+        try:
+            parser = detect_parser(f) if args.parser == "auto" else args.parser
+            parse_fn = parse_sysmon_evtx if parser == "sysmon" else parse_windows_evtx
+            st = {}
+            events = parse_fn(str(f), st)
+        except Exception as e:
+            broken_files.append(f.name)
+            print(f"  [损坏文件，跳过] {f.name}: {type(e).__name__}: {e}")
+            continue
+        all_events.extend(events)
+        total["parsed"] += st["parsed"]
+        total["skipped_other"] += st["skipped_other"]
+        total["failed"] += st["failed"]
+        if st["parsed"] == 0 and st["failed"] == 0 and st["skipped_other"] == 0:
+            no_record_files.append(f.name)
+            print(f"  [⚠️无可疑事件也无记录] {f.name}: 0条记录——文件可能被截断/清空，请人工确认")
+            continue
+        print(f"  {f.name}: 成功 {st['parsed']} 条 / 解析失败 {st['failed']} 条 / "
+              f"跳过其他事件 {st['skipped_other']} 条  事件ID分布: {st['by_event_id']}")
+
+    print(f"\n[2/3] 会话重建 + 异常预标记（合并{len(all_events)}条后统一跑）...")
+    all_events, sessions, anomaly_stats = enrich(all_events)
+    print_enrich_stats(sessions, anomaly_stats)
+
+    out_path = Path(args.out) if args.out else PROJECT_ROOT / "data" / "output" / "all_events.jsonl"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    save_jsonl(all_events, str(out_path))
+    sessions_path = out_path.with_name("all_sessions.json")
+    sessions_path.write_text(json.dumps(sessions, ensure_ascii=False, indent=2),
+                             encoding="utf-8")
+    print(f"\n[3/3] 已落地 {len(all_events)} 条 → {out_path}")
+    print(f"      会话汇总 → {sessions_path.name}")
+
+    # ===== 末尾统计：数字直接抄进《测试分析报告》 =====
+    print("\n===== 全量导入统计 =====")
+    print(f"  文件总数: {len(files)}（损坏跳过 {len(broken_files)} 个, "
+          f"无记录 {len(no_record_files)} 个）")
+    print(f"  事件总计: 成功 {total['parsed']} 条 / 解析失败 {total['failed']} 条 / "
+          f"跳过其他事件 {total['skipped_other']} 条")
+    print(f"  会话: {len(sessions)} 个 | 异常标记: {anomaly_stats['flagged']} 条 "
+          f"{anomaly_stats['by_rule']}")
+
+    if args.post:
+        post(args, all_events)
+
+    return {"files": len(files), "broken_files": broken_files,
+            "no_record_files": no_record_files,
+            "parsed": total["parsed"], "failed": total["failed"],
+            "skipped_other": total["skipped_other"],
+            "events": len(all_events), "sessions": len(sessions),
+            "anomaly": anomaly_stats}
+
+
+def main():
+    ap = argparse.ArgumentParser(description="主机日志解析器（B模块）")
+    ap.add_argument("file", nargs="?", default=None,
+                    help=".evtx 文件路径（单文件模式）")
+    ap.add_argument("--dir", default=None,
+                    help="文件夹路径：递归解析其中全部 .evtx（任务9全量导入）")
+    ap.add_argument("--out", default=None,
+                    help="输出 .jsonl 路径（默认 单文件=events.jsonl / 目录模式=all_events.jsonl）")
+    ap.add_argument("--post", default=None,
+                    help="A的导入接口地址，如 http://127.0.0.1:8000/api/events/import")
+    ap.add_argument("--limit", type=int, default=None,
+                    help="单文件模式：只解析前N条记录（冒烟测试用）")
+    ap.add_argument("--parser", choices=["auto", "windows", "sysmon"], default="auto",
+                    help="解析器选择：auto=按日志Provider自动识别（默认）")
+    args = ap.parse_args()
+
+    if args.dir:
+        dir_path = Path(args.dir)
+        if not dir_path.is_dir():
+            print(f"[错误] 文件夹不存在: {dir_path}")
+            sys.exit(1)
+        run_dir(args, dir_path)
+        return
+
+    if not args.file:
+        ap.error("请给出一个 .evtx 文件路径，或用 --dir 指定文件夹（任务9全量导入）")
+    in_path = Path(args.file)
+    if not in_path.exists():
+        print(f"[错误] 文件不存在: {in_path}")
+        sys.exit(1)
+    run_single(args, in_path)
+
+
 if __name__ == "__main__":
-    import requests  # 放底部避免未安装时--help都跑不了
     main()

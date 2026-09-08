@@ -291,6 +291,65 @@ check("任务8", "异常预标记: offhour/brute_force/username_enumeration/enco
                "remote_download 5规则命中+不误报+severity取最高+幂等", t4)
 
 
+# ---------- t5：任务9 目录全量导入（含坏文件容错） ----------
+def t5():
+    import argparse
+    import shutil
+    import tempfile
+    from run_parse import run_dir
+
+    tmp = Path(tempfile.mkdtemp(prefix="verify_day2_"))
+    try:
+        # 1份好样本 + 1份空evtx（python-evtx对空文件打开即抛异常）：
+        # 坏文件必须只丢自己，不能拖垮整批
+        shutil.copy(PROJECT / "data" / "sample_logs" / "sample_4624_4625.evtx",
+                    tmp / "good_sample.evtx")
+        (tmp / "broken.evtx").write_bytes(b"")
+
+        out = tmp / "all_events.jsonl"
+        args = argparse.Namespace(file=None, dir=str(tmp), out=str(out),
+                                  post=None, limit=None, parser="auto")
+        result = run_dir(args, tmp)   # 内部会打印统计，返回值供断言
+        assert result["files"] == 2 and len(result["broken_files"]) == 1, \
+            f"坏文件应被识别并跳过: {result}"
+        assert result["parsed"] == 4 and result["failed"] == 0, \
+            f"好样本应完整解析出4条: {result}"
+
+        lines = [json.loads(l) for l in out.open(encoding="utf-8")]
+        assert len(lines) == 4, f"落地文件应有4条: {len(lines)}"
+        sess_file = out.with_name("all_sessions.json")
+        assert sess_file.exists() and json.loads(sess_file.read_text(encoding="utf-8"))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+check("任务9", "目录全量导入: 损坏文件只丢自己不拖垮整批 / 按文件统计 / 会话json落地", t5)
+
+
+# ---------- t6：真实跑批产物的全量契约校验 ----------
+def t6():
+    from schema import STANDARD_FIELDS
+    p = PROJECT / "data" / "output" / "all_events.jsonl"
+    assert p.exists() and p.stat().st_size > 0, \
+        "all_events.jsonl 不存在——先跑 python run_parse.py --dir ..\\..\\data\\sample_logs"
+    total = bad = 0
+    for line in p.open(encoding="utf-8"):
+        ev = json.loads(line)
+        total += 1
+        if list(ev.keys()) != STANDARD_FIELDS:
+            bad += 1
+            continue
+        if ev["raw_log"] is None or not isinstance(ev["detail"], dict) \
+                or not isinstance(ev["anomaly_flags"], list) \
+                or not isinstance(ev["severity"], int):
+            bad += 1
+    assert bad == 0, f"{bad}/{total}条不符合契约"
+    assert total >= 20, f"全量导入应≥20条(4份样本), 实际{total}"
+
+
+check("契约2", "全量跑批产物(all_events.jsonl): 19键齐全+raw_log/detail/flags/severity类型正确", t6)
+
+
 # ---------- 汇总 ----------
 print("-" * 56)
 if all(results):
