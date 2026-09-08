@@ -33,8 +33,8 @@ function renderChain(data) {
     id: n.id,                        // ECharts 内部引用用的 id（nodes/links 靠它连线）
     name: n.host ?? n.ip,            // 契约回退规则：有主机名显示主机名
     value: n,                        // 把原始节点数据塞进 value，tooltip/点击时取用
-    x: LAYOUT_X[n.id] ?? 500,
-    y: LAYOUT_Y[n.id] ?? 130,
+    x: LAYOUT_X[n.id] ?? LAYOUT_X[n.host] ?? 500,
+    y: LAYOUT_Y[n.id] ?? LAYOUT_Y[n.host] ?? 130,
     // 攻击者/红队节点画大一点突出；实体主机中等大小
     symbolSize: n.category === "attacker" ? 54 : n.category === "c2" ? 48 : 44,
     itemStyle: {
@@ -58,16 +58,18 @@ function renderChain(data) {
     };
   }
 
-  /* ---------- 生成边 ----------
-   * 按 host 匹配 chain.json 里的节点得到 ECharts 的 source/target id。
-   * 找不到对应节点时直接用 host 字符串当 id（防御：数据缺节点不至于崩）。 */
+  /* 真实 API 使用明确端点 ID；旧 mock 按非空 hostname 或 IP 匹配。 */
+  function endpointId(id, host, ip) {
+    if (id != null) return id;
+    const node = chain.nodes.find(n => host != null ? n.host === host : ip != null && n.ip === ip);
+    return node ? node.id : null;
+  }
   const edges = [];
   chain.links.forEach((l, i) => {
     const color = App.STAGE_COLORS[l.attack_stage] || "#64748b"; // 未知阶段兜底灰
-    const srcNode = chain.nodes.find(n => n.host === l.source_host);
-    const dstNode = chain.nodes.find(n => n.host === l.target_host);
-    const srcId = srcNode ? srcNode.id : l.source_host;
-    const dstId = dstNode ? dstNode.id : l.target_host;
+    const srcId = endpointId(l.source, l.source_host, l.source_ip);
+    const dstId = endpointId(l.target, l.target_host, l.target_ip);
+    if (!nodes.some(n => n.id === srcId) || !nodes.some(n => n.id === dstId)) return;
 
     if (srcId === dstId) {
       /* "Web-Server → Web-Server 执行异常进程"：自环边画不出来，
