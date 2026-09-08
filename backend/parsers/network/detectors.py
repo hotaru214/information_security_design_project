@@ -21,6 +21,7 @@ STAGE_ZH = {
     "Execution": "执行",
     "Persistence": "持久化",
     "Privilege Escalation": "权限提升",
+    "Credential Access": "凭证访问",
     "Lateral Movement": "横向移动",
     "Collection": "收集",
     "Command and Control": "命令与控制",
@@ -318,6 +319,108 @@ def detect_http_attacks(flows, cfg: DetectionConfig):
     return results
 
 
+def detect_brute_force(flows, cfg: DetectionConfig):
+    """登录爆破的网络侧证据：同源对同目标端口 短窗口高频连接且大量未完成
+    （Credential Access, T1110）。给 B 的主机侧 login_failed 提供跨源佐证。"""
+    groups = defaultdict(list)
+    for rec in flows:
+        if rec.protocol != "TCP":
+            continue
+        if any(f == "S" for f in rec.src_flags):
+            groups[(rec.src_ip, rec.dst_ip, rec.dst_port)].append(rec)
+
+    results = []
+    for (src, dst, dport), recs in groups.items():
+        if len(recs) < cfg.brute_force_min_count:
+            continue
+        starts = sorted(rec.start_ts for rec in recs)
+        hit = None
+        i = 0
+        for j, ts in enumerate(starts):
+            while ts - starts[i] > cfg.brute_force_window_sec:
+                i += 1
+            if j - i + 1 >= cfg.brute_force_min_count:
+                hit = (starts[i], ts, j - i + 1)
+                break
+        if hit is None:
+            continue
+        # 未完成 = 对端只回 RST（拒绝）或无响应
+        incomplete = sum(1 for r in recs
+                         if not r.dst_flags or all("R" in f for f in r.dst_flags))
+        if incomplete / len(recs) < cfg.brute_force_incomplete_ratio:
+            continue
+        win_start, win_end, win_count = hit
+        service = SERVICE_NAMES.get(dport, str(dport))
+        results.append(Anomaly(
+            kind="brute_force_evidence", severity="high", attack_stage="Credential Access",
+            mitre="T1110",
+            src_ip=src, dst_ip=dst, dst_port=dport,
+            start_ts=win_start, end_ts=max(rec.end_ts for rec in recs),
+            protocol="TCP", source=recs[0].source,
+            description=("登录爆破嫌疑(网络侧): " + src + " 在 " + _hhmmss(win_start) + " 起的 "
+                         + f"{cfg.brute_force_window_sec:.0f}" + "s 内对 " + dst + ":" + str(dport)
+                         + "(" + service + ") 发起 " + str(win_count)
+                         + " 次连接，其中 " + str(incomplete) + "/" + str(len(recs))
+                         + " 次未完成（与主机侧 login_failed 事件互为佐证）"),
+            evidence={
+                "service": service,
+                "total_connections": len(recs),
+                "window_connections": win_count,
+                "window_sec": cfg.brute_force_window_sec,
+                "incomplete_connections": incomplete,
+                "incomplete_ratio": round(incomplete / len(recs), 3),
+                "first_seen": _hhmmss(win_start),
+            },
+        ))
+    return results
+
+
+# 入侵点裁决的阶段优先级：Initial Access 最准，逐级退化
+ENTRY_STAGE_PRIORITY = ("Initial Access", "Reconnaissance", "Credential Access")
+
+
+def _pick_entry(candidates: list):
+    """一组对内告警中选入侵点：按阶段优先级，同级取最早。"""
+    for stage in ENTRY_STAGE_PRIORITY:
+        staged = [a for a in candidates if a.attack_stage == stage]
+        if staged:
+            return min(staged, key=lambda a: a.start_ts), stage
+    return None, None
+
+
+def mark_entry_point(anomalies: list, cfg: DetectionConfig) -> list:
+    """标记疑似初始入侵点（任务书要求"通过边界设备日志识别初始入侵点"）。
+
+    按"外部源 IP"分组（一个外部攻击者一条链），每组各标记一条最早的高优先级
+    阶段对内告警（Initial Access > Reconnaissance > Credential Access）——
+    多攻击者场景（case02）各自成链互不干扰。无外源告警时对全部对内告警标一条。
+    只做"候选"标记，最终确认由 D 的关联引擎裁决。
+    """
+    def _mark(chosen, stage, group_key):
+        chosen.entry_point = True
+        chosen.evidence["entry_point"] = True
+        chosen.evidence["entry_point_basis"] = "攻击者 " + str(group_key) + " 最早的对内" + STAGE_ZH[stage] + "告警"
+        chosen.description = "【疑似入侵点】" + chosen.description
+
+    inbound = [a for a in anomalies
+               if a.dst_ip and cfg.is_internal(a.dst_ip) and not a.entry_point]
+    groups = defaultdict(list)
+    for a in inbound:
+        if a.src_ip and not cfg.is_internal(a.src_ip):
+            groups[a.src_ip].append(a)
+
+    if groups:
+        for attacker, cands in groups.items():
+            chosen, stage = _pick_entry(cands)
+            if chosen:
+                _mark(chosen, stage, attacker)
+    else:
+        chosen, stage = _pick_entry(inbound)
+        if chosen:
+            _mark(chosen, stage, "unknown")
+    return anomalies
+
+
 DETECTORS = [
     detect_port_scans,
     detect_c2_beacons,
@@ -327,6 +430,7 @@ DETECTORS = [
     detect_icmp_tunnel,
     detect_lateral_movement,
     detect_http_attacks,
+    detect_brute_force,
 ]
 
 
@@ -337,5 +441,6 @@ def run_all(flows: list, cfg: DetectionConfig = None) -> list:
     anomalies: list[Anomaly] = []
     for detector in DETECTORS:
         anomalies.extend(detector(flows, cfg))
+    mark_entry_point(anomalies, cfg)
     anomalies.sort(key=lambda a: (a.start_ts, a.kind))
     return anomalies

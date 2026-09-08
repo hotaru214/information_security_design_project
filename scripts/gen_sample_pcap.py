@@ -56,14 +56,20 @@ HOSTS_CSV = """ip,hostname,role
 
 BASE = datetime(2026, 9, 7, 9, 0, 0).timestamp()
 
+# Case02 额外节点（第二个攻击者与第二个 C2）
+HOSTS_CSV_CASE02_EXTRA = """198.51.100.23,attacker2-external,external
+45.61.136.207,c2-server-2,external
+"""
+
 
 class Builder:
-    def __init__(self):
+    def __init__(self, shift: float = 0.0):
         self.pkts = []
         random.seed(42)
+        self.shift = shift     # case02：不同攻击链用不同 shift 实现时间交错
 
     def add(self, offset: float, pkt):
-        pkt.time = BASE + offset
+        pkt.time = BASE + offset + self.shift
         self.pkts.append(pkt)
 
 
@@ -336,6 +342,45 @@ def phase8_icmp_tunnel(b: Builder):
         ping(b, 450 + i * 2.0, CORE, PUB_DNS, 0x0539, i + 1, payload=os.urandom(512))
 
 
+CRLF = bytes((13, 10))       # 传输层会折叠反斜杠，源码中避免出现转义文本
+SMB_HDR = bytes((0, 0, 0, 0x54, 0xFF)) + b"SMB"
+SSH_BANNER_C = b"SSH-2.0-OpenSSH_8.9p1" + CRLF
+SSH_BANNER_S = b"SSH-2.0-OpenSSH_8.2p1" + CRLF
+SSH_OK = bytes((12,)) + b" success" + CRLF
+
+
+def phase_attacker1_bruteforce_chain(b: Builder):
+    """攻击者2: 198.51.100.23 对 mail-server 走 SSH 爆破链（case02 专用）。
+
+    19 次 RST 拒绝 + 1 次成功登录 -> 触发网络侧 brute_force_evidence（T1110），
+    随后横向到 core-server，回连第二个 C2:4445。
+    """
+    ATT2 = "198.51.100.23"
+    for i in range(19):
+        sport = next_sport()
+        raw_syn(b, 700 + i * 8.0, ATT2, MAIL, sport, 22)
+        raw_rstack(b, 700 + i * 8.0 + 0.05, MAIL, ATT2, 22, sport)
+    s = TCPSession(b, ATT2, MAIL, next_sport(), 22)      # 第 20 次成功登录
+    s.handshake(860)
+    s.send(860.3, True, SSH_BANNER_C)
+    s.send(860.5, False, SSH_BANNER_S)
+    s.send(861.0, True, os.urandom(120))
+    s.send(861.3, False, SSH_OK)
+    s.close(864.0)
+    s = TCPSession(b, MAIL, CORE, next_sport(), 445)     # 横向: mail -> core
+    s.handshake(870)
+    s.send(870.2, True, SMB_HDR + os.urandom(80))
+    s.close(872.0)
+    C2B = "45.61.136.207"                                # 第二个 C2 端点
+    for i in range(5):
+        ts = 880 + i * 45.0
+        s = TCPSession(b, CORE, C2B, next_sport(), 4445)
+        s.handshake(ts)
+        s.send(ts + 0.15, True, b"PING-" + os.urandom(12).hex().encode())
+        s.send(ts + 0.3, False, b"OK")
+        s.close(ts + 0.5)
+
+
 def phase9_aftermath(b: Builder):
     """攻击结束后业务流量恢复（对照数据）。"""
     benign = [
@@ -355,35 +400,61 @@ def phase9_aftermath(b: Builder):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="生成 Case01 企业内网攻击链样例 PCAP")
-    parser.add_argument("--out", default="data/network_logs/case01_enterprise_attack.pcap")
-    parser.add_argument("--hosts", default="data/hosts.csv")
+    parser = argparse.ArgumentParser(description="生成企业内网攻击链样例 PCAP（Case01/Case02）")
+    parser.add_argument("--case02", action="store_true",
+                        help="生成 Case02 双攻击链样例（两个攻击者独立成链，含 SSH 爆破）")
+    parser.add_argument("--out", default=None)
+    parser.add_argument("--hosts", default=None)
     args = parser.parse_args()
+
+    if args.case02:
+        out = args.out or "data/network_logs/case02_dual_attack.pcap"
+        hosts = args.hosts or "data/hosts_case02.csv"
+        hosts_content = HOSTS_CSV + HOSTS_CSV_CASE02_EXTRA
+    else:
+        out = args.out or "data/network_logs/case01_enterprise_attack.pcap"
+        hosts = args.hosts or "data/hosts.csv"
+        hosts_content = HOSTS_CSV
 
     b = Builder()
     phase0_background(b)
-    phase1_port_scan(b)
-    phase2_web_attack(b)
-    phase3_reverse_shell(b)
-    phase4_lateral_movement(b)
-    phase5_c2_beacon(b)
-    phase6_dns_tunnel(b)
-    phase7_exfiltration(b)
-    phase8_icmp_tunnel(b)
-    phase9_aftermath(b)
+    if args.case02:
+        b.shift = 4 * 3600                    # 攻击者1（SSH爆破链）：13:00 时段
+        phase_attacker1_bruteforce_chain(b)
+        b.shift = 5 * 3600                    # 攻击者2（Web链）：14:00 时段，时间交错
+        phase1_port_scan(b)
+        phase2_web_attack(b)
+        phase3_reverse_shell(b)
+        phase4_lateral_movement(b)
+        phase5_c2_beacon(b)
+        phase6_dns_tunnel(b)
+    else:
+        phase1_port_scan(b)
+        phase2_web_attack(b)
+        phase3_reverse_shell(b)
+        phase4_lateral_movement(b)
+        phase5_c2_beacon(b)
+        phase6_dns_tunnel(b)
+        phase7_exfiltration(b)
+        phase8_icmp_tunnel(b)
+        phase9_aftermath(b)
 
-    os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-    wrpcap(args.out, b.pkts)
-    if args.hosts:
-        os.makedirs(os.path.dirname(os.path.abspath(args.hosts)), exist_ok=True)
-        with open(args.hosts, "w", encoding="utf-8") as fh:
-            fh.write(HOSTS_CSV)
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    wrpcap(out, b.pkts)
+    if hosts:
+        os.makedirs(os.path.dirname(os.path.abspath(hosts)), exist_ok=True)
+        with open(hosts, "w", encoding="utf-8") as fh:
+            fh.write(hosts_content)
 
     span = b.pkts[-1].time - b.pkts[0].time
-    print(f"已生成 {args.out}: {len(b.pkts)} 个数据包，时间跨度 {span:.0f} 秒")
-    print(f"已生成 {args.hosts}（IP-主机名映射，与靶场拓扑对齐，可按实际环境修改）")
-    print("预埋攻击行为: 端口扫描 / SQL注入 / Webshell上传 / 反弹Shell(4444) / "
-          "横向移动(445,3389,22) / C2心跳(60s) / DNS隧道 / 1.2MB数据外传 / ICMP大载荷隧道")
+    print(f"已生成 {out}: {len(b.pkts)} 个数据包，时间跨度 {span:.0f} 秒")
+    print(f"已生成 {hosts}（IP-主机名映射，与靶场拓扑对齐，可按实际环境修改）")
+    if args.case02:
+        print("Case02 预埋: 攻击者1 SSH爆破(mail:22)->横向->C2:4445；"
+              "攻击者2 完整Web链(扫描/注入/反弹Shell/C2/DNS隧道)")
+    else:
+        print("预埋攻击行为: 端口扫描 / SQL注入 / Webshell上传 / 反弹Shell(4444) / "
+              "横向移动(445,3389,22) / C2心跳(60s) / DNS隧道 / 1.2MB数据外传 / ICMP大载荷隧道")
 
 
 if __name__ == "__main__":

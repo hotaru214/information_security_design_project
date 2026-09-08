@@ -80,3 +80,4 @@ class Anomaly:
     description: str = ""
     evidence: dict = field(default_factory=dict)
     source: str = "network_pcap"       # 沿袭所聚合会话的来源标记
+    entry_point: bool = False          # mark_entry_point 标记的疑似初始入侵点

@@ -60,6 +60,7 @@ ANOMALY_EVENT_TYPE = {
     "exfiltration": "network_connection",
     "icmp_tunnel": "network_connection",
     "lateral_movement": "network_connection",
+    "brute_force_evidence": "network_connection",
     "http_attack": "http_request",
     "dns_tunnel": "dns_query",
 }
@@ -211,6 +212,10 @@ def anomaly_to_event(a: Anomaly, host_map: dict, cfg: DetectionConfig) -> dict:
 
     raw_log = f"DETECT[{a.kind}] {a.description}"
 
+    flags = [ANOMALY_FLAG_NAME.get(a.kind, a.kind), a.mitre]
+    if a.entry_point:
+        flags.append("entry_point_candidate")   # D 的关联引擎据此裁决攻击链起点
+
     return {
         "timestamp": _iso8601_cn(a.start_ts),
         "host": host_map.get(host_ip, host_ip),
@@ -228,7 +233,7 @@ def anomaly_to_event(a: Anomaly, host_map: dict, cfg: DetectionConfig) -> dict:
         "cmdline": None,
         "detail": detail,
         "description": a.description,
-        "anomaly_flags": [ANOMALY_FLAG_NAME.get(a.kind, a.kind), a.mitre],
+        "anomaly_flags": flags,
         "severity": SEVERITY_MAP[a.severity],
         "raw_log": raw_log,
     }
@@ -276,6 +281,71 @@ def validate_events(events: list) -> list:
         if not e["raw_log"]:
             problems.append(f"事件#{i} raw_log 为空")
     return problems
+
+
+def build_summary(events: list) -> dict:
+    """事件列表 -> 前端 Dashboard 汇总（--summary-json 输出）。
+
+    F 的首页四宫格与时间线页可直接消费，无需自己写统计逻辑。
+    """
+    from collections import Counter
+
+    severity_counts = Counter(e["severity"] for e in events)
+    type_counts = Counter(e["event_type"] for e in events)
+    alarmed = [e for e in events if e["anomaly_flags"]]
+
+    # 攻击阶段时间线：每条告警 -> 阶段/规则/ATT&CK/主机/描述
+    timeline = []
+    for e in alarmed:
+        d = e.get("detail") or {}
+        timeline.append({
+            "timestamp": e["timestamp"],
+            "attack_stage": d.get("attack_stage"),
+            "attack_stage_zh": d.get("attack_stage_zh"),
+            "flag": e["anomaly_flags"][0],
+            "mitre_technique": d.get("mitre_technique") or (e["anomaly_flags"][1] if len(e["anomaly_flags"]) > 1 else None),
+            "severity": e["severity"],
+            "host": e["host"],
+            "src_ip": e["src_ip"], "dst_ip": e["dst_ip"],
+            "description": e["description"],
+            "entry_point": bool(d.get("entry_point")),
+        })
+    timeline.sort(key=lambda t: t["timestamp"])
+
+    # 告警涉及主机（去重排序）
+    hosts_involved = sorted({e["host"] for e in alarmed if e["host"]})
+
+    # 外部目的 top10（按上行字节）——从 flow 事件 detail 取
+    ext_stats = {}
+    for e in events:
+        if e["event_type"] != "network_connection" or not e["anomaly_flags"]:
+            d = e.get("detail") or {}
+            if d.get("direction") != "outbound":
+                continue
+            key = e["dst_ip"]
+            stat = ext_stats.setdefault(key, {"ip": key, "hostname": d.get("peer_host"), "bytes_out": 0, "connections": 0})
+            stat["bytes_out"] += d.get("bytes_out") or 0
+            stat["connections"] += 1
+    top_external = sorted(ext_stats.values(), key=lambda s: -s["bytes_out"])[:10]
+
+    # 告警规则计数（flags[0]）
+    flag_counts = Counter(e["anomaly_flags"][0] for e in alarmed)
+
+    return {
+        "total_events": len(events),
+        "anomaly_events": len(alarmed),
+        "severity_counts": {str(k): v for k, v in sorted(severity_counts.items())},
+        "event_type_counts": dict(sorted(type_counts.items())),
+        "anomaly_flag_counts": dict(sorted(flag_counts.items())),
+        "attack_stage_sequence": [t["flag"] for t in timeline],
+        "attack_timeline": timeline,
+        "hosts_involved": hosts_involved,
+        "top_external_dst_by_bytes": top_external,
+        "time_range": {
+            "first": events[0]["timestamp"] if events else None,
+            "last": events[-1]["timestamp"] if events else None,
+        },
+    }
 
 
 def save_events(events: list, out_path: str):

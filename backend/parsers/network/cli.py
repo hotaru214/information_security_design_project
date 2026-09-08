@@ -18,7 +18,7 @@ from datetime import datetime
 
 from .config import DetectionConfig
 from .detectors import STAGE_ZH
-from .normalize import build_events, load_host_map, save_events, validate_events
+from .normalize import build_events, build_summary, load_host_map, save_events, validate_events
 from .pcap_parser import parse_pcap
 from .zeek_parser import parse_connection_csv, parse_zeek_logs
 
@@ -105,6 +105,8 @@ def main(argv=None):
     parser.add_argument("inputs", nargs="+", help="pcap/pcapng/cap 文件、Zeek 日志目录或 CSV 连接日志")
     parser.add_argument("--hosts", default="", help="IP->主机名映射 CSV（列: ip,hostname,role）")
     parser.add_argument("--out", default="", help="统一事件 JSON 输出路径")
+    parser.add_argument("--summary-json", default="", metavar="PATH",
+                        help="Dashboard 汇总 JSON 输出路径（阶段时间线/severity分布/外传top，给F直接消费）")
     parser.add_argument("--anomalies-only", action="store_true", help="只输出告警事件，不含普通会话")
     parser.add_argument("--internal", default="", help="内网网段，逗号分隔（默认 RFC1918）")
     parser.add_argument("--config", default="", help="检测阈值 JSON 配置文件")
@@ -127,6 +129,16 @@ def main(argv=None):
     if args.out:
         save_events(events, args.out)
         print(f"事件已写入: {args.out}（可直接 POST /api/events/import）")
+    if args.summary_json:
+        import json
+        import os
+        summary = build_summary(events)
+        out_path = args.summary_json
+        os.makedirs(os.path.dirname(os.path.abspath(out_path)) or ".", exist_ok=True)
+        with open(out_path, "w", encoding="utf-8") as fh:
+            json.dump(summary, fh, ensure_ascii=False, indent=2)
+        print(f"汇总已写入: {out_path}（告警 {summary['anomaly_events']} 条 / "
+              f"阶段 {len(summary['attack_timeline'])} 步 / 主机 {len(summary['hosts_involved'])} 台）")
     return 0
 
 

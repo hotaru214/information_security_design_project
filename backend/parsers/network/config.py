@@ -64,6 +64,11 @@ class DetectionConfig:
     icmp_large_payload: int = 256       # 单包 ICMP 载荷字节数
     icmp_count_threshold: int = 20      # 同会话 ICMP 包数量
 
+    # 登录爆破（网络侧证据）：同源对同目标端口 短窗口高频连接且大量未完成
+    brute_force_min_count: int = 15
+    brute_force_window_sec: float = 300.0
+    brute_force_incomplete_ratio: float = 0.5   # 未完成连接（RST/无响应）占比下限
+
     http_attack_patterns: list = field(default_factory=lambda: list(HTTP_ATTACK_PATTERNS))
     suspicious_ports: set = field(default_factory=lambda: set(SUSPICIOUS_PORTS))
     remote_service_ports: set = field(default_factory=lambda: set(REMOTE_SERVICE_PORTS))

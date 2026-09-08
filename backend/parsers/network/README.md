@@ -19,8 +19,14 @@ pip install -r requirements.txt
 # 生成一套覆盖完整攻击链的样例数据（Case01，可跳过）
 python scripts/gen_sample_pcap.py
 
-# 解析并输出 Event V2 统一事件 JSON
-python -m backend.parsers.network data/network_logs/case01_enterprise_attack.pcap --hosts data/hosts.csv --out out/network_events.json
+# 解析并输出 Event V2 统一事件 JSON（--summary-json 同时产出 Dashboard 汇总）
+python -m backend.parsers.network data/network_logs/case01_enterprise_attack.pcap --hosts data/hosts.csv --out out/network_events.json --summary-json out/summary.json
+
+# 生成 Case02 双攻击链样例（两个攻击者独立成链，含 SSH 爆破）
+python scripts/gen_sample_pcap.py --case02
+
+# 联调：导入 A 的后端并做 round-trip 校验（先启动 uvicorn backend.main:app）
+python scripts/post_events.py out/network_events.json --sync-hosts data/hosts.csv
 ```
 
 CLI 运行时会做 **Event V2 契约自检**（19 字段、event_type 枚举、severity 取值、时间格式等），
@@ -55,6 +61,7 @@ CLI 运行时会做 **Event V2 契约自检**（19 字段、event_type 枚举、
 | DNS 隐蔽信道 | `dns_tunnel` | 域名标签 ≥25 字符且熵 ≥3.5；或同源同域 TXT ≥6 次 | T1071.004（命令与控制） |
 | 数据外传 | `exfiltration` | 内→外单会话 ≥1MB；或时长 ≥300s 且 ≥200KB | T1048（数据外传） |
 | ICMP 隐蔽信道 | `icmp_tunnel` | 单包载荷 ≥256B；或同会话 ≥20 包 | T1095（命令与控制） |
+| 登录爆破（网络侧） | `brute_force_evidence` | 同源对同端口 300s 内 ≥15 连接且 ≥50% 未完成 | T1110（凭证访问） |
 
 **event_type 映射（对齐全组冻结枚举）**：告警不再自造 event_type——
 端口扫描/可疑端口/C2心跳/横向移动/数据外传/ICMP隧道 一律映射为 `network_connection`，
@@ -62,6 +69,11 @@ Web攻击载荷 → `http_request`，DNS隧道 → `dns_query`；检测规则名
 ATT&CK 阶段/技术号在 `detail.attack_stage` / `detail.mitre_technique`。
 普通会话事件 event_type：`network_connection`（含 ICMP，用 `protocol: "icmp"` 区分）/
 `dns_query` / `http_request`。protocol 输出小写（tcp/udp/icmp），与规范示例一致。
+
+**初始入侵点标记**：解析完成后自动按"外部攻击者 IP"分组，给每组最早的高优先级对内告警
+（Initial Access > Reconnaissance > Credential Access）追加 flag `entry_point_candidate`、
+`detail.entry_point = true`、description 前缀【疑似入侵点】——候选标记，最终裁决权在 D。
+多攻击者场景（Case02）各自成链互不干扰。
 
 ## 4. 输出：Event V2（19 个公共字段，契约冻结）
 
@@ -133,6 +145,14 @@ assert validate_events(events) == []   # 导入前契约自检
 ```
 
 - `include_flows=False` 可只产出告警事件。数据库内部 `id` 由后端生成，本模块不关心。
+- **联调冒烟**：`python scripts/post_events.py out/network_events.json --sync-hosts data/hosts.csv`
+  ——本地契约自检 → hosts.csv 同步到 `/api/hosts`（逐条、容忍 409）→ 批量 `/api/events/import`
+  （422 时打印 Pydantic 错误明细）→ GET 回拉做 **round-trip 逐字段比对**。
+  已验证：case01 70 条 + case02 96 条全部往返一致。
+- **Dashboard 汇总**：`--summary-json out/summary.json` 产出 F 可直接消费的 JSON：
+  `total_events / anomaly_events / severity_counts / event_type_counts / anomaly_flag_counts /
+  attack_stage_sequence / attack_timeline（阶段时间线，含 entry_point）/ hosts_involved /
+  top_external_dst_by_bytes（外联 top10）/ time_range`。
 
 ### D（事件关联 / 攻击链重建）——消费后端返回的 EventOut
 - event_type 分发：只会在 `network_connection` / `dns_query` / `http_request` 三种上触发；
