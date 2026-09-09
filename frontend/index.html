@@ -44,10 +44,13 @@
       <div class="card toolbar">
         <label><input type="checkbox" id="filter-anomaly"> 仅看异常</label>
         <select id="filter-type"><option value="">全部 event_type</option></select>
-        <select id="filter-source"><option value="">全部 source</option></select>
         <select id="filter-severity"><option value="">全部 severity</option></select>
-        <select id="filter-hour"><option value="">全部小时</option></select>
         <select id="filter-host"><option value="">全部主机</option></select>
+        <label class="range-label">时间范围
+          <input type="datetime-local" id="filter-start" step="60"> ~
+          <input type="datetime-local" id="filter-end" step="60">
+        </label>
+        <button id="filter-clear" class="btn-ghost" title="清空全部过滤条件">清空</button>
         <span id="timeline-count" class="muted"></span>
       </div>
       <div class="card"><div id="timeline" class="timeline"></div></div>

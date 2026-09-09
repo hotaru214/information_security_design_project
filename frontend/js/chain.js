@@ -33,8 +33,10 @@ function renderChain(data) {
     id: n.id,                        // ECharts 内部引用用的 id（nodes/links 靠它连线）
     name: n.host ?? n.ip,            // 契约回退规则：有主机名显示主机名
     value: n,                        // 把原始节点数据塞进 value，tooltip/点击时取用
-    x: LAYOUT_X[n.id] ?? LAYOUT_X[n.host] ?? 500,
-    y: LAYOUT_Y[n.id] ?? LAYOUT_Y[n.host] ?? 130,
+    // mock 节点没有 x（由 LAYOUT_X 按 id 查表）；live 推导节点自带 x
+    //（api.js normalizeChain 按出现顺序布置），两者取其一
+    x: n.x ?? LAYOUT_X[n.id] ?? 500,
+    y: n.y ?? LAYOUT_Y[n.id] ?? 130,
     // 攻击者/红队节点画大一点突出；实体主机中等大小
     symbolSize: n.category === "attacker" ? 54 : n.category === "c2" ? 48 : 44,
     itemStyle: {
@@ -58,18 +60,30 @@ function renderChain(data) {
     };
   }
 
-  /* 真实 API 使用明确端点 ID；旧 mock 按非空 hostname 或 IP 匹配。 */
-  function endpointId(id, host, ip) {
-    if (id != null) return id;
-    const node = chain.nodes.find(n => host != null ? n.host === host : ip != null && n.ip === ip);
-    return node ? node.id : null;
+  /* ---------- 生成边 ----------
+   * 端点解析 resolveEndpoint()，两级策略：
+   *   ① 优先用 adapter 直接给的 source / target（节点 id，2026-09-08 起
+   *      真实接口会带）——最准，不依赖字段名猜测；
+   *   ② 兜底按"展示键"（host ?? ip，与 api.js normalizeChain 推导节点的
+   *      口径一致）匹配——mock 和没给 source/target 的数据走这里。
+   * 为什么兜底不直接比 host：D 的 AttackStep 里 host 可为 null（纯 IP
+   * 链路，契约 null 白名单允许），按 host 相等会错误命中第一个
+   * host=null 的节点。两级都落空才用合成 id（图上仍能连线不崩）。 */
+  function resolveEndpoint(l, side, i) {
+    const ref = safeField(l, side);
+    if (ref != null && chain.nodes.some(n => n.id === ref)) return ref;
+    const host = safeField(l, `${side}_host`);
+    const ip = safeField(l, `${side}_ip`);
+    const key = host ?? ip;
+    const node = chain.nodes.find(n => (n.host ?? n.ip) === key);
+    return node ? node.id : (key ?? `unknown_${side}_${i}`);
   }
+
   const edges = [];
   chain.links.forEach((l, i) => {
-    const color = App.STAGE_COLORS[l.attack_stage] || "#64748b"; // 未知阶段兜底灰
-    const srcId = endpointId(l.source, l.source_host, l.source_ip);
-    const dstId = endpointId(l.target, l.target_host, l.target_ip);
-    if (!nodes.some(n => n.id === srcId) || !nodes.some(n => n.id === dstId)) return;
+    const color = App.stageColor(l.attack_stage); // 容错查找（大小写/变体也命中）
+    const srcId = resolveEndpoint(l, "source", i);
+    const dstId = resolveEndpoint(l, "target", i);
 
     if (srcId === dstId) {
       /* "Web-Server → Web-Server 执行异常进程"：自环边画不出来，
@@ -77,9 +91,10 @@ function renderChain(data) {
        * 用阶段色填充 + 白字，视觉上像"主机内部发生的事"。 */
       const execNodeId = `__exec_${i}`;
       const base = nodes.find(n => n.id === srcId);
+      const bx = base ? base.x : 500, by = base ? base.y : 130; // 防御：找不到基点也不崩
       nodes.push({
         id: execNodeId, name: "异常进程执行\nrundll32 → mshta", value: { virtual: true },
-        x: base.x, y: base.y + 190,
+        x: bx, y: by + 190,
         symbol: "roundRect", symbolSize: [86, 30],   // symbolSize 传数组 = [宽, 高]
         itemStyle: { color },
         label: { show: true, position: "inside", color: "#fff", fontSize: 10 },
@@ -124,25 +139,31 @@ function renderChain(data) {
   });
 
   /* ---------- 右侧：攻击步骤卡片列表 ---------- */
+  /* live 模式下每条 step 带 evidence_event_ids（数据库 events.id 数组，
+   * D 产出）→ 渲染成可点击的证据 chip，点了直接开详情弹窗。
+   * mock 没有该字段 → 不渲染 chip（降级为下方节点联动找证据）。 */
   const linksBox = document.getElementById("chain-links");
   linksBox.innerHTML = chain.links.map((l, i) => {
-    const color = App.STAGE_COLORS[l.attack_stage] || "#64748b";
+    const color = App.stageColor(l.attack_stage); // 容错查找
+    const evids = Array.isArray(l.evidence_event_ids) ? l.evidence_event_ids : [];
+    const evidHtml = evids.length
+      ? `<div class="evid">证据事件：${evids.map(id =>
+          `<span class="chip flag evid-chip" data-eid="${id}" title="点击查看事件详情">#${id}</span>`).join(" ")}</div>`
+      : "";
     return `
-      <div class="chain-link-item" role="button" tabindex="0" data-step-index="${i}" style="cursor:pointer">
+      <div class="chain-link-item">
         <span class="stage" style="background:${color}">${App.esc(l.attack_stage)}</span>
         <span class="tid">${App.esc(l.mitre_technique)}</span>
         <div class="path">${App.esc(l.source_host ?? l.source_ip)} → ${App.esc(l.target_host ?? l.target_ip)}</div>
         <div class="muted">${App.esc(App.fmtTime(l.timestamp))} · ${App.esc(l.source_ip)} → ${App.esc(l.target_ip)}</div>
         <div class="desc">${App.esc(l.description)}</div>
+        ${evidHtml}
       </div>`;
   }).join("");
 
-  linksBox.querySelectorAll("[data-step-index]").forEach(card => {
-    const open = () => App.openStepEvidence(chain.links[Number(card.dataset.stepIndex)]);
-    card.addEventListener("click", open);
-    card.addEventListener("keydown", event => {
-      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); }
-    });
+  // 证据 chip 点击 → 事件详情弹窗（契约：定位事件一律用 id）
+  linksBox.querySelectorAll(".evid-chip").forEach(chip => {
+    chip.addEventListener("click", () => App.openEventDetail(chip.dataset.eid));
   });
 
   /* ---------- 节点点击：联动展示该节点相关证据事件 ----------
@@ -153,17 +174,18 @@ function renderChain(data) {
   if (old) old.remove();          // 重新渲染时清掉上次的联动面板
   chart.off("click");             // off 再 on，防止重复绑定
   chart.on("click", p => {
-    if (p.dataType === "edge") {
-      App.openStepEvidence(chain.links[p.data.value]);
-      return;
-    }
     if (p.dataType !== "node") return;
     const n = p.data.value;
     if (n.virtual) return;        // 虚拟执行节点没有对应主机，不联动
 
+    /* 匹配条件逐项判空：n.host / n.ip 为 null 时不参与该条件的比较
+     * （live 推导节点可能只有 IP 没有 host，反之亦然），
+     * 避免 null === null 把不相干事件误匹配进来。 */
     const related = events.filter(e =>
-      e.host === n.host || e.src_ip === n.ip || e.dst_ip === n.ip
-    ).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+      (n.host != null && e.host === n.host) ||
+      (n.ip != null && (e.src_ip === n.ip || e.dst_ip === n.ip))
+    ).sort((a, b) => String(safeField(a, "timestamp") || "").localeCompare(
+        String(safeField(b, "timestamp") || "")));
 
     const box = document.createElement("div");
     box.id = "node-events";

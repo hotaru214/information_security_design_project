@@ -133,7 +133,60 @@ main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
 .tl-time { font-size: 12px; color: var(--text-muted); font-family: Consolas, monospace; }
 .tl-host { font-size: 13px; font-weight: 600; }
 .tl-desc { font-size: 13px; margin-top: 3px; }
-.tl-item.anomalous .tl-desc { color: var(--anomaly); font-weight: 500; }
+/* 高危（severity≥2）事件描述红色加粗强调，与红框卡片呼应 */
+.tl-item.high .tl-desc { color: var(--anomaly); font-weight: 500; }
+
+/* 时间线 v2：severity≥2 红色卡片（红节点圆点 + 红边框 + 浅红底） */
+.tl-item { border: 1px solid transparent; }
+.tl-item.high { border-color: #fecaca; background: #fff7f7; }
+.tl-item.high::before { background: var(--anomaly); }
+.tl-item.open { background: #f8fafc; }
+.tl-item.high.open { background: #fff7f7; }
+/* URL ?id= 定位成功的高亮描边（locateFromURL 加，3 秒后移除） */
+.tl-item.located { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* 时间线 v2：内嵌详情面板（点击卡片展开） */
+.tl-detail {
+  margin-top: 10px; padding: 12px 14px;
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px;
+}
+.tl-detail-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-bottom: 8px; border-bottom: 1px dashed var(--border); margin-bottom: 4px;
+}
+.tl-detail h5 {
+  font-size: 12px; margin: 12px 0 6px; color: var(--primary);
+  padding-left: 8px; border-left: 3px solid var(--primary);
+}
+.tl-detail .kv { margin-bottom: 4px; }
+.tl-detail .kv td.mono {
+  font-family: Consolas, monospace; font-size: 11px; word-break: break-all;
+}
+.btn-copy {
+  border: 1px solid var(--border); background: #f8fafc; color: var(--primary);
+  font-size: 12px; padding: 4px 12px; border-radius: 6px; cursor: pointer;
+}
+.btn-copy:hover { background: #dbeafe; border-color: #93c5fd; }
+/* raw_log 证据说明条（需求⑤c："这是溯源证据"的说明样式） */
+.evidence-note {
+  font-size: 11px; color: #92400e; background: #fef3c7;
+  border: 1px solid #fde68a; border-radius: 6px;
+  padding: 4px 10px; margin-bottom: 6px;
+}
+
+/* 时间范围过滤（datetime-local 成对输入 + 清空按钮） */
+.toolbar .range-label {
+  font-size: 13px; display: flex; align-items: center; gap: 4px; cursor: default;
+}
+.toolbar input[type="datetime-local"] {
+  padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--card-bg); font-size: 12px; font-family: Consolas, monospace;
+}
+.btn-ghost {
+  border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+  font-size: 12px; padding: 5px 12px; border-radius: 8px; cursor: pointer;
+}
+.btn-ghost:hover { color: var(--primary); border-color: #93c5fd; background: #f8fafc; }
 
 .chip {
   display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 999px;
@@ -157,6 +210,10 @@ main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
 .chain-link-item .path { font-weight: 600; margin: 4px 0; }
 .chain-link-item .tid { font-family: Consolas, monospace; color: var(--primary); font-size: 12px; }
 .chain-link-item .desc { color: var(--text-muted); font-size: 12px; margin-top: 3px; }
+/* 证据事件 chip（live 模式 AttackStep 的 evidence_event_ids，点击开详情弹窗） */
+.chain-link-item .evid { margin-top: 5px; font-size: 11px; color: var(--text-muted); }
+.chain-link-item .evid-chip { cursor: pointer; }
+.chain-link-item .evid-chip:hover { background: #fee2e2; }
 
 /* ---------- 分析报告 ---------- */
 .report-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
@@ -196,7 +253,7 @@ main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
 .kv { width: 100%; border-collapse: collapse; }
 .kv th, .kv td { border: 1px solid var(--border); padding: 5px 10px; font-size: 12px; text-align: left; vertical-align: top; }
 .kv th { width: 140px; background: #f8fafc; font-weight: 600; }
-.kv td.null { color: #9ca3af; font-style: italic; }
+/* null 字段规则（契约）：整行不渲染，不再显示灰色 "null（不显示）" 占位 */
 .rawlog {
   margin-top: 10px; background: #0f172a; color: #e2e8f0;
   border-radius: 8px; padding: 12px; font-size: 11px; line-height: 1.6;

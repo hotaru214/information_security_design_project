@@ -7,7 +7,7 @@
  *   2) "连后端"和"连 mock"的切换逻辑只写一遍，所有页面共用。
  *
  * 数据来源策略（验收要求）：
- *   优先请求当前主机的后端 API；
+ *   优先请求后端 http://127.0.0.1:8000 的 API；
  *   请求失败（没启动 / 超时 / 返回格式不对）自动回退本地 mock，
  *   并把加载模式（live/demo）返回给 app.js，由它在页面角落
  *   显示"演示模式（后端未连接）"徽章。
@@ -20,13 +20,10 @@
  *     原始日志自带的编号（4624、Sysmon 1 等），可重复、网络事件恒 null。
  * ============================================================ */
 
-/* :8000 同源托管使用相对 API 路径；独立开发服务连接当前主机的 :8000。 */
-const API_BASE = (() => {
-  if (window.location.port === "8000") return "";
-  const backendUrl = new URL(window.location.origin);
-  backendUrl.port = "8000";
-  return backendUrl.origin;
-})();
+/* 后端地址集中成一个常量。
+ * 注意：不要写成 "localhost"——如果页面将来部署到别的机器，
+ * localhost 会指向用户自己的电脑而不是后端。 */
+const API_BASE = "http://127.0.0.1:8000";
 
 /* 超时 2 秒：后端没启动时，浏览器 fetch 默认会等很久（几十秒的
  * TCP 超时），页面会白屏转圈。必须主动掐断，快速回退 mock。 */
@@ -140,8 +137,9 @@ async function loadEvents() {
  *
  * 和 loadEvents 的区别：
  *   攻击链接口 /api/attack-chain 是 D 模块的产出，后端"可能还没实现"，
- *   所以除了判HTTP状态，还要校验结构（nodes/links 都是非空数组）——
- *   接口存在但返回空链时，渲染出一张空图，不如回退 mock 好看。
+ *   所以除了判HTTP状态，还要校验结构——**只要有 links 就算可用**：
+ *   nodes 缺失时 normalizeChain() 能从 links 自动推导，页面照样出图
+ *   （接口存在但返回空链时才回退 mock）。
  *
  * @returns {Promise<{chain: {nodes: Array, links: Array}, mode: "live"|"demo"}>}
  */
@@ -150,15 +148,75 @@ async function loadChain() {
     const resp = await fetchWithTimeout(`${API_BASE}/api/attack-chain`);
     if (resp.ok) {
       const data = await resp.json();
-      if (data && Array.isArray(data.nodes) && Array.isArray(data.links) && data.nodes.length > 0) {
-        return { chain: data, mode: "live" };
+      if (data && Array.isArray(data.links) && data.links.length > 0) {
+        return { chain: normalizeChain(data), mode: "live" };
       }
     }
   } catch (e) {
     /* 回退 mock */
   }
   const resp = await fetch("mock/chain.json");
-  return { chain: await resp.json(), mode: "demo" };
+  return { chain: normalizeChain(await resp.json()), mode: "demo" };
+}
+
+/**
+ * 攻击链结构归一化（数据边界兼容层，与 normalizeSourceEventId 同思路）。
+ *
+ * 背景（2026-09-08 与 A 对齐的集成方案）：
+ *   D 的关联模块输出的 AttackStep 字段名是 stage / technique_id，
+ *   前端（chain.js / report.js）消费的是 attack_stage / mitre_technique。
+ *   A 会做 /api/attack-chain adapter 转换，但为了**不依赖 adapter 做
+ *   得全不满**，这里做前端侧兜底：
+ *     - 字段名：attack_stage ?? stage、mitre_technique ?? technique_id，
+ *       mock（契约名）和 live（可能是 D 原始名）两种都认；
+ *     - evidence_event_ids（数据库 events.id 数组，D 产出）原样保留，
+ *       chain.js 拿它渲染可点击的证据 chip；
+ *     - nodes：adapter 若只输出 links 没拼 nodes，前端从 links 两端的
+ *       主机自动推导节点表（含坐标），页面照样出图。
+ *
+ * 不改传入对象（mock/chain.json 是共享数据），返回归一化后的新结构。
+ */
+function normalizeChain(chain) {
+  const out = { nodes: [], links: [], ...chain };
+  if (!Array.isArray(out.links)) out.links = [];
+
+  out.links = out.links.map(l => {
+    const link = { ...l };
+    if (link.attack_stage === undefined) link.attack_stage = safeField(l, "stage");
+    if (link.mitre_technique === undefined) link.mitre_technique = safeField(l, "technique_id");
+    return link;
+  });
+
+  if (!Array.isArray(out.nodes) || out.nodes.length === 0) {
+    const seen = {};              // host键 -> 节点对象（同主机多步只建一个节点）
+    out.links.forEach(l => {
+      ["source", "target"].forEach(side => {
+        const host = safeField(l, `${side}_host`);
+        const ip = safeField(l, `${side}_ip`);
+        const key = host ?? ip;
+        if (!key || seen[key]) return;
+        const lower = String(key).toLowerCase();
+        seen[key] = {
+          id: key,
+          host: host ?? null,
+          ip: ip ?? null,
+          role: null,
+          // 命名启发式分类：给节点上色用（attacker红 / c2深红 / 受害主机蓝）
+          category: lower.includes("attacker") ? "attacker"
+                  : lower.includes("c2") ? "c2"
+                  : "host",
+        };
+      });
+    });
+    const derived = Object.values(seen);
+    derived.forEach((n, i) => {
+      // layout:none 需要每个节点有坐标：按出现顺序横向排开
+      n.x = 60 + i * 230;
+      n.y = 130;
+    });
+    out.nodes = derived;
+  }
+  return out;
 }
 
 /* ============================================================
@@ -223,15 +281,4 @@ async function loadHostMap() {
     });
   }
   return map;
-}
-
-
-/** 精确证据只读取数据库内部 id；失败交给 UI 提示，不回退 mock。 */
-async function loadEventById(id) {
-  if (!Number.isSafeInteger(id) || id <= 0) throw new Error("无效证据 ID");
-  const resp = await fetchWithTimeout(`${API_BASE}/api/events/${id}`);
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  const event = await resp.json();
-  if (!event || event.id !== id) throw new Error("证据 ID 不匹配");
-  return event;
 }

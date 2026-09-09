@@ -137,6 +137,15 @@ function buildReportHtml({ events, chain }) {
  * 截取前 5 条：证据贵精不贵多。
  */
 function evidenceIds(events, link) {
+  /* 优先级 1：D/adapter 直接给的 evidence_event_ids（数据库 events.id）
+   * ——这是最准的口径（D 关联时用真实 id 做的证据链），有就直接用；
+   * 优先级 2（fallback，mock/早期数据没有该字段）：按 IP/主机启发式匹配
+   * 异常事件。 */
+  const refs = Array.isArray(safeField(link, "evidence_event_ids"))
+    ? link.evidence_event_ids : null;
+  if (refs && refs.length > 0) {
+    return refs.slice(0, 5).map(id => `#${id}`);
+  }
   return events
     .filter(e => e.anomaly_flags && e.anomaly_flags.length > 0 &&
       (e.src_ip === link.source_ip || e.dst_ip === link.target_ip ||
