@@ -23,7 +23,7 @@ import os
 import random
 from datetime import datetime
 
-from scapy.all import Ether, IP, TCP, UDP, ICMP, DNS, DNSQR, DNSRR, Raw, wrpcap
+from scapy.all import IP, TCP, UDP, ICMP, DNS, DNSQR, DNSRR, Raw, wrpcap
 
 # ---------------------------------------------------------------- 拓扑（与E的8节点靶场对齐，IP 可按靶场实际调整）
 ATTACKER = "203.0.113.66"      # 攻击节点（外网）

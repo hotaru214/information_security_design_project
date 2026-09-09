@@ -46,6 +46,10 @@ raw_log
 
 其中 `id` 是后端数据库内部唯一 ID，D 的 `evidence_event_ids` 必须保存这个 ID，不保存原始日志的 `source_event_id`。
 
+**批次隔离约定（2026-09-09）**：多批数据不混库，每批独立入库（id 每批从 1 起）。每条事件
+`detail.batch_id` 标记来源批次（如 case01 / apt29_day1 / e_case01），D 关联时按 batch_id 过滤，
+不得跨批次串联。已交付的批次数据见 `data/sample_events/*_eventout.json`。
+
 事件特有字段从 `detail` 中读取：
 
 ```text

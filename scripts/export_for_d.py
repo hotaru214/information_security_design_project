@@ -55,9 +55,15 @@ def main(argv=None):
     ap.add_argument("--base", default="http://127.0.0.1:8000")
     ap.add_argument("--sync-hosts", default="", metavar="HOSTS_CSV",
                     help="把数据集的 IP->主机名映射同步到后端（D 的 host_map 数据源）")
+    ap.add_argument("--batch-id", default="", metavar="NAME",
+                    help="批次标签：写入每条事件的 detail.batch_id（默认取输出文件名去掉 _eventout）")
     args = ap.parse_args(argv)
+    batch_id = args.batch_id or os.path.splitext(os.path.basename(args.out))[0].replace("_eventout", "")
 
     events = json.load(open(args.events_json, encoding="utf-8"))
+    for e in events:
+        e.setdefault("detail", {})["batch_id"] = batch_id   # 批次标签：D/前端据此区分数据批次
+    print(f"[batch] batch_id={batch_id}")
     if args.dataset == "ctu13":
         events = subset_for_dataset(events, args.dataset)
     print(f"[load] 待导出 {len(events)} 条")

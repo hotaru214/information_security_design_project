@@ -43,7 +43,7 @@ class FlowRecord:
     http_requests: list = field(default_factory=list)  # list[HttpRequest]
     icmp_count: int = 0
     icmp_max_payload: int = 0
-    source_file: str = ""
+    source_file: str = ""              # 溯源调试字段：记录来源文件（多文件合并排障用），输出层不消费
     # Event V2 契约相关
     source: str = "network_pcap"       # network_pcap / network_zeek（CSV 兜底也归 network_zeek）
     source_event_id: str | None = None  # Event V2 FINAL：网络事件恒为 null，原始编号(如 Zeek uid)保留在 raw_log
@@ -57,10 +57,6 @@ class FlowRecord:
     @property
     def flow_key(self) -> str:
         return f"{self.src_ip}:{self.src_port}->{self.dst_ip}:{self.dst_port}/{self.protocol}"
-
-    @property
-    def tuple_key(self) -> tuple:
-        return (self.src_ip, self.src_port, self.dst_ip, self.dst_port, self.protocol)
 
 
 @dataclass

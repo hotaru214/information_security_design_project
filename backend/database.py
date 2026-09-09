@@ -74,6 +74,8 @@ def _event_data(event: EventCreate):
     data["timestamp"] = event.timestamp.isoformat()
     data["detail"] = json.dumps(event.detail, ensure_ascii=False)
     data["anomaly_flags"] = json.dumps(event.anomaly_flags, ensure_ascii=False)
+    # 契约字段名是 source_event_id，DB 列名保留 event_id（内部实现细节）
+    data["event_id"] = data.pop("source_event_id", None)
     return data
 
 
@@ -81,6 +83,9 @@ def _event_from_row(row):
     data = dict(row)
     data["detail"] = json.loads(data["detail"])
     data["anomaly_flags"] = json.loads(data["anomaly_flags"])
+    # DB 列 event_id -> 契约字段 source_event_id（EventOut 输出用契约名）
+    if "event_id" in data:
+        data["source_event_id"] = data.pop("event_id")
     return data
 
 
