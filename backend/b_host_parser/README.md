@@ -1,6 +1,6 @@
 # B模块：主机日志解析器
 
-把 Windows/Linux 主机日志解析成全组统一的标准安全事件JSON。**契约：Event V2（2026-09-07冻结，19字段；2026-09-08 D确认补充 `log_cleared`）**，见 `../../docs/数据格式契约-v1.md`。
+把 Windows/Linux 主机日志解析成全组统一的标准安全事件JSON。**契约：Event V2 FINAL（2026-09-08 A发布冻结，19字段；原始事件编号字段统一命名 `source_event_id`，每批事件带 `detail.batch_id`）**，见 `../../docs/Event-V2-FINAL.md`（唯一权威版本；旧版 `数据格式契约-v1.md` 已废止）。
 （2026-09-08 起本模块位于 `backend/b_host_parser/`，与A的后端同仓。）
 
 ## 当前能力（Day 2）
@@ -63,6 +63,7 @@ backend/b_host_parser/
 ├── schema.py          # 标准事件结构（任务1契约的代码版，19字段+V2词表），所有解析器共用
 ├── windows_evtx.py    # Windows Security解析器（4624/4625/4634/4647/4688/1102/4720/4728/4673/7045/4698）
 ├── sysmon.py          # Sysmon日志解析器（ID 1/3/11/13）
+├── sysmon_json.py     # JSON行格式Windows日志适配器（APT29等已导出数据集）
 ├── sessions.py        # 任务7b：登录↔注销会话重建（(host,LogonId)配对）
 ├── anomaly.py         # 任务8：异常预标记规则引擎（5条规则→anomaly_flags+severity）
 ├── import_client.py   # 落地.jsonl / 批量POST给A

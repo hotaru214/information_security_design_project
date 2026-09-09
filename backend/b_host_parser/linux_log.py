@@ -182,7 +182,7 @@ def _parse_sockaddr(rest: str):
 def _new_event(ts, host, source, event_type, user, process, src_ip,
                detail, description, raw_line, cmdline=None):
     return make_event(
-        timestamp=ts, host=host, source=source, event_id=None,
+        timestamp=ts, host=host, source=source, source_event_id=None,
         event_type=event_type, user=user, process=process, src_ip=src_ip,
         dst_ip=None, dst_port=None, protocol=None, logon_type=None,
         session_id=None, cmdline=cmdline, detail=detail,

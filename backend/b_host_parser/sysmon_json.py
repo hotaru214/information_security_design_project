@@ -98,19 +98,6 @@ def _to_int(value):
     return int(s) if s.isdigit() else None
 
 
-def _v2_event(**kwargs) -> dict:
-    """make_event 的 Event V2 FINAL 适配层：出参字段名 event_id → source_event_id。
-
-    B 模块 schema.py 的 STANDARD_FIELDS 还在用旧名 event_id（统一改名会波及
-    windows_evtx/sysmon/linux_log 三个解析器，是全组登记的待办），本适配器
-    的产出要过 C 侧 validate_events（键集必须恰好是 source_event_id 版19字段）
-    和 export_for_d 的落盘校验，所以在出口处改名。
-    """
-    ev = make_event(**kwargs)
-    ev["source_event_id"] = ev.pop("event_id")
-    return ev
-
-
 def _event_ts(ev: dict) -> str | None:
     """行JSON → UTC+8 字符串。优先 UtcTime（事件真实时间），退回 @timestamp。"""
     raw = _clean(ev.get("UtcTime"))
@@ -173,8 +160,8 @@ def _sysmon_event(event_id: int, data: dict, ts, host: str) -> dict | None:
                   "initiated": _clean(data.get("Initiated")),
                   "process": _clean(data.get("Image")),
                   "process_guid": _clean(data.get("ProcessGuid"))}
-        return _v2_event(timestamp=ts, host=host, source="sysmon",
-                         event_id=event_id, event_type=event_type, user=user,
+        return make_event(timestamp=ts, host=host, source="sysmon",
+                         source_event_id=event_id, event_type=event_type, user=user,
                          process=image, src_ip=src_ip, dst_ip=dst_ip,
                          dst_port=dst_port, protocol=protocol, cmdline=cmdline,
                          detail=detail, description=description,
@@ -211,8 +198,8 @@ def _sysmon_event(event_id: int, data: dict, ts, host: str) -> dict | None:
                   "archived": _clean(data.get("Archived")),
                   "process_guid": _clean(data.get("ProcessGuid"))}
 
-    return _v2_event(timestamp=ts, host=host, source="sysmon",
-                     event_id=event_id, event_type=event_type, user=user,
+    return make_event(timestamp=ts, host=host, source="sysmon",
+                     source_event_id=event_id, event_type=event_type, user=user,
                      process=image, cmdline=cmdline, detail=detail,
                      description=description, raw_log=data.get("_raw_line"))
 
@@ -241,8 +228,8 @@ def _security_event(event_id: int, data: dict, ts, host: str) -> dict | None:
                   "workstation": _clean(data.get("WorkstationName")),
                   "auth_package": _clean(data.get("AuthenticationPackageName")),
                   "process_name": _basename(_clean(data.get("ProcessName")))}
-        return _v2_event(timestamp=ts, host=host, source="windows_evtx",
-                         event_id=event_id, event_type=event_type, user=user,
+        return make_event(timestamp=ts, host=host, source="windows_evtx",
+                         source_event_id=event_id, event_type=event_type, user=user,
                          process=_basename(_clean(data.get("ProcessName"))),
                          src_ip=src_ip, logon_type=logon_type,
                          session_id=session_id, detail=detail,
@@ -254,8 +241,8 @@ def _security_event(event_id: int, data: dict, ts, host: str) -> dict | None:
         detail = {"substatus": sub, "substatus_desc": sub_desc,
                   "failure_reason": _clean(data.get("FailureReason")),
                   "workstation": _clean(data.get("WorkstationName"))}
-        return _v2_event(timestamp=ts, host=host, source="windows_evtx",
-                         event_id=event_id, event_type=event_type, user=user,
+        return make_event(timestamp=ts, host=host, source="windows_evtx",
+                         source_event_id=event_id, event_type=event_type, user=user,
                          process=None, src_ip=src_ip, logon_type=logon_type,
                          session_id=None, detail=detail,
                          description=description, raw_log=data.get("_raw_line"))
@@ -267,8 +254,8 @@ def _security_event(event_id: int, data: dict, ts, host: str) -> dict | None:
             description = f"用户 {user} 主动发起注销"
         detail = {"logon_id": logon_id,
                   "domain": _clean(data.get("TargetDomainName"))}
-        return _v2_event(timestamp=ts, host=host, source="windows_evtx",
-                         event_id=event_id, event_type=event_type, user=user,
+        return make_event(timestamp=ts, host=host, source="windows_evtx",
+                         source_event_id=event_id, event_type=event_type, user=user,
                          process=None, src_ip=src_ip, logon_type=logon_type,
                          session_id=session_id, detail=detail,
                          description=description, raw_log=data.get("_raw_line"))
@@ -284,8 +271,8 @@ def _security_event(event_id: int, data: dict, ts, host: str) -> dict | None:
                   "new_process_id": _to_int(data.get("NewProcessId")),
                   "token_elevation": _clean(data.get("TokenElevationType")),
                   "subject_domain": _clean(data.get("SubjectDomainName"))}
-        return _v2_event(timestamp=ts, host=host, source="windows_evtx",
-                         event_id=event_id, event_type=event_type, user=user,
+        return make_event(timestamp=ts, host=host, source="windows_evtx",
+                         source_event_id=event_id, event_type=event_type, user=user,
                          process=process, cmdline=cmdline, detail=detail,
                          description=description, raw_log=data.get("_raw_line"))
     if event_id == 1102:  # 审计日志被清除
@@ -293,8 +280,8 @@ def _security_event(event_id: int, data: dict, ts, host: str) -> dict | None:
         actor = f"操作者: {user}" if user else "操作者未记录"
         description = f"审计日志被清除（{actor}）——抹痕迹标志动作"
         detail = {"domain": _clean(data.get("SubjectDomainName"))}
-        return _v2_event(timestamp=ts, host=host, source="windows_evtx",
-                         event_id=event_id, event_type=event_type, user=user,
+        return make_event(timestamp=ts, host=host, source="windows_evtx",
+                         source_event_id=event_id, event_type=event_type, user=user,
                          detail=detail, description=description,
                          raw_log=data.get("_raw_line"))
     if event_id == 4720:  # 新建账号
@@ -304,8 +291,8 @@ def _security_event(event_id: int, data: dict, ts, host: str) -> dict | None:
                   "target_sid": _clean(data.get("TargetUserSid")),
                   "target_domain": _clean(data.get("TargetDomainName")),
                   "creator": subject}
-        return _v2_event(timestamp=ts, host=host, source="windows_evtx",
-                         event_id=event_id, event_type=event_type, user=user,
+        return make_event(timestamp=ts, host=host, source="windows_evtx",
+                         source_event_id=event_id, event_type=event_type, user=user,
                          detail=detail, description=description,
                          raw_log=data.get("_raw_line"))
     if event_id == 4728:  # 成员加入安全组（TargetUserName是组名）
@@ -317,8 +304,8 @@ def _security_event(event_id: int, data: dict, ts, host: str) -> dict | None:
                   "group_name": group,
                   "member_sid": _clean(data.get("MemberSid")),
                   "group_domain": _clean(data.get("TargetDomainName"))}
-        return _v2_event(timestamp=ts, host=host, source="windows_evtx",
-                         event_id=event_id, event_type=event_type, user=member,
+        return make_event(timestamp=ts, host=host, source="windows_evtx",
+                         source_event_id=event_id, event_type=event_type, user=member,
                          detail=detail, description=description,
                          raw_log=data.get("_raw_line"))
     if event_id == 4673:  # 特权服务调用
@@ -331,8 +318,8 @@ def _security_event(event_id: int, data: dict, ts, host: str) -> dict | None:
                   "object_server": obj_server,
                   "object_name": _clean(data.get("ObjectName")),
                   "service_name": _clean(data.get("ServiceName"))}
-        return _v2_event(timestamp=ts, host=host, source="windows_evtx",
-                         event_id=event_id, event_type=event_type, user=user,
+        return make_event(timestamp=ts, host=host, source="windows_evtx",
+                         source_event_id=event_id, event_type=event_type, user=user,
                          process=proc, detail=detail, description=description,
                          raw_log=data.get("_raw_line"))
     if event_id == 4697:  # 服务安装（Security通道版，等价于7045）
@@ -348,8 +335,8 @@ def _security_event(event_id: int, data: dict, ts, host: str) -> dict | None:
                   "start_type": start_desc,
                   "account": account,
                   "creator": subject}
-        return _v2_event(timestamp=ts, host=host, source="windows_evtx",
-                         event_id=event_id, event_type=event_type, user=account,
+        return make_event(timestamp=ts, host=host, source="windows_evtx",
+                         source_event_id=event_id, event_type=event_type, user=account,
                          process=_basename(image), detail=detail,
                          description=description, raw_log=data.get("_raw_line"))
     # 4698 计划任务创建
@@ -359,8 +346,8 @@ def _security_event(event_id: int, data: dict, ts, host: str) -> dict | None:
     description = f"创建计划任务: {task}{creator}"
     detail = {"task_name": task,
               "task_content": _clean(data.get("TaskContent"))}
-    return _v2_event(timestamp=ts, host=host, source="windows_evtx",
-                     event_id=event_id, event_type=event_type, user=user,
+    return make_event(timestamp=ts, host=host, source="windows_evtx",
+                     source_event_id=event_id, event_type=event_type, user=user,
                      detail=detail, description=description,
                      raw_log=data.get("_raw_line"))
 

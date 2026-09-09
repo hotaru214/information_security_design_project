@@ -3,7 +3,7 @@
 任务3：Windows EVTX 解析器
 ==========================
 输入 : .evtx 文件路径（Windows事件日志的二进制原始文件，python-evtx负责解码）
-输出 : 标准事件 dict 列表（结构见 b_host_parser/schema.py / docs/数据格式契约-v1.md）
+输出 : 标准事件 dict 列表（结构见 b_host_parser/schema.py / docs/Event-V2-FINAL.md）
 
 Day 1 支持的事件:
     4624  登录成功  → event_type = login_success
@@ -293,7 +293,7 @@ def xml_to_event(xml_text: str) -> dict:
         timestamp=ts,
         host=host,
         source="windows_evtx",
-        event_id=event_id,
+        source_event_id=event_id,
         event_type=event_type,
         user=user,
         process=process,
@@ -347,7 +347,7 @@ def parse_windows_evtx(file_path: str, stats: dict = None) -> list:
                     continue
                 events.append(ev)
                 stats["parsed"] += 1
-                key = str(ev["event_id"])
+                key = str(ev["source_event_id"])
                 stats["by_event_id"][key] = stats["by_event_id"].get(key, 0) + 1
             except Exception as e:
                 # 一条坏了：计数、继续处理下一条（绝不中断整个文件）
