@@ -73,6 +73,19 @@ backend/b_host_parser/
 └── requirements.txt
 ```
 
+## E 最终批次导出（2026-09-09，A 封箱合并用）
+
+一条命令从 E 最终原始主机日志复现整批标准事件（47,055 条，全过 C 侧 `validate_events` 预检）：
+
+```bash
+python backend/b_host_parser/build_e_final_batch.py          # → data/output/e_final_host_events.json
+python scripts/reset_import_export.py --name e_final_host \
+    --events data/output/e_final_host_events.json --hosts data/hosts_e_case01.csv
+# → data/sample_events/e_final_host_eventout.json（EventOut，id 1~47055，batch_id=e_final_host）
+```
+
+覆盖输入：core-server 的 `core-auth.log`（**rsyslog ISO 8601 时间格式已支持**，见 linux_log.py `_AUTH_HEAD_ISO`）+ 三个 auditd txt、web-server 的三个 auditd txt、office-win 的 `security-final.evtx` + `system-final.evtx`。evtx 的 Computer 字段（DESKTOP-88HQCN9/WIN-UL7KE8FN5I6）自动对齐成 `hosts_e_case01.csv` 里的靶机名 win10-jump。eventout 约 72MB，按 apt29 先例保持未跟踪、不进 git。
+
 ## 给A同学（联调状态：✅ 已打通）
 
 - **模块已在本仓库 `backend/b_host_parser/`**，与你的 FastAPI 同仓，无框架依赖（只依赖 `python-evtx`、`requests`）。
