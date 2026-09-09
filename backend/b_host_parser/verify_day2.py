@@ -83,7 +83,7 @@ def t2():
     e = xml_to_event(ev_xml(4634, ts="2020-09-09T14:30:00Z",
                             TargetUserName="IEUser", TargetDomainName="MSEDGEWIN10",
                             TargetLogonId="0x8F1A5", LogonType="2"))
-    assert e["event_type"] == "logout" and e["event_id"] == 4634
+    assert e["event_type"] == "logout" and e["source_event_id"] == 4634
     assert e["session_id"] == "MSEDGEWIN10:0x8F1A5", f"注销也要带配对键: {e['session_id']}"
     assert e["detail"]["logon_id"] == "0x8F1A5" and e["user"] == "IEUser"
     assert e["logon_type"] == 2
@@ -374,7 +374,7 @@ def t7():
     assert any(e["user"] == "oracle" and e["detail"]["invalid_user"] for e in fails)
     # 时间统一UTC+8（auth.log本地时间直接打时区标记）
     assert all(e["timestamp"].endswith("+08:00") for e in evs)
-    assert all(e["source"] == "linux_auth" and e["event_id"] is None for e in evs)
+    assert all(e["source"] == "linux_auth" and e["source_event_id"] is None for e in evs)
 
     # --- audit.log（原始格式）：sudo提权 + 敏感文件访问 + execve兜底 ---
     st2 = {}

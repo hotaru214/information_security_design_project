@@ -51,7 +51,9 @@ def rebuild_sessions(events: list):
         sid = ev.get("session_id")
         if not sid:
             continue
-        if ev["event_type"] == "login_success" and ev["event_id"] == 4624:
+        # 原始事件ID（Event V2 FINAL 定名 source_event_id；只有Windows类事件有值）
+        eid = ev.get("source_event_id")
+        if ev["event_type"] == "login_success" and eid == 4624:
             if sid not in logins:  # 先到先得 = 时间最早（解析产物通常按日志顺序）
                 logins[sid] = ev
         elif ev["event_type"] == "logout":
