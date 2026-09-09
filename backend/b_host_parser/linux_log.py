@@ -8,8 +8,10 @@
 parse_linux_auth  —— SSH登录（sshd）
     "Accepted password for alice from 10.0.2.17 port 51234 ssh2" → login_success
     "Failed password for invalid user admin from 1.2.3.4 ..."    → login_failed
-    ⚠️ auth.log 的时间没有年份（"Jan 12 02:55:01"），用文件mtime的年份补全；
+    ⚠️ 传统auth.log的时间没有年份（"Jan 12 02:55:01"），用文件mtime的年份补全；
     ⚠️ auth.log 是靶机本地时间——靶场按全组约定统一UTC+8，直接打时区标记。
+    （E最终数据 core-auth.log 是 rsyslog 的ISO 8601形态"2026-09-07T23:48:31.575069+08:00"，
+    年月日/时区直接取自行内，任意时区偏移一律换算成UTC+8——2026-09-09 按A集成要求补）
 
 parse_linux_audit —— auditd（2026-09-08按E真实数据适配，支持两种形态）
     E实际交付了两种格式，都要吃：
@@ -39,7 +41,7 @@ by_event_id 用记录类型作键（USER_CMD/execve/file_open/connect_inet/...�
 """
 import ipaddress
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from schema import make_event
@@ -53,6 +55,11 @@ MONTHS = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
 # auth.log行头： "Jan 12 02:55:01 host prog[pid]: message"
 _AUTH_HEAD = re.compile(
     r"^([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})\s+(\S+)\s+([^\[\s]+)(?:\[\d+\])?:\s(.*)$")
+# auth.log行头（ISO 8601形态，Ubuntu 24.04 rsyslog 默认，E最终数据core-auth.log实测）：
+# "2026-09-07T23:48:31.575069+08:00 host prog[pid]: message"——带年份/微秒/时区
+_AUTH_HEAD_ISO = re.compile(
+    r"^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?"
+    r"(Z|[+-]\d{2}:?\d{2})\s+(\S+)\s+([^\[\s]+)(?:\[\d+\])?:\s(.*)$")
 # sshd的登录成功/失败消息（"invalid user"前缀=用户不存在，Linux版的用户名枚举指纹）
 _SSHD_MSG = re.compile(
     r"^(Accepted|Failed)\s+(\S+)\s+for\s+(?:invalid user\s+)?(\S+)\s+from\s+(\S+)\s+port\s+(\d+)")
@@ -102,6 +109,22 @@ def _audit_ts_interp(y, mo, d, h, mi, s, ms) -> str:
     micro = int(ms) * 10 ** (6 - len(ms)) if ms else 0
     dt = datetime(int(y), int(mo), int(d), int(h), int(mi), int(s), micro, tzinfo=UTC8)
     return dt.isoformat()
+
+
+def _iso_ts_to_utc8(y, mo, d, hh, mm, ss, frac, tzs) -> str:
+    """ISO 8601行内时间戳 → 统一UTC+8字符串。
+
+    年月日和时区都取自行内（rsyslog新格式自带，不再依赖mtime补年份）；
+    任意偏移（Z / ±HH:MM / ±HHMM）都换算成UTC+8——靶机时区配错日志也能对齐。
+    """
+    micro = int(frac.ljust(6, "0")[:6]) if frac else 0
+    if tzs == "Z":
+        tz = timezone.utc
+    else:
+        sign = 1 if tzs[0] == "+" else -1
+        tz = timezone(sign * timedelta(hours=int(tzs[1:3]), minutes=int(tzs[-2:])))
+    dt = datetime(int(y), int(mo), int(d), int(hh), int(mm), int(ss), micro, tzinfo=tz)
+    return to_utc8(dt)
 
 
 def _parse_head(line: str):
@@ -205,22 +228,27 @@ def parse_linux_auth(file_path: str, stats: dict = None, host: str = None) -> li
 
     with open(file_path, "r", encoding="utf-8", errors="replace") as f:
         for line in f:
-            line = line.rstrip("\n")
+            line = line.rstrip("\r\n")  # E的文件是CRLF——只strip\n会残留\r污染raw_log
             if not line.strip():
                 continue
             try:
-                head = _AUTH_HEAD.match(line)
-                if head is None:
+                head = _AUTH_HEAD.match(line)     # 传统格式："Sep  8 13:05:02"（无年份）
+                iso = None if head else _AUTH_HEAD_ISO.match(line)  # ISO格式（E最终数据）
+                if head is not None:
+                    mon, day, hh, mm, ss, line_host, prog, msg = head.groups()
+                    ts = to_utc8(datetime(year, MONTHS[mon], int(day), int(hh), int(mm),
+                                          int(ss), tzinfo=_AUTH_TZ))
+                elif iso is not None:
+                    y, mo, d, hh, mm, ss, frac, tzs, line_host, prog, msg = iso.groups()
+                    ts = _iso_ts_to_utc8(y, mo, d, hh, mm, ss, frac, tzs)
+                else:
                     stats["skipped_other"] += 1
                     continue
-                mon, day, hh, mm, ss, line_host, prog, msg = head.groups()
                 m = _SSHD_MSG.match(msg)
                 if m is None or prog != "sshd":
                     stats["skipped_other"] += 1
                     continue
                 result, method, user, src_ip, src_port = m.groups()
-                ts = to_utc8(datetime(year, MONTHS[mon], int(day), int(hh), int(mm), int(ss),
-                                      tzinfo=_AUTH_TZ))
                 invalid_user = "invalid user" in msg
                 port = int(src_port) if src_port.isdigit() else None
                 if result == "Accepted":
@@ -266,7 +294,7 @@ def parse_linux_audit(file_path: str, stats: dict = None, host: str = None) -> l
     # ---- 第一遍：按行归类（SYSCALL/EXECVE/PATH/CWD/SOCKADDR要按序号配对，必须整文件看完）----
     with open(file_path, "r", encoding="utf-8", errors="replace") as f:
         for line in f:
-            line = line.rstrip("\n")
+            line = line.rstrip("\r\n")  # E的文件是CRLF——只strip\n会残留\r污染raw_log
             if not line.strip() or line.strip() == "----":  # ausearch输出的分隔行
                 continue
             try:
@@ -434,7 +462,8 @@ def parse_linux_audit(file_path: str, stats: dict = None, host: str = None) -> l
 
 
 def detect_linux_parser(file_path) -> str:
-    """按内容判断Linux日志类型：type=开头→audit，月名开头→auth。跳过ausearch的----分隔行。"""
+    """按内容判断Linux日志类型：type=开头→audit；月名或ISO时间戳开头→auth。
+    跳过ausearch的----分隔行。"""
     with open(file_path, "r", encoding="utf-8", errors="replace") as f:
         for line in f:
             line = line.strip()
@@ -444,5 +473,7 @@ def detect_linux_parser(file_path) -> str:
                 return "linux_audit"
             if re.match(r"^[A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s", line):
                 return "linux_auth"
+            if re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", line):
+                return "linux_auth"  # rsyslog ISO形态（E最终数据core-auth.log）
             return None  # 第一条有效行认不出来就不硬猜
     return None
