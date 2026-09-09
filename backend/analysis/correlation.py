@@ -125,11 +125,31 @@ def correlate_events(
     internal ``id`` field, not the original ``source_event_id``.
     """
 
-    # Explicit CIDRs define the scenario boundary, independently of host names.
     host_map = host_map or {}
     normalized = preprocess_events(events)
     normalized.sort(key=lambda event: event["_time"])
-    context = build_context(normalized, host_map)
+    grouped_events = group_events_by_case(normalized)
+
+    steps: list[dict[str, Any]] = []
+    for case_events in grouped_events.values():
+        steps.extend(correlate_case_events(case_events, host_map, internal_networks))
+
+    steps = deduplicate_steps(steps)
+    steps.sort(key=lambda step: step["timestamp"])
+
+    for index, step in enumerate(steps, start=1):
+        step["step_id"] = f"S{index:03d}"
+
+    return steps
+
+
+def correlate_case_events(
+    events: list[dict[str, Any]],
+    host_map: dict[str, str],
+    internal_networks: list[str] | None,
+) -> list[dict[str, Any]]:
+    # Explicit CIDRs define the scenario boundary, independently of host names.
+    context = build_context(events, host_map)
     context["internal_networks"] = compile_internal_networks(internal_networks)
 
     steps: list[dict[str, Any]] = []
@@ -146,13 +166,7 @@ def correlate_events(
     ]
 
     for detector in detectors:
-        steps.extend(detector(normalized, context, host_map))
-
-    steps = deduplicate_steps(steps)
-    steps.sort(key=lambda step: step["timestamp"])
-
-    for index, step in enumerate(steps, start=1):
-        step["step_id"] = f"S{index:03d}"
+        steps.extend(detector(events, context, host_map))
 
     return steps
 
@@ -187,10 +201,20 @@ def preprocess_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
             get_detail(copied, "registry_value_data")
         ).lower()
         copied["_anomaly_flags"] = normalize_flags(copied.get("anomaly_flags"))
+        copied["_case_id"] = get_case_id(copied)
 
         normalized.append(copied)
 
     return normalized
+
+
+def group_events_by_case(
+    events: list[dict[str, Any]]
+) -> dict[str | None, list[dict[str, Any]]]:
+    grouped: dict[str | None, list[dict[str, Any]]] = defaultdict(list)
+    for event in events:
+        grouped[event.get("_case_id")].append(event)
+    return dict(grouped)
 
 
 def build_context(
@@ -750,6 +774,7 @@ def make_step(
 ) -> dict[str, Any]:
     return {
         "step_id": None,
+        "case_id": infer_case_id(evidence_events),
         "stage": stage,
         "technique_id": technique_id,
         "technique_name": ATTACK_TECHNIQUES[technique_id],
@@ -796,6 +821,7 @@ def build_attack_graph(attack_steps: list[dict[str, Any]], internal_networks=Non
                     "source": source_id,
                     "target": target_id,
                     "step_id": step.get("step_id"),
+                    "case_id": step.get("case_id"),
                     "stage": step.get("stage"),
                     "technique_id": step.get("technique_id"),
                     "timestamp": step.get("timestamp"),
@@ -847,6 +873,7 @@ def deduplicate_steps(steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for step in steps:
         key = (
             step["stage"],
+            step.get("case_id"),
             step["technique_id"],
             step.get("source_host"),
             step.get("target_host"),
@@ -947,6 +974,31 @@ def event_ids(events: list[dict[str, Any]]) -> list[int]:
         seen.add(event_id)
         ids.append(event_id)
     return ids
+
+
+def infer_case_id(events: list[dict[str, Any]]) -> str | None:
+    case_ids = [event.get("_case_id") for event in events if event.get("_case_id")]
+    if not case_ids:
+        return None
+    return case_ids[0]
+
+
+def get_case_id(event: dict[str, Any]) -> str | None:
+    # Preferred Event field. detail.case_id and detail.batch_id are accepted only
+    # for compatibility with earlier sample data and parser drafts.
+    case_id = get_value(event, "case_id")
+    if case_id:
+        return str(case_id)
+
+    detail_case_id = get_detail(event, "case_id")
+    if detail_case_id:
+        return str(detail_case_id)
+
+    batch_id = get_detail(event, "batch_id")
+    if batch_id:
+        return str(batch_id)
+
+    return None
 
 
 def resolve_host(ip: Any, host_map: dict[str, str]) -> str | None:
