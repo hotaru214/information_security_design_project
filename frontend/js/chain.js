@@ -36,6 +36,18 @@ function renderChain(data) {
   const linksBox = document.getElementById("chain-links");
   const legendBox = document.getElementById("chain-legend");
 
+  /* 封箱空态：Live 模式下关联引擎没跑出链（空库/无异常）→ 如实提示，
+   * 不画空图也不换演示数据。 */
+  if (!Array.isArray(chain.links) || chain.links.length === 0) {
+    const msg = data.mode === "demo"
+      ? "演示数据未包含攻击链。"
+      : "未检测到攻击链（当前数据库中没有可关联的攻击行为）。";
+    const graphDom = document.getElementById("chain-graph");
+    if (graphDom) graphDom.innerHTML = `<p class="muted" style="padding:24px;text-align:center">${App.esc(msg)}</p>`;
+    if (linksBox) linksBox.innerHTML = `<h3>攻击步骤（0）</h3><p class="muted">${App.esc(msg)}</p>`;
+    return;
+  }
+
   /* ================================================================
    * 端点解析（两级策略，见文件头说明③）——先定义，节点/边都要用
    * ================================================================ */
