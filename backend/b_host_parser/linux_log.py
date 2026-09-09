@@ -439,7 +439,8 @@ def parse_linux_audit(file_path: str, stats: dict = None, host: str = None) -> l
                                 f"{':' + str(port) if port else ''}",
                     raw_line="\n".join(g["raw"])))
                 ev = events[-1]
-                ev["dst_ip"], ev["dst_port"] = ip, port
+                # 契约：dst_port缺失传null不传0（E数据里确实有port=0的connect记录）
+                ev["dst_ip"], ev["dst_port"] = ip, (port or None)
             else:  # accept：对端=来源（谁连进来了——横向移动的关键证据）
                 events.append(_new_event(
                     ts=g["ts"], host=host, source="linux_audit",
