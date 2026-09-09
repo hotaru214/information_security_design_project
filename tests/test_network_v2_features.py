@@ -226,3 +226,27 @@ def test_case02_dual_chain_end_to_end(tmp_path):
     flagged = [e for e in events if e["anomaly_flags"]]
     assert len(flagged) == len(anomalies)
     assert sum(1 for e in flagged if "entry_point_candidate" in e["anomaly_flags"]) == 2
+
+
+def test_cc_rotation_detected():
+    """CC 列表轮询：同源对同端口向 >=5 个不同外部主机发起连接 -> 告警（T1071）。"""
+    from backend.parsers.network.detectors import detect_cc_rotation
+    flows = [mk_flow(src="10.0.0.10", sport=40000 + i, dst=f"185.{i}.0.{i + 1}",
+                     dport=6667, start=BASE + i * 60, end=BASE + i * 60 + 1)
+             for i in range(6)]
+    anomalies = detect_cc_rotation(flows, CFG)
+    assert len(anomalies) == 1
+    a = anomalies[0]
+    assert a.kind == "cc_rotation"
+    assert a.attack_stage == "Command and Control"
+    assert a.mitre == "T1071"
+    assert a.evidence["distinct_dst_count"] == 5   # 首次越过阈值(>=5)的窗口即告警
+
+
+def test_cc_rotation_not_triggered_for_web_browsing():
+    """80/443 等标准端口的大规模多目的访问（正常浏览/下载）-> 不告警。"""
+    from backend.parsers.network.detectors import detect_cc_rotation
+    flows = [mk_flow(src="10.0.0.21", sport=40000 + i, dst=f"93.184.{i}.10",
+                     dport=80, start=BASE + i * 60, end=BASE + i * 60 + 1)
+             for i in range(8)]
+    assert detect_cc_rotation(flows, CFG) == []

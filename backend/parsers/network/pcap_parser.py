@@ -10,12 +10,11 @@ from scapy.layers.inet import IP, TCP, UDP, ICMP
 from scapy.layers.dns import DNS
 from scapy.packet import Raw
 
-from .config import DetectionConfig, DNS_PORTS, HTTP_PORTS
+from .config import DetectionConfig, HTTP_PORTS
 from .models import DnsQuery, FlowRecord, HttpRequest
 
 logger = logging.getLogger(__name__)
 
-ICMP_TYPES = {0: "Echo-Reply", 3: "Dest-Unreachable", 8: "Echo-Request", 11: "Time-Exceeded"}
 DNS_QTYPES = {1: "A", 2: "NS", 5: "CNAME", 12: "PTR", 15: "MX", 16: "TXT", 28: "AAAA", 33: "SRV", 255: "ANY"}
 HTTP_METHODS = (b"GET ", b"POST ", b"PUT ", b"DELETE ", b"HEAD ", b"OPTIONS ", b"PATCH ")
 
