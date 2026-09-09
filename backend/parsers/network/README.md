@@ -199,3 +199,6 @@ CSV、Event V2 契约（19 字段、event_type 冻结枚举、null 语义、seve
 - C2 心跳规则只看外联方向，内网 DNS 等周期性正常流量零误报。
 - 大 PCAP 流式读取，内存占用与会话数成正比，与总包数无关。
 - 契约变更需全组同步：Event V2 与 event_type 枚举冻结后，本模块不再单方面修改。
+- **数据留存约定（全组）**：外部获取的数据集（APT29/CTU-13 及日后任何下载的数据）
+  只保留在本地（data/datasets/ 已 gitignore，**绝不提交仓库**），仓库里只留
+  分析结果（评估 JSON、EventOut、报告）。原始数据随时可用 scripts/fetch_dataset.py 重新下载。
