@@ -72,32 +72,111 @@ function withSimulatedIds(events) {
   return events.map((e, i) => ({ ...e, id: i + 1 }));
 }
 
-/**
- * 字段名归一化：event_id → source_event_id（数据边界兼容层）。
- *
- * 背景（2026-09-08 对齐 A 后端时发现）：
- *   A 的 EventOut pydantic 模型里字段名叫 event_id（输入端用
- *   AliasChoices 兼容 source_event_id，但输出序列化是 event_id），
- *   而全组契约规定的名字是 source_event_id。
- *   归一化放在 api.js（数据边界）而不是让每个页面模块各自兼容——
- *   下游代码永远只认契约名；A 哪天把输出改成 source_event_id，
- *   本函数自动变成空操作，前端其他地方零改动。
- *
- * 处理规则（保持事件恰好 19+1 个键，不留脏字段）：
- *   - 只有 event_id           → 改名为 source_event_id；
- *   - 两个都有                → 契约名 source_event_id 优先，删 event_id；
- *   - 两个都没有              → 补 null（契约：网络事件无原始编号时为 null）。
+/* ============================================================
+ * normalizeEvent / normalizeEvents —— 单事件归一化（联调适配层）
+ * ============================================================
+ * 2026-09-09 联调引入。职责：把后端 EventOut 的实际形态修整成
+ * 全组契约（Event V2 FINAL）的形态，页面模块永远只认契约字段。
+ * 四条处理规则（联调任务书 3a-3d）+ 一条时间规则（任务书 4）：
+ *   a) 接口字段 event_id → source_event_id（改名，语义=原始日志编号）；
+ *   b) detail / anomaly_flags 缺失 → 补 {} / []（契约必填，缺了页
+ *      面组件会炸）；
+ *   c) event_type 不在冻结枚举 → console.warn 并原样保留（不私造
+ *      也不丢弃——擅自改值会破坏过滤器和统计口径）；
+ *   d) id 缺失 → 用数组下标模拟并 console.warn（live 数据缺 id 属
+ *      于 A 侧事故，必须留痕；mock 缺 id 是设计内行为，不警告）；
+ *   时间规则：timestamp 解析失败（非 ISO8601 / 空 / 类型不对）→
+ *      该事件整体跳过并 console.warn——时间线排序和"按小时统计"
+ *      都依赖它，坏一条会污染整页。
  */
-function normalizeSourceEventId(events) {
-  events.forEach(e => {
-    if (e && typeof e === "object") {
-      const oldVal = safeField(e, "event_id");
-      const newVal = safeField(e, "source_event_id");
-      e.source_event_id = newVal !== null ? newVal : oldVal;
-      delete e.event_id;
+
+/* 契约冻结的 event_type 全集（31 值 = 7 类 30 值 + log_cleared）。
+ * 出处：docs/数据格式契约-v1.md 第四节（V2.1 起 log_cleared 转正）。
+ * 与 timeline.js 的 EVENT_TYPE_GROUPS 保持同源——那边按 7 类分组
+ * 做过滤器下拉，这边只做"是否合法"判定；改枚举必须两处同步。 */
+const EVENT_TYPE_ALLOWED = new Set([
+  "login_success", "login_failed", "logout",
+  "process_start", "process_end",
+  "network_connection", "dns_query", "http_request",
+  "file_create", "file_read", "file_write", "file_modify", "file_delete",
+  "registry_set", "registry_create", "registry_delete", "registry_query",
+  "user_created", "user_deleted", "user_modified",
+  "group_member_added", "group_member_removed", "privilege_change",
+  "service_created", "service_started", "service_stopped", "service_deleted",
+  "scheduled_task_created", "scheduled_task_run", "scheduled_task_deleted",
+  "log_cleared",
+]);
+
+/**
+ * 校验契约时间戳：UTC+8 ISO8601（`2026-09-07T09:02:08[.微秒]+08:00`）。
+ * @returns {Date|null} 可解析返回 Date；不可解析返回 null
+ */
+function parseContractTime(ts) {
+  if (typeof ts !== "string" || ts.length === 0) return null;
+  const d = new Date(ts);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * 归一化单条事件。
+ * @param {Object} e 后端/原始事件对象（会被就地修整）
+ * @param {number} idx 在列表中的下标（模拟 id 用）
+ * @param {boolean} liveMode true=live 数据（缺 id 要警告）；false=mock（静默模拟）
+ * @returns {Object|null} 修整后的事件；时间戳坏 → null（调用方跳过）
+ */
+function normalizeEvent(e, idx, liveMode) {
+  if (!e || typeof e !== "object") return null;
+
+  /* 时间规则（任务书 4）：先验时间，坏事件直接跳过——
+   * 避免给一个马上要被丢弃的事件做无谓的补字段。 */
+  const ts = parseContractTime(safeField(e, "timestamp"));
+  if (!ts) {
+    console.warn("[api.js] 事件已跳过：timestamp 无法按 ISO8601 解析（index=%d）", idx, e);
+    return null;
+  }
+  /* 不带时区的时间戳会被 new Date 当作浏览器本地时区——国内机器
+   * 恰好就是 +08:00 所以结果碰巧对，但这是巧合不是契约。只警告
+   * 不丢弃：A 的数据目前都带 +08:00，出现这种数据先人工对齐。 */
+  if (!/[+-]\d{2}:?\d{2}$/.test(e.timestamp)) {
+    console.warn("[api.js] 事件 timestamp 缺少时区后缀（契约要求 +08:00）：", e.timestamp);
+  }
+
+  /* a) event_id → source_event_id（与 normalizeSourceEventId 同规则） */
+  const oldVal = safeField(e, "event_id");
+  const newVal = safeField(e, "source_event_id");
+  e.source_event_id = newVal !== null ? newVal : oldVal;
+  delete e.event_id;
+
+  /* b) 契约必填字段缺失兜底 */
+  if (e.detail === undefined || e.detail === null) e.detail = {};
+  if (e.anomaly_flags === undefined || e.anomaly_flags === null) e.anomaly_flags = [];
+
+  /* c) event_type 冻结枚举校验：只警告不改值 */
+  if (!EVENT_TYPE_ALLOWED.has(e.event_type)) {
+    console.warn("[api.js] event_type 不在冻结枚举（原样保留）：", e.event_type);
+  }
+
+  /* d) id 缺失 → 下标模拟；live 模式下必须留痕（这是 A 侧事故信号） */
+  if (e.id === undefined || e.id === null) {
+    e.id = idx + 1;
+    if (liveMode) {
+      console.warn("[api.js] live 事件缺失数据库 id，已用数组下标模拟（index=%d）——请反馈 A", idx);
     }
+  }
+  return e;
+}
+
+/**
+ * 归一化整份事件列表（loadEvents 的 live/mock 两条路都走这里）。
+ * 时间戳坏的事件会被剔除，返回的数组可能比入参短。
+ */
+function normalizeEvents(list, liveMode) {
+  const out = [];
+  (list || []).forEach((e, idx) => {
+    const fixed = normalizeEvent(e, idx, liveMode);
+    if (fixed) out.push(fixed);
   });
-  return events;
+  return out;
 }
 
 /**
@@ -118,8 +197,8 @@ async function loadEvents() {
       const data = await resp.json();
       // Array.isArray 防御：万一后端返回了 {error: ...} 之类的对象
       if (Array.isArray(data) && data.length > 0) {
-        // 先过字段名归一化（A 的输出用 event_id，契约叫 source_event_id）
-        return { events: normalizeSourceEventId(data), mode: "live" };
+        // live 数据走完整归一化（缺 id 警告 / 坏时间戳跳过）
+        return { events: normalizeEvents(data, true), mode: "live" };
       }
     }
   } catch (e) {
@@ -131,7 +210,8 @@ async function loadEvents() {
    * 相对路径跟部署位置无关，绝对路径反而容易写错。 */
   const resp = await fetch("mock/events.json");
   const events = await resp.json();
-  return { events: withSimulatedIds(events), mode: "demo" };
+  /* mock：先按下标补 id（设计内行为，静默），再走同一套归一化 */
+  return { events: normalizeEvents(withSimulatedIds(events), false), mode: "demo" };
 }
 
 /**
@@ -253,19 +333,28 @@ function safeField(obj, key) {
  * 展示规则 target_host ?? target_ip——有主机名显示主机名，没有显示 IP。
  *
  * 数据来源优先级：
- *   1. 后端 GET /api/hosts（{ip:hostname} 或 [{ip,hostname}] 两种形态都兼容）；
- *   2. 回退 mock/host_map.json（out/build_mock.py 从 data/hosts.csv 生成）；
- *   3. 连 mock 都没有 → 返回 {}，展示层自然回退显示 IP，页面不报错。
+ *   1. 后端 GET /api/hosts/map（A 已实现，直接返回 {ip:hostname}，
+ *      由 data/hosts.csv 入库生成，含 attacker/c2/exfil 的映射）；
+ *   2. 回退 GET /api/hosts（[{ip,hostname,...}] 形态也兼容——万一
+ *      map 接口变动还有一层缓冲）；
+ *   3. 回退 mock/host_map.json（out/build_mock.py 从 data/hosts.csv 生成）；
+ *   4. 连 mock 都没有 → 返回 {}，展示层自然回退显示 IP，页面不报错。
  *
  * @returns {Promise<Object>} 归一化的 { "10.0.0.5": "web-server", ... }
  */
 async function loadHostMap() {
   let raw = null;
-  try {
-    const resp = await fetchWithTimeout(`${API_BASE}/api/hosts`);
-    if (resp.ok) raw = await resp.json();
-  } catch (e) {
-    /* 后端未连接，走 mock */
+  /* 主选 /api/hosts/map（精确的 {ip:hostname} 字典）；
+   * 失败再试 /api/hosts（完整主机表）；都失败才走 mock。 */
+  for (const path of ["/api/hosts/map", "/api/hosts"]) {
+    try {
+      const resp = await fetchWithTimeout(`${API_BASE}${path}`);
+      if (resp.ok) {
+        raw = await resp.json();
+        if (raw && (Array.isArray(raw) ? raw.length > 0 : Object.keys(raw).length > 0)) break;
+        raw = null;   // 空数据视同失败，继续下一个来源
+      }
+    } catch (e) { /* 该来源不可用，试下一个 */ }
   }
   if (!raw || typeof raw !== "object") {
     try {
@@ -357,6 +446,20 @@ const MOCK_ANALYSIS_REPORT = {
 };
 
 /**
+ * 分析范围 → 后端请求体的适配。
+ * A 的 AnalysisRequest 契约是 {host?, start?, end?}（都可空，空=全库）；
+ * report.js 页面用的是 {scope:"all"} / {scope:"host", host} 这种带
+ * scope 字段的 UI 形态。适配层放这里，页面代码不用知道后端长啥样。
+ * （后端 pydantic 会忽略多余字段，所以就算不适配也能跑——但发精确
+ * 契约体是白捡的稳健性：万一 A 将来开了 forbid_extra，前端零改动。）
+ */
+function toAnalysisPayload(scope) {
+  if (!scope || scope.scope === "all") return {};
+  if (scope.scope === "host") return { host: scope.host };
+  return scope;   // 已经是 {host,start,end} 形态的直接透传
+}
+
+/**
  * 请求 LLM 分析报告。
  * 结构校验只卡最核心的 attack_path（数组非空）——其余字段缺失时
  * report.js 渲染层会用 safeField 兜底成"该区不渲染"，不会崩页。
@@ -370,7 +473,7 @@ async function getAnalysisReport(scope = { scope: "all" }) {
     const resp = await fetchWithTimeout(`${API_BASE}/api/analysis`, FETCH_TIMEOUT_MS, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(scope),
+      body: JSON.stringify(toAnalysisPayload(scope)),
     });
     if (resp.ok) {
       const data = await resp.json();
