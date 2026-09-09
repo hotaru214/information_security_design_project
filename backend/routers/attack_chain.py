@@ -5,8 +5,13 @@ from backend.analysis.correlation import compile_internal_networks, is_internal_
 from backend.database import get_events, get_hosts
 
 
-# Fixed final scenario: simulated WAN 10.10.10.0/24 is outside these networks.
-DEFAULT_INTERNAL_NETWORKS = ["10.10.20.0/24", "10.10.30.0/24"]
+# Supported datasets: case01 uses 10.0.0.0/24; E/case02 uses the two LAN zones.
+# 10.10.10.0/24 remains outside the list and is therefore the WAN zone.
+DEFAULT_INTERNAL_NETWORKS = [
+    "10.0.0.0/24",
+    "10.10.20.0/24",
+    "10.10.30.0/24",
+]
 
 router = APIRouter(prefix="/api/attack-chain")
 

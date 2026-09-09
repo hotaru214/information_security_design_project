@@ -78,6 +78,23 @@ def test_graph_node_type_uses_ip_for_both_endpoints(ip, hostname, expected):
 
 
 FINAL_NETWORKS = ["10.10.20.0/24", "10.10.30.0/24"]
+DATASET_NETWORKS = [
+    "10.0.0.0/24",
+    "10.10.20.0/24",
+    "10.10.30.0/24",
+]
+
+
+@pytest.mark.parametrize("ip,internal", [
+    ("10.0.0.5", True), ("10.0.0.10", True), ("10.0.0.21", True),
+    ("203.0.113.66", False),
+    ("10.10.10.10", False), ("10.10.10.20", False),
+    ("10.10.20.10", True), ("10.10.30.10", True),
+])
+def test_supported_dataset_zones(ip, internal):
+    from backend.analysis.correlation import is_internal_ip, is_external_ip
+    assert is_internal_ip(ip, DATASET_NETWORKS) is internal
+    assert is_external_ip(ip, DATASET_NETWORKS) is (not internal)
 
 
 @pytest.mark.parametrize("ip,internal", [

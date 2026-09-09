@@ -83,5 +83,27 @@ def test_router_passes_final_networks(monkeypatch):
         return [step(source_ip="10.10.10.10", target_host=None, target_ip="10.10.20.10")]
     monkeypatch.setattr(module, "correlate_events", correlate)
     view = module.read_attack_chain()
-    assert seen == [["10.10.20.0/24", "10.10.30.0/24"]]
+    assert seen == [[
+        "10.0.0.0/24",
+        "10.10.20.0/24",
+        "10.10.30.0/24",
+    ]]
     assert [n["category"] for n in view["nodes"]] == ["external_ip", "host"]
+
+
+def test_router_default_networks_cover_case01_and_case02(monkeypatch):
+    monkeypatch.setattr(module, "get_events", lambda: [])
+    monkeypatch.setattr(module, "get_hosts", lambda: [])
+    monkeypatch.setattr(module, "correlate_events", lambda *args, **kwargs: [])
+
+    module.read_attack_chain()
+
+    from backend.analysis.correlation import is_external_ip, is_internal_ip
+    networks = module.DEFAULT_INTERNAL_NETWORKS
+    assert all(is_internal_ip(ip, networks) for ip in (
+        "10.0.0.5", "10.0.0.10", "10.0.0.21",
+        "10.10.20.10", "10.10.30.10",
+    ))
+    assert all(is_external_ip(ip, networks) for ip in (
+        "203.0.113.66", "10.10.10.10", "10.10.10.20",
+    ))
