@@ -16,5 +16,10 @@ uvicorn==0.52.4
 # ===== 网络流量解析模块（成员C）=====
 scapy>=2.5.0
 
+# ===== LLM 分析模块（成员F）=====
+# OpenAI 兼容协议走 httpx 直连 /chat/completions，不引入重量级 SDK
+httpx>=0.27.0
+python-dotenv>=1.0.0
+
 # ===== 测试依赖（全组通用）=====
 pytest>=7.0

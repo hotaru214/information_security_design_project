@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from backend.database import init_db
+from backend.routers.analysis import router as analysis_router
 from backend.routers.attack_chain import router as attack_chain_router
 from backend.routers.events import router
 from backend.routers.hosts import router as hosts_router
@@ -34,6 +35,7 @@ app.add_middleware(
 app.include_router(router)
 app.include_router(hosts_router)
 app.include_router(attack_chain_router)
+app.include_router(analysis_router)
 
 
 @app.get("/health")
