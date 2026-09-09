@@ -9,6 +9,7 @@
 import math
 import re
 import statistics
+from urllib.parse import unquote_plus
 from collections import defaultdict
 from datetime import datetime
 
@@ -356,7 +357,8 @@ def detect_http_attacks(flows, cfg: DetectionConfig):
             continue
         hits = []
         for req in rec.http_requests:
-            text = f"{req.method} {req.uri} {req.host} {req.user_agent} {req.body} {req.raw_line}"
+            # 攻击载荷通常 URL 编码（如 %26%26=&&、%2F=/），解码后再匹配
+            text = unquote_plus(f"{req.method} {req.uri} {req.host} {req.user_agent} {req.body} {req.raw_line}")
             for regex, name in compiled:
                 if regex.search(text):
                     hits.append({"request": (req.raw_line or f"{req.method} {req.uri}")[:200], "pattern": name})

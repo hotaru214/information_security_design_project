@@ -1,0 +1,10 @@
+ip,hostname,role
+10.10.10.1,opnsense-wan,infrastructure
+10.10.10.10,attack-external,external
+10.10.10.20,c2-server,external
+10.10.20.1,opnsense-dmz,infrastructure
+10.10.20.10,web-server,dmz
+10.10.20.20,email-server,dmz
+10.10.30.1,opnsense-lan,infrastructure
+10.10.30.10,win10-jump,office
+10.10.30.20,core-server,server-zone

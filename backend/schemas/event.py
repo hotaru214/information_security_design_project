@@ -11,8 +11,11 @@ class EventCreate(BaseModel):
         "windows_evtx", "sysmon", "linux_auth", "linux_audit",
         "network_pcap", "network_zeek",
     ]
-    event_id: int | None = Field(
-        validation_alias=AliasChoices("event_id", "source_event_id")
+    # 统一数据契约(Event V2 FINAL)：对外字段名是 source_event_id；
+    # 输入兼容旧名 event_id，输出统一序列化为 source_event_id
+    source_event_id: int | None = Field(
+        validation_alias=AliasChoices("event_id", "source_event_id"),
+        serialization_alias="source_event_id",
     )
     event_type: str = Field(min_length=1)
     user: str | None

@@ -1,3 +1,6 @@
+> **[字段名过时]** 本文档写作时 event_id 尚未更名为 source_event_id；阅读时请按
+> `docs/Event-V2-FINAL.md` 的命名对照。B 重新导出样例前，字段名以 FINAL 为准。
+
 # 给A：主机日志标准事件样例 v2（数据100%来自真实日志解析）
 
 > **✅ 已对齐 Event V2（2026-09-07契约冻结）**：19字段、source枚举6值、ISO8601 T分隔时间戳、detail注册表键名、null语义，全部按V2执行。**event_type已按D《Event V2 event_type 规范》对齐**（login_failed/process_start/network_connection等）。

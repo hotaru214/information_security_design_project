@@ -76,7 +76,9 @@ C2 心跳、DNS 隧道、数据外传、ICMP 隧道。详见 [backend/parsers/ne
 
 当前后端要求的 Event 输入共 **19 个公共字段**：
 
-`timestamp, host, source, event_id, event_type, user, process, src_ip, dst_ip, dst_port, protocol, logon_type, session_id, cmdline, detail, description, anomaly_flags, severity, raw_log`
+`timestamp, host, source, source_event_id, event_type, user, process, src_ip, dst_ip, dst_port, protocol, logon_type, session_id, cmdline, detail, description, anomaly_flags, severity, raw_log`
+
+> **权威契约文档：[docs/Event-V2-FINAL.md](docs/Event-V2-FINAL.md)**（2026-09-09 落定；事件输出字段名统一为 source_event_id，并补充批次隔离约定 detail.batch_id）。
 
 要点：
 
@@ -88,14 +90,15 @@ C2 心跳、DNS 隧道、数据外传、ICMP 隧道。详见 [backend/parsers/ne
 - **detail 必填对象**：各模块独有字段（`parent_process`、`file_path`、`registry_*`、`src_port`、
   `attack_stage`、`mitre_technique` 等）全部放 `detail`，不再新增公共字段。
 - **anomaly_flags 必填**：无异常 `[]`。
-- **event_id 与数据库 id 区分**：`event_id` 是原始日志自带编号（Windows 4624 /
+- **source_event_id 与数据库 id 区分**：`source_event_id` 是原始日志自带编号（Windows 4624 /
   Sysmon 1 等），网络事件（PCAP/Zeek）传 `null`；后端 SQLite 另生成内部主键 `id`，
-  D 的 `evidence_event_ids` 只用这个 `id`。
+  D 的 `evidence_event_ids` 只用这个 `id`。数据库列名 `event_id` 仅为内部实现细节。
 - **source 枚举**：`windows_evtx` / `sysmon` / `linux_auth` / `linux_audit` / `network_pcap` / `network_zeek`。
 
 所有 19 个输入字段均必填；可空字段需显式传 `null`。`host`、`source`、`event_type`、`description`、`raw_log` 非空；端口非空时为 1～65535，severity 为 0～3。
 
-联调兼容：输入阶段临时接受 C 网络解析器的 `source_event_id`，作为正式字段 `event_id` 的 validation alias。两种名字都允许显式传 `null`，两者都缺失返回 422；若同时提供，以 `event_id` 为准。数据库列和 API 输出统一使用 `event_id`，不输出 `source_event_id`。
+**字段名定案（2026-09-09，按 Event V2 FINAL）**：公共字段正式名称为 `source_event_id`，API 输出亦用此名（输入端保留 `event_id` 作为兼容别名）。数据库列名 `event_id` 为内部实现细节，不对外。
+批次隔离：多批数据不得混库，每批独立入库（id 每批从 1 起），事件 `detail.batch_id` 标记批次；流程见 `scripts/reset_import_export.py`，已交付 D 的五份 EventOut（data/sample_events/）均含批次标签。
 
 ### 当前后端 API
 

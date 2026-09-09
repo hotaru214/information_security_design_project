@@ -109,6 +109,9 @@ def test_all_eventout_files_in_sample_events_are_compliant():
         events = json.loads(f.read_text(encoding="utf-8"))
         problems = validate_eventout(events)
         assert not problems, f"{f.name} 契约不合规: {problems[:3]}"
+        # 批次隔离约定：每条事件必须带 detail.batch_id，且一个文件内只有一个批次
+        batches = {e["detail"].get("batch_id") for e in events}
+        assert len(batches) == 1 and None not in batches, f"{f.name} 批次标签缺失或混批: {batches}"
         warns = collect_warnings(events)
         # 警告不阻断，但必须处于已知受控范围（host IP 兜底），出现其他类型警告要人工审查
         unexpected = [w for w in warns if "host 为 IP" not in w]

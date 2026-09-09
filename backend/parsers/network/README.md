@@ -152,6 +152,10 @@ assert validate_events(events) == []   # 导入前契约自检
 ```
 
 - `include_flows=False` 可只产出告警事件。数据库内部 `id` 由后端生成，本模块不关心。
+- **批次隔离（重要）**：多批数据**不得**混在一个库里（否则 D 关联会跨批次串链）。
+  标准流程：`python scripts/reset_import_export.py --name <批次名> --events <事件JSON> [--hosts <映射CSV>]`
+  ——自动重置数据库 → 启动后端 → 导入（事件 detail.batch_id 打批次标签）→ 导出
+  `data/sample_events/<批次名>_eventout.json`。D 消费时按 detail.batch_id 过滤。
 - **联调冒烟**：`python scripts/post_events.py out/network_events.json --sync-hosts data/hosts.csv`
   ——本地契约自检 → hosts.csv 同步到 `/api/hosts`（逐条、容忍 409）→ 批量 `/api/events/import`
   （422 时打印 Pydantic 错误明细）→ GET 回拉做 **round-trip 逐字段比对**。

@@ -17,7 +17,7 @@ REMOTE_SERVICE_PORTS = {22, 23, 139, 445, 3389, 5985, 5986}
 SERVICE_NAMES = {22: "SSH", 23: "Telnet", 139: "NetBIOS", 445: "SMB",
                  3389: "RDP", 5985: "WinRM", 5986: "WinRM-HTTPS"}
 
-HTTP_PORTS = {80, 8080, 8000}   # 明文 HTTP 才能做请求行启发式，HTTPS(443) 不在其中
+HTTP_PORTS = {80, 8080, 8000, 8088}   # 明文 HTTP 请求行启发式端口（8088=E靶场 DVWA/Nginx 实际端口）
 DNS_PORTS = {53}
 
 # HTTP 请求中的攻击载荷特征（正则, 说明）
@@ -29,6 +29,7 @@ HTTP_ATTACK_PATTERNS = [
     (r"/etc/(passwd|shadow)", "敏感文件访问特征(/etc/passwd)"),
     (r"(?<![a-z])(cmd|exec|command)=", "命令执行参数特征"),   # 负向断言排除 utmcmd= 等统计参数误报
     (r"eval\s*\(", "代码执行特征(eval)"),
+    (r"(&&|\|\||;)\s*/?[\w./\-]+\.(sh|py|php|bat|ps1)\b", "命令注入特征(链接执行脚本)"),
     (r"base64_decode", "Webshell特征(base64_decode)"),
     (r"<script", "XSS特征(<script)"),
 ]
