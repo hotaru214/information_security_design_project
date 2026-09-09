@@ -24,7 +24,7 @@
 | Linux auth.log | sshd Accepted/Failed | login_success / login_failed（含invalid_user线索；合成样本见 data/sample_logs/linux/） |
 | Linux audit.log | sudo USER_CMD（HEX命令解码） | process_start（sudo信息放detail，D决议） |
 | Linux audit（原始/ausearch -i解释 双格式） | execve + EXECVE | process_start（完整命令行cmdline） |
-| Linux audit（同上） | open/openat + PATH/CWD | file_read（相对路径自动拼CWD成绝对路径） |
+| Linux audit（同上） | open/openat + PATH/CWD | file_read / file_write（按open flags区分读写，D的外传/落盘匹配用；相对路径自动拼CWD成绝对路径） |
 | Linux audit（同上） | connect/accept + SOCKADDR(仅inet) | network_connection（本地unix socket噪音自动跳过） |
 | Linux audit（同上） | SERVICE_START / SERVICE_STOP | service_started / service_stopped |
 
