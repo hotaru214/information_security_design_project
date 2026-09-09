@@ -1,3 +1,0 @@
-Connection to 10.10.20.20 25 port [tcp/smtp] succeeded!
-220 email.localdomain ESMTP Postfix (Ubuntu)
-221 2.0.0 Bye
