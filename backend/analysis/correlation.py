@@ -126,13 +126,14 @@ def correlate_events(
     """
 
     host_map = host_map or {}
+    compiled_internal_networks = compile_internal_networks(internal_networks)
     normalized = preprocess_events(events)
     normalized.sort(key=lambda event: event["_time"])
     grouped_events = group_events_by_case(normalized)
 
     steps: list[dict[str, Any]] = []
     for case_events in grouped_events.values():
-        steps.extend(correlate_case_events(case_events, host_map, internal_networks))
+        steps.extend(correlate_case_events(case_events, host_map, compiled_internal_networks))
 
     steps = deduplicate_steps(steps)
     steps.sort(key=lambda step: step["timestamp"])
@@ -146,11 +147,11 @@ def correlate_events(
 def correlate_case_events(
     events: list[dict[str, Any]],
     host_map: dict[str, str],
-    internal_networks: list[str] | None,
+    internal_networks,
 ) -> list[dict[str, Any]]:
     # Explicit CIDRs define the scenario boundary, independently of host names.
     context = build_context(events, host_map)
-    context["internal_networks"] = compile_internal_networks(internal_networks)
+    context["internal_networks"] = internal_networks
 
     steps: list[dict[str, Any]] = []
     detectors = [
