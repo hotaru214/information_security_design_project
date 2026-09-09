@@ -18,6 +18,68 @@ def network_event(**changes):
     return event
 
 
+def file_event(path):
+    return network_event(
+        host="Core",
+        source="linux_audit",
+        event_type="file_read",
+        src_ip=None,
+        dst_ip=None,
+        dst_port=None,
+        detail={"file_path": path},
+    )
+
+
+def test_finance_file_read_is_collection():
+    steps = correlate_events([file_event("/data/finance_demo.txt")])
+
+    collection = [
+        step for step in steps
+        if step["stage"] == "Collection" and step["technique_id"] == "T1005"
+    ]
+
+    assert len(collection) == 1
+    assert collection[0]["evidence_event_ids"] == [101]
+
+
+def test_harmless_text_file_is_not_collection():
+    steps = correlate_events([file_event("/tmp/readme.txt")])
+
+    assert not any(step["stage"] == "Collection" for step in steps)
+
+
+def test_http_request_to_suspicious_external_c2_is_detected():
+    event = network_event(
+        event_type="http_request",
+        src_ip="10.10.30.10",
+        dst_ip="10.10.10.20",
+        dst_port=8080,
+        detail={"uri": "/test-beacon?data=CASE01_WIN10_FAKE_DATA"},
+    )
+
+    steps = correlate_events([event], internal_networks=FINAL_NETWORKS)
+
+    assert any(
+        step["stage"] == "Command and Control"
+        and step["technique_id"] == "T1071"
+        for step in steps
+    )
+
+
+def test_normal_external_http_is_not_c2():
+    event = network_event(
+        event_type="http_request",
+        src_ip="10.10.30.10",
+        dst_ip="10.10.10.20",
+        dst_port=80,
+        detail={"uri": "/index.html"},
+    )
+
+    steps = correlate_events([event], internal_networks=FINAL_NETWORKS)
+
+    assert not any(step["stage"] == "Command and Control" for step in steps)
+
+
 @pytest.mark.parametrize("event_type", ["network_connection", "http_request"])
 @pytest.mark.parametrize("detail", [{}, {"bytes_out": None}, {"bytes_out": "invalid"}, {"bytes_out": 0}])
 @pytest.mark.parametrize("flagged", [False, True])
@@ -78,6 +140,23 @@ def test_graph_node_type_uses_ip_for_both_endpoints(ip, hostname, expected):
 
 
 FINAL_NETWORKS = ["10.10.20.0/24", "10.10.30.0/24"]
+DATASET_NETWORKS = [
+    "10.0.0.0/24",
+    "10.10.20.0/24",
+    "10.10.30.0/24",
+]
+
+
+@pytest.mark.parametrize("ip,internal", [
+    ("10.0.0.5", True), ("10.0.0.10", True), ("10.0.0.21", True),
+    ("203.0.113.66", False),
+    ("10.10.10.10", False), ("10.10.10.20", False),
+    ("10.10.20.10", True), ("10.10.30.10", True),
+])
+def test_supported_dataset_zones(ip, internal):
+    from backend.analysis.correlation import is_internal_ip, is_external_ip
+    assert is_internal_ip(ip, DATASET_NETWORKS) is internal
+    assert is_external_ip(ip, DATASET_NETWORKS) is (not internal)
 
 
 @pytest.mark.parametrize("ip,internal", [
