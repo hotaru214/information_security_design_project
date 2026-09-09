@@ -1,0 +1,4 @@
+10.10.30.10 - - [08/Sep/2026:16:02:49 +0800] "GET / HTTP/1.1" 200 59 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36 Edg/92.0.902.67"
+10.10.30.10 - - [08/Sep/2026:16:02:49 +0800] "GET /favicon.ico HTTP/1.1" 404 196 "http://10.10.20.10/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36 Edg/92.0.902.67"
+10.10.10.10 - - [08/Sep/2026:17:45:14 +0800] "GET / HTTP/1.1" 200 32 "-" "curl/8.5.0"
+10.10.10.10 - - [08/Sep/2026:17:47:49 +0800] "GET / HTTP/1.1" 200 32 "-" "curl/8.5.0"
