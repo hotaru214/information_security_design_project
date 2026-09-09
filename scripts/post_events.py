@@ -23,7 +23,7 @@ from datetime import datetime
 
 sys.path.insert(0, ".")
 
-from backend.parsers.network.normalize import validate_events  # noqa: E402
+from backend.parsers.network.normalize import collect_warnings, validate_eventout, validate_events  # noqa: E402
 
 
 # ---------------------------------------------------------------- HTTP 基础
@@ -189,6 +189,8 @@ def main(argv=None):
             print(f"    ! {p}")
         return 1
     print("[check] 本地契约自检: 通过")
+    for w in collect_warnings(events)[:5]:
+        print(f"[warn] {w}")
 
     st, body = _request("GET", f"{args.base}/health")
     if st != 200:
@@ -213,6 +215,14 @@ def main(argv=None):
         print(f"[fetch] GET /api/events 失败: {st}")
         return 1
     print(f"[fetch] 后端现有 {len(remote)} 条事件")
+
+    eo_problems = validate_eventout(remote)
+    if eo_problems:
+        print(f"[contract] 后端 EventOut 契约不合规 x{len(eo_problems)}（阻断）:")
+        for p in eo_problems[:8]:
+            print(f"    ! {p}")
+        return 1
+    print("[contract] 后端 EventOut 校验: 通过")
 
     result = compare_events(events, remote)
     print("=" * 60)

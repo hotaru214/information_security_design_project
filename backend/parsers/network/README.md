@@ -124,8 +124,15 @@ ATT&CK 阶段/技术号在 `detail.attack_stage` / `detail.mitre_technique`。
   （`FLOW <五元组> start=... pkts=... bytes=...`）；检测告警为 `DETECT[规则] 描述`。
 - **缺失即 null**：ICMP 无端口 → `dst_port: null`（不是 0）；主机侧字段（user/process/
   cmdline/logon_type/session_id）网络事件恒为 `null`。
-- 契约校验函数：`normalize.validate_events(events)` 返回问题列表（空=合规），
-  已内置 **event_type 冻结枚举校验**，可在后端导入前调用。
+- 契约校验函数（**三层守卫，任何数据出入口都会执行**）：
+  - `validate_events(events)`：解析器输出（19 字段）阻断级校验——字段集、event_type 冻结枚举、
+    source 枚举、severity 0-3、UTC+8 且可解析、必填非空、**禁止占位值**（unknown/空串/dst_port=0）、
+    网络事件 source_event_id 必须 null；
+  - `validate_eventout(events)`：D 的输入（19 字段 + 数据库 id）阻断级校验——id 唯一正整数；
+  - `collect_warnings(events)`：非阻断警告（当前仅 host 为 IP 字符串一项，待后端放宽 host 可空后归零）。
+  - 接入点：CLI 运行时自检（本模块）、`scripts/post_events.py`（导入前阻断 + 回拉后校验）、
+    `scripts/export_for_d.py`（落盘前阻断）；`tests/test_contract_guard.py` 含文件级守卫，
+    `data/sample_events/` 下任何新放的 `*_eventout.json` 都会被自动检查。
 
 ## 5. 与其他成员的对接
 

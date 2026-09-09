@@ -79,6 +79,7 @@ SENSITIVE_FILE_KEYWORDS = [
     "passwd",
     "shadow",
     "credential",
+    "finance",
     "database",
     "backup",
     "dump",
@@ -584,7 +585,7 @@ def detect_c2(
     grouped_connections: dict[tuple[str | None, str | None, int | None], list[dict[str, Any]]] = defaultdict(list)
 
     for event in events:
-        if event["_event_type"] != "network_connection":
+        if event["_event_type"] not in {"network_connection", "http_request"}:
             continue
 
         src_ip = get_value(event, "src_ip")
