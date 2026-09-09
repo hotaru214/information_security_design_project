@@ -1,0 +1,7 @@
+ip,hostname,role
+10.0.0.4,apt29-dc,domain-controller
+10.0.1.6,apt29-workstation-bob,victim
+10.0.1.4,apt29-workstation-04,victim
+203.0.113.25,apt29-c2-infra,external
+192.168.0.4,apt29-c2-infra,external
+192.168.0.5,apt29-c2-infra,external
