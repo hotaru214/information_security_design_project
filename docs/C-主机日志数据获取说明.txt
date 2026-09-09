@@ -2,7 +2,9 @@ C 主机日志数据获取说明（apt29_day1 / ctu13_s2）
 ================================================
 
 【apt29_day1 主机日志】
-- 已下载: data/datasets/apt29/day1/apt29_evals_day1_manual.zip
+- 原始包已清理，需先重新下载:
+  python -c "import sys; sys.path.insert(0,'scripts'); from fetch_dataset import fetch; open('data/datasets/apt29/day1/apt29_evals_day1_manual.zip','wb').write(fetch('https://raw.githubusercontent.com/OTRF/detection-hackathon-apt29/master/datasets/day1/apt29_evals_day1_manual.zip', timeout=300))"
+  （或直接浏览器下载: https://github.com/OTRF/detection-hackathon-apt29 -> datasets/day1/apt29_evals_day1_manual.zip）
 - 来源: https://github.com/OTRF/detection-hackathon-apt29
   路径 datasets/day1/apt29_evals_day1_manual.zip
 - 解压后为单个 JSON 文件:

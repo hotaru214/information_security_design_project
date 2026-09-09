@@ -34,6 +34,24 @@ HTTP_ATTACK_PATTERNS = [
 ]
 
 
+# 各数据批次的标准网络分段预设（封箱定案，2026-09-09）。
+# 用途：CLI --profile <name>，使操作员无需手工记忆 --internal/--hosts 参数。
+# 网段定案：E case01 靶场三段式中 10.10.10.*(WAN: Attack/C2)=external、
+#           10.10.20.*(DMZ) 与 10.10.30.*(LAN)=internal；case01 数据集 10.0.0.0/24=internal。
+PROFILES = {
+    "case01": {"internal_networks": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"],
+               "hosts": "data/hosts.csv"},
+    "case02": {"internal_networks": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"],
+               "hosts": ""},
+    "apt29_day1": {"internal_networks": ["10.0.0.0/16"],
+                   "hosts": "data/hosts_apt29.csv"},
+    "ctu13_s2": {"internal_networks": ["147.32.0.0/16"],
+                 "hosts": "data/hosts_ctu13.csv"},
+    "e_case01": {"internal_networks": ["10.10.20.0/24", "10.10.30.0/24"],
+                 "hosts": "data/hosts_e_case01.csv"},
+}
+
+
 @dataclass
 class DetectionConfig:
     internal_networks: list = field(default_factory=lambda: list(INTERNAL_NETWORKS_DEFAULT))

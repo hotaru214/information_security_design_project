@@ -42,6 +42,9 @@ sys.modules["post_events"] = post_events
 _spec.loader.exec_module(post_events)
 
 
+ROOT_E = Path(__file__).resolve().parents[1]
+
+
 def mk_flow(src="10.0.0.5", sport=1234, dst="203.0.113.66", dport=80, proto="TCP",
             start=BASE, end=None, packets=6, bytes_total=1000,
             src_flags=("S", "PA"), dst_flags=("SA", "PA")):
@@ -250,3 +253,55 @@ def test_cc_rotation_not_triggered_for_web_browsing():
                      dport=80, start=BASE + i * 60, end=BASE + i * 60 + 1)
              for i in range(8)]
     assert detect_cc_rotation(flows, CFG) == []
+
+
+# ---------------------------------------------------------------- 封箱定案：E 最终网络配置
+
+def test_e_case01_profile_segmentation():
+    """E 靶场三段式定案：10.10.10.*=external，10.10.20.*/30.*=internal。"""
+    from backend.parsers.network.config import PROFILES
+    cfg = DetectionConfig()
+    cfg.internal_networks = list(PROFILES["e_case01"]["internal_networks"])
+    cfg.__post_init__()
+    assert cfg.is_internal("10.10.10.10") is False      # Attack = external
+    assert cfg.is_internal("10.10.10.20") is False      # C2 = external
+    assert cfg.is_internal("10.10.20.10") is True       # Web (DMZ) = internal
+    assert cfg.is_internal("10.10.30.10") is True       # Win10 (LAN) = internal
+    assert cfg.is_internal("10.10.30.20") is True       # Core = internal
+    assert cfg.is_broadcast("10.10.30.255") is True
+
+
+def test_broadcast_internal_cache_no_cross_contamination():
+    """回归：is_broadcast 与 is_internal 缓存分离，同 IP 交叉判定互不污染。"""
+    ip = "10.0.0.5"
+    assert CFG.is_broadcast(ip) is False                # 先走广播缓存
+    assert CFG.is_internal(ip) is True                  # 再走内网缓存，不得读到广播缓存值
+    ip2 = "10.10.30.255"
+    assert CFG.is_broadcast(ip2) is True                # x.y.z.255 是广播
+    assert CFG.is_internal(ip2) is True                 # 同 IP 的内网判定仍正确（10.10.30.0/24）
+
+
+def test_cli_profile_parsing(tmp_path, capsys):
+    """--profile e_case01：自动注入 internal 网段与默认 hosts；显式 --hosts 可覆盖。"""
+    from backend.parsers.network.cli import main
+    pcap = ROOT_E / "data" / "network_logs" / "e_case01" / "win10-to-c2.pcap"
+    out = tmp_path / "ev.json"
+    rc = main(["--profile", "e_case01", str(pcap), "--out", str(out)])
+    assert rc == 0
+    events = json.loads(out.read_text(encoding="utf-8"))
+    assert events
+    # 三网段分类落到事件上：C2(10.10.10.20) 必为 external 方向的 dst
+    c2 = [e for e in events if e["dst_ip"] == "10.10.10.20"]
+    assert c2 and all(e["detail"]["direction"] == "outbound" for e in c2)
+    assert all(e["host"] == "win10-jump" for e in c2)   # 默认 hosts 已注入
+    # 显式 --hosts 覆盖 profile 默认
+    hosts2 = tmp_path / "hosts.csv"
+    hosts2.write_text("ip,hostname,role\n10.10.30.10,jump-box,office\n", encoding="utf-8")
+    out2 = tmp_path / "ev2.json"
+    rc = main(["--profile", "e_case01", str(pcap), "--hosts", str(hosts2), "--out", str(out2)])
+    assert rc == 0
+    events2 = json.loads(out2.read_text(encoding="utf-8"))
+    assert all(e["host"] == "jump-box" for e in events2 if e["src_ip"] == "10.10.30.10")
+
+
+ROOT_E = Path(__file__).resolve().parents[1]
