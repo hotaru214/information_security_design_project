@@ -192,6 +192,15 @@ def test_build_summary_structure():
 
 # ---------------------------------------------------------------- Case02 双链端到端
 
+# 防呆（2026-09-09）：gen_sample_pcap.py 生成攻击流量样本，部分同学机器上的
+# 杀软（如火绒"文件实时监控"）会在脚本被执行时将其误判为 Backdoor/WebShell
+# 并删除文件。脚本缺失时跳过而不是报 fail，避免测试结果误导排查方向；
+# 根治方式是把项目目录加入杀软信任区，然后该用例自动恢复执行。
+def _sample_script_available() -> bool:
+    return (Path(__file__).resolve().parents[1] / "scripts" / "gen_sample_pcap.py").exists()
+
+
+@pytest.mark.skipif(not _sample_script_available(), reason="gen_sample_pcap.py 不在（可能被杀软误删）：把项目加入杀软信任区后恢复")
 def test_case02_dual_chain_end_to_end(tmp_path):
     """生成 Case02 -> 解析：两攻击者独立成链、各有入侵点、两 C2 都检出、契约合规。"""
     pcap = tmp_path / "case02.pcap"
