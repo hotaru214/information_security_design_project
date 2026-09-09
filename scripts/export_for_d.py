@@ -57,6 +57,8 @@ def main(argv=None):
                     help="把数据集的 IP->主机名映射同步到后端（D 的 host_map 数据源）")
     ap.add_argument("--batch-id", default="", metavar="NAME",
                     help="批次标签：写入每条事件的 detail.batch_id（默认取输出文件名去掉 _eventout）")
+    ap.add_argument("--pretty", action="store_true",
+                    help="输出美化缩进 JSON（默认紧凑单行，避免仓库行数膨胀）")
     args = ap.parse_args(argv)
     batch_id = args.batch_id or os.path.splitext(os.path.basename(args.out))[0].replace("_eventout", "")
 
@@ -114,7 +116,10 @@ def main(argv=None):
     assert len(ids) == len(set(ids)), "分配到重复 id！"
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as fh:
-        json.dump(exported, fh, ensure_ascii=False, indent=1)
+        if args.pretty:
+            json.dump(exported, fh, ensure_ascii=False, indent=1)
+        else:
+            json.dump(exported, fh, ensure_ascii=False, separators=(",", ":"))
     print(f"[done] {args.out}: {len(exported)} 条 EventOut（含真实 id，未匹配 {unmatched}）")
     return 0 if unmatched == 0 else 2
 
