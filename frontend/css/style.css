@@ -253,7 +253,18 @@ main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
 .evt-item .tl-detail { margin-top: 8px; padding: 10px 12px; }
 
 /* ---------- 分析报告 ---------- */
-.report-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.report-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+.report-head .scope-label {
+  font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: default;
+}
+.report-head .scope-label select {
+  padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--card-bg); font-size: 13px;
+}
+/* 右侧动作区：报告生成前按钮禁用（index.html 初始 disabled） */
+.report-actions { margin-left: auto; display: flex; gap: 8px; }
+.btn-ghost:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-ghost:disabled:hover { color: var(--text-muted); border-color: var(--border); background: transparent; }
 .btn-primary {
   background: var(--primary); color: #fff; border: none; cursor: pointer;
   padding: 9px 22px; border-radius: 8px; font-size: 14px; font-weight: 600;
@@ -271,6 +282,42 @@ main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
   border: 1px solid var(--border); padding: 6px 10px; font-size: 12px; text-align: left;
 }
 .report th { background: #f8fafc; }
+.report .mono { font-family: Consolas, monospace; }
+
+/* 一、攻击路径：横向流程图（节点/箭头配色 = 契约攻击阶段映射表） */
+.report-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 6px 0; }
+.flow-node {
+  color: #fff; font-weight: 600; font-size: 13px; text-align: center;
+  border-radius: 8px; padding: 9px 16px;
+  box-shadow: var(--shadow); border: 2px solid rgba(255,255,255,0.85);
+}
+.flow-arrow { font-size: 20px; font-weight: 700; line-height: 1; }
+
+/* 四、ATT&CK 映射：阶段 → 技术标签组（每阶段一行） */
+.mitre-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 7px 10px; border-bottom: 1px dashed var(--border); font-size: 13px;
+}
+.mitre-row:last-child { border-bottom: none; }
+.mitre-tag {
+  background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;
+  padding: 3px 10px; font-size: 12px;
+}
+.mitre-tag .mono { color: var(--primary); font-weight: 700; }
+.mitre-evid { font-size: 12px; color: var(--text-muted); }
+.mitre-evid .evid-chip { cursor: pointer; }
+.mitre-evid .evid-chip:hover { background: #fee2e2; }
+
+/* 风险等级徽章 */
+.risk-badge {
+  color: #fff; font-weight: 700; font-size: 13px;
+  border-radius: 999px; padding: 4px 16px; display: inline-block;
+}
+
+/* 三、关键证据表：整行可点（跳时间线详情） */
+.report tr.evid-row { cursor: pointer; transition: background 0.1s; }
+.report tr.evid-row:hover { background: #f0f6ff; }
+
 .caret { display: inline-block; width: 8px; background: var(--primary); animation: blink 1s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
 

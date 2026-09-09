@@ -70,7 +70,15 @@
     <section id="page-report" class="page">
       <div class="card report-head">
         <button id="btn-analyze" class="btn-primary">开始分析</button>
-        <span class="muted">根据攻击链与证据事件自动生成溯源分析报告</span>
+        <label class="scope-label">分析范围
+          <!-- 默认"全部数据"；主机选项由 report.js 从事件列表动态填充 -->
+          <select id="report-scope"><option value="all">全部数据</option></select>
+        </label>
+        <span class="muted">LLM 分析在后端完成，前端只消费结构化结果</span>
+        <span class="report-actions">
+          <button id="btn-copy-report" class="btn-ghost" disabled title="生成报告后可用">复制为 Markdown</button>
+          <button id="btn-export-report" class="btn-ghost" disabled title="生成报告后可用">导出报告</button>
+        </span>
       </div>
       <div class="card"><div id="report" class="report"><p class="muted">点击"开始分析"生成报告。</p></div></div>
     </section>

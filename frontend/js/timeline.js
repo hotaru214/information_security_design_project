@@ -242,16 +242,19 @@ function renderTimeline(data) {
   }
   // 注册到 App：app.js 的 showTimeline 调它
   App._applyTimelineFilter = applyFilter;
+  // 跨页定位入口：分析报告页关键证据表点行 → 时间线展开对应事件详情
+  App._locateTimelineEvent = locateEvent;
 
   /**
-   * URL 参数定位（需求⑥）：index.html?id=<数据库id>
-   * 供其他 tab / 外部链接跳转。定位 = 切到时间线 tab → 展开该事件 →
-   * 滚动到视野中央 + 高亮描边（3 秒后自动淡出，不干扰后续浏览）。
+   * 跨页定位事件（需求⑥的通用化）：index.html?id=<数据库id> 与
+   * 其他 tab 的跳转（如分析报告页关键证据表点行）共用这一个实现：
+   * 切到时间线 tab → 重置过滤并展开该事件 → 滚到视野中央 + 高亮描边
+   * （3 秒后自动淡出，不干扰后续浏览）。
+   * @param {number} id 数据库 events.id
+   * @returns {boolean} 是否定位成功（id 不在当前数据范围返回 false）
    */
-  function locateFromURL() {
-    const params = new URLSearchParams(location.search);
-    const id = Number(params.get("id"));
-    if (!id || !eventsById.has(id)) return;    // 无参数 / id 不存在，静默返回
+  function locateEvent(id) {
+    if (!eventsById.has(id)) return false;     // 无此 id，静默返回
     App.showTimeline({});                       // 切 tab 并恢复默认视图
     expandedId = id;
     draw();
@@ -261,6 +264,13 @@ function renderTimeline(data) {
       setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 150);
       setTimeout(() => el.classList.remove("located"), 3000);
     }
+    return true;
+  }
+
+  function locateFromURL() {
+    const params = new URLSearchParams(location.search);
+    const id = Number(params.get("id"));
+    if (id) locateEvent(id);
   }
 
   /* ---------- 控件变化 → 重画 ---------- */

@@ -42,13 +42,15 @@ const FETCH_TIMEOUT_MS = 2000;
  *
  * @param {string} url 请求地址
  * @param {number} ms  超时毫秒数
+ * @param {Object} [options] 透传给 fetch 的额外选项（method/headers/body），
+ *                           POST /api/analysis 这类带请求体的接口要用
  * @returns {Promise<Response>}
  */
-async function fetchWithTimeout(url, ms = FETCH_TIMEOUT_MS) {
+async function fetchWithTimeout(url, ms = FETCH_TIMEOUT_MS, options = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
-    return await fetch(url, { signal: controller.signal });
+    return await fetch(url, { signal: controller.signal, ...options });
   } finally {
     clearTimeout(timer);
   }
@@ -286,4 +288,99 @@ async function loadHostMap() {
     });
   }
   return map;
+}
+
+/* ============================================================
+ * getAnalysisReport() — 分析报告数据层（成员F）
+ * ============================================================
+ * 架构约束（需求原文）："LLM 调用属于后端，前端只消费结构化结果，
+ * 禁止在前端直接调 LLM API。"
+ *   - 前端只做一件事：POST /api/analysis（带分析范围），
+ *     拿回结构化 JSON 后交给 report.js 渲染；
+ *   - 后端收到请求后自己组织 prompt（攻击链+证据事件）去调 LLM，
+ *     把 LLM 输出解析成下面的固定结构再返回——LLM 的 key、
+ *     网络细节全部留在后端，前端零接触（key 不落前端）；
+ *   - mock（当前阶段）：返回固定 JSON，结构与真实接口完全一致，
+ *     后端就绪后本函数一行不用改，report.js 更不用改。
+ *
+ * 返回结构（后端 LLM 分析结果契约）：
+ *   attack_path      string[]  攻击路径节点（主机名按攻击顺序）
+ *   summary          string    攻击路径文字摘要
+ *   key_evidences    [{event_id, reason}]  关键证据（event_id=数据库 id）
+ *   mitre_mapping    [{stage, technique, evidence_event_ids:number[]}]
+ *   risk_level       string    风险等级（低危/中危/高危/严重）
+ *   recommendations  string[]  处置建议
+ *
+ * id 口径（重要，答辩会被问）：
+ *   key_evidences[].event_id 和 mitre_mapping[].evidence_event_ids
+ *   存的都是数据库 events.id（整数）。mock 阶段前端用"数组下标+1"
+ *   模拟 id（见 withSimulatedIds），所以 mock JSON 里的 id 都能在
+ *   mock 事件列表里找到对应事件（id=12 即第 12 条，T1190 Web 攻击）。
+ * ============================================================ */
+
+/**
+ * mock 固定报告 JSON（演示模式，断网可答辩）。
+ * 内容按 mock/chain.json 的真实攻击链编写（与攻击链 tab 互相印证），
+ * 所有 id 均指向 mock 事件列表里的真实事件，点击证据可跳转详情。
+ */
+const MOCK_ANALYSIS_REPORT = {
+  attack_path: ["attacker-external", "web-server", "office-pc-01", "core-server", "c2-server"],
+  summary:
+    "攻击者 203.0.113.66 于 09:01 前后对 web-server 发起端口扫描与 Web 攻击载荷投递（T1190），" +
+    "利用 Web 应用漏洞取得执行权限；09:02 起 web-server 出现 cmd.exe/rundll32 编码执行与远程下载行为（T1059），" +
+    "载荷落地后建立持久化；09:03 攻击者经 SMB/RDP 从 web-server 横向移动至 office-pc-01，" +
+    "再经 SSH 抵达 core-server（T1021）；09:04 起 core-server 出现 60s 固定间隔 C2 心跳与 DNS 隐蔽信道（T1071）；" +
+    "09:06 core-server 向外部 45.33.32.156 上传约 1.2MB 数据（T1041），判定发生数据外传。" +
+    "整条链路为典型的「初始访问 → 执行落地 → 横向移动 → C2 控制 → 数据外传」入侵链。",
+  key_evidences: [
+    { event_id: 12, reason: "Web 攻击载荷命中（http_attack / T1190）——初始入侵点" },
+    { event_id: 15, reason: "cmd.exe 编码执行并派生 rundll32 远程下载（remote_download/encoded_exec）——载荷落地" },
+    { event_id: 23, reason: "web-server 经 SMB(445) 横向连接 office-pc-01（remote_service_connection / T1021）——横向移动起点" },
+    { event_id: 27, reason: "core-server 以 60s 固定间隔外联 C2（c2_beacon / T1071）——命令与控制信道" },
+    { event_id: 47, reason: "core-server 向外部 45.33.32.156:80 上传数据（exfiltration / T1041）——数据外传" },
+  ],
+  mitre_mapping: [
+    { stage: "Initial Access", technique: "T1190", evidence_event_ids: [12, 13] },
+    { stage: "Execution", technique: "T1059", evidence_event_ids: [15, 16] },
+    { stage: "Lateral Movement", technique: "T1021", evidence_event_ids: [23, 25, 26] },
+    { stage: "Command and Control", technique: "T1071", evidence_event_ids: [27, 33] },
+    { stage: "Exfiltration", technique: "T1041", evidence_event_ids: [47] },
+  ],
+  risk_level: "高危",
+  recommendations: [
+    "立即隔离 web-server / office-pc-01 / core-server，阻断其对外一切连接",
+    "封禁攻击源 203.0.113.66 及外联目标 45.33.32.156、c2bad-dns.com",
+    "修复 web-server 输入校验缺陷（T1190 入口），排查 Web 日志中的其他入侵痕迹",
+    "全域重置凭据并审计 4624/4625 登录记录，确认横向移动是否触及更多主机",
+    "评估 core-server 上传数据内容与范围，确认泄露等级并按预案上报",
+  ],
+};
+
+/**
+ * 请求 LLM 分析报告。
+ * 结构校验只卡最核心的 attack_path（数组非空）——其余字段缺失时
+ * report.js 渲染层会用 safeField 兜底成"该区不渲染"，不会崩页。
+ *
+ * @param {Object} scope 分析范围：{scope:"all"}（默认全部数据）或
+ *                       {scope:"host", host:"web-server"}（仅某主机）
+ * @returns {Promise<{report: Object, mode: "live"|"demo"}>}
+ */
+async function getAnalysisReport(scope = { scope: "all" }) {
+  try {
+    const resp = await fetchWithTimeout(`${API_BASE}/api/analysis`, FETCH_TIMEOUT_MS, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(scope),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data && Array.isArray(data.attack_path) && data.attack_path.length > 0) {
+        return { report: data, mode: "live" };
+      }
+    }
+  } catch (e) {
+    /* 后端未连接 / 超时 —— 回退 mock，由 report.js 在页面上标注演示模式 */
+  }
+  /* mock 是共享常量，浅拷贝一层防止页面代码改动污染常量本身 */
+  return { report: { ...MOCK_ANALYSIS_REPORT }, mode: "demo" };
 }
