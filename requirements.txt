@@ -1,4 +1,4 @@
-# ===== 后端 FastAPI（成员A）=====
+# Backend FastAPI dependencies
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
@@ -13,8 +13,12 @@ typing-inspection==0.4.4
 typing_extensions==4.16.0
 uvicorn==0.52.4
 
-# ===== 网络流量解析模块（成员C）=====
+# Host parser dependencies
+python-evtx>=0.8.1
+requests>=2.28
+
+# Network parser dependencies
 scapy>=2.5.0
 
-# ===== 测试依赖（全组通用）=====
+# Shared test dependencies
 pytest>=7.0
