@@ -43,6 +43,8 @@ def analyze_paths(paths: list, host_map: dict = None, cfg: DetectionConfig = Non
         path = str(path)
         if _is_dir_zeek(path):
             f, s = parse_zeek_logs(path)
+        elif path.lower().endswith(".log"):
+            f, s = parse_zeek_logs(path)   # 单个 .log（含 APT29 combined_zeek.log 合并流）
         elif path.lower().endswith((".pcap", ".pcapng", ".cap")):
             f, s = parse_pcap(path, cfg)
         elif path.lower().endswith(".csv"):

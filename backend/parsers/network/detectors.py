@@ -129,10 +129,15 @@ def detect_c2_beacons(flows, cfg: DetectionConfig):
 
 
 def detect_suspicious_ports(flows, cfg: DetectionConfig):
-    """连接到常见远控/后门端口（如 4444 反弹Shell）→ 可疑连接（C2, T1571）。"""
+    """连接到常见远控/后门端口（如 4444 反弹Shell）→ 可疑连接（C2, T1571）。
+
+    排除广播/多播目的（如子网 147.32.255.255:4444 的 UDP 噪声）。
+    """
     results = []
     for rec in flows:
         if rec.dst_port not in cfg.suspicious_ports:
+            continue
+        if cfg.is_broadcast(rec.dst_ip):
             continue
         external = not cfg.is_internal(rec.dst_ip)
         results.append(Anomaly(
@@ -254,6 +259,62 @@ def detect_icmp_tunnel(flows, cfg: DetectionConfig):
             evidence={
                 "icmp_count": rec.icmp_count, "max_payload_bytes": rec.icmp_max_payload,
                 "trigger": "large_payload" if large else "high_frequency",
+            },
+        ))
+    return results
+
+
+def detect_cc_rotation(flows, cfg: DetectionConfig):
+    """CC 列表轮询：同源对同一端口在窗口内向 >=N 个不同外部主机发起连接/请求
+    （僵尸网络硬编码 CC 列表的典型行为，Command and Control, T1071）。
+
+    CTU-13 实测动机：Neris 感染主机 25 分钟内向 7 个不同 C2 的 6667 端口 POST。
+    """
+    groups = defaultdict(list)
+    for rec in flows:
+        if not (cfg.is_internal(rec.src_ip) and not cfg.is_internal(rec.dst_ip)):
+            continue
+        if cfg.is_broadcast(rec.dst_ip) or not rec.dst_port:
+            continue
+        if rec.dst_port in cfg.cc_rotation_ignored_ports or rec.dst_port > cfg.cc_rotation_max_port:
+            continue   # 正常 Web 浏览 / 基础服务 / P2P 临时端口的"多目的"属正常行为
+        groups[(rec.src_ip, rec.dst_port)].append(rec)
+
+    results = []
+    for (src, dport), recs in groups.items():
+        recs.sort(key=lambda r: r.start_ts)
+        starts = [r.start_ts for r in recs]
+        best = None
+        i = 0
+        for j, ts in enumerate(starts):
+            while ts - starts[i] > cfg.cc_rotation_window_sec:
+                i += 1
+            distinct = len({recs[k].dst_ip for k in range(i, j + 1)})
+            if distinct >= cfg.cc_rotation_distinct_dst:
+                best = (i, j, distinct)
+                break
+        if best is None:
+            continue
+        i, j, distinct = best
+        window_recs = recs[i:j + 1]
+        dst_ips = sorted({r.dst_ip for r in window_recs})
+        results.append(Anomaly(
+            kind="cc_rotation", severity="high", attack_stage="Command and Control",
+            mitre="T1071",
+            src_ip=src, dst_ip="", dst_port=dport,
+            start_ts=window_recs[0].start_ts, end_ts=window_recs[-1].end_ts,
+            protocol="TCP" if window_recs[0].protocol == "TCP" else window_recs[0].protocol,
+            source=window_recs[0].source,
+            description=(f"CC列表轮询: {src} 在 {_hhmmss(window_recs[0].start_ts)} 起的 "
+                         f"{cfg.cc_rotation_window_sec:.0f}s 内向同一端口 {dport} 的 "
+                         f"{distinct} 个不同外部主机发起 {len(window_recs)} 次连接"
+                         f"（硬编码CC列表的典型轮询行为）"),
+            evidence={
+                "dst_port": dport, "distinct_dst_count": distinct,
+                "connection_count": len(window_recs),
+                "dst_ips": dst_ips[:10],
+                "window_sec": cfg.cc_rotation_window_sec,
+                "first_seen": _hhmmss(window_recs[0].start_ts),
             },
         ))
     return results
@@ -431,6 +492,7 @@ DETECTORS = [
     detect_lateral_movement,
     detect_http_attacks,
     detect_brute_force,
+    detect_cc_rotation,
 ]
 
 

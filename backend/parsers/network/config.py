@@ -27,7 +27,7 @@ HTTP_ATTACK_PATTERNS = [
     (r"('|%27)\s*--", "SQL注入特征(注释符--)"),
     (r"\.\./\.\./", "路径穿越特征(../../)"),
     (r"/etc/(passwd|shadow)", "敏感文件访问特征(/etc/passwd)"),
-    (r"(cmd|exec|command)=", "命令执行参数特征"),
+    (r"(?<![a-z])(cmd|exec|command)=", "命令执行参数特征"),   # 负向断言排除 utmcmd= 等统计参数误报
     (r"eval\s*\(", "代码执行特征(eval)"),
     (r"base64_decode", "Webshell特征(base64_decode)"),
     (r"<script", "XSS特征(<script)"),
@@ -69,6 +69,13 @@ class DetectionConfig:
     brute_force_window_sec: float = 300.0
     brute_force_incomplete_ratio: float = 0.5   # 未完成连接（RST/无响应）占比下限
 
+    # CC 列表轮询（真实僵尸网络行为）：同源对同端口在窗口内轮询大量不同外部主机。
+    # 排除正常浏览/下载会大量"多目的"的端口：标准 Web 端口、基础服务端口、P2P 临时高端口
+    cc_rotation_distinct_dst: int = 5
+    cc_rotation_window_sec: float = 1800.0
+    cc_rotation_ignored_ports: set = field(default_factory=lambda: {3, 53, 123, 80, 443, 8080, 8000, 3478, 6881, 6882, 6883})
+    cc_rotation_max_port: int = 10000          # 高于此端口视为 P2P/临时端口，不参与判定
+
     http_attack_patterns: list = field(default_factory=lambda: list(HTTP_ATTACK_PATTERNS))
     suspicious_ports: set = field(default_factory=lambda: set(SUSPICIOUS_PORTS))
     remote_service_ports: set = field(default_factory=lambda: set(REMOTE_SERVICE_PORTS))
@@ -76,6 +83,19 @@ class DetectionConfig:
     def __post_init__(self):
         self._nets = [ipaddress.ip_network(n) for n in self.internal_networks]
         self._cache = {}
+
+    def is_broadcast(self, ip: str) -> bool:
+        """广播（x.y.z.255 / x.y.255.255 等）或多播地址，规则检测时应排除。"""
+        if ip in self._cache:
+            return self._cache[ip]
+        result = False
+        try:
+            addr = ipaddress.ip_address(ip)
+            result = addr.is_multicast or addr.ip == addr.network_broadcast_address or str(addr).endswith(".255")
+        except ValueError:
+            pass
+        self._cache[ip] = result
+        return result
 
     def is_internal(self, ip: str) -> bool:
         """判断 IP 是否属于内网网段。"""
