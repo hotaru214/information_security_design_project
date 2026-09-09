@@ -61,6 +61,7 @@ ANOMALY_EVENT_TYPE = {
     "icmp_tunnel": "network_connection",
     "lateral_movement": "network_connection",
     "brute_force_evidence": "network_connection",
+    "cc_rotation": "network_connection",
     "http_attack": "http_request",
     "dns_tunnel": "dns_query",
 }
@@ -160,6 +161,8 @@ def flow_to_event(rec: FlowRecord, host_map: dict, cfg: DetectionConfig) -> dict
     if rec.protocol == "ICMP":
         detail["icmp_count"] = rec.icmp_count
         detail["icmp_max_payload_bytes"] = rec.icmp_max_payload
+    if getattr(rec, "dataset_label", None):
+        detail["dataset_label"] = rec.dataset_label   # 公开数据集标签（评估用）
 
     port_part = f":{rec.dst_port}" if has_ports and rec.dst_port else ""
     description = (f"{rec.src_ip} → {rec.dst_ip}{port_part} {rec.protocol} 会话，"

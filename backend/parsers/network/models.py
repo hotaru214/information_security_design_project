@@ -48,6 +48,7 @@ class FlowRecord:
     source: str = "network_pcap"       # network_pcap / network_zeek（CSV 兜底也归 network_zeek）
     source_event_id: str | None = None  # Event V2 FINAL：网络事件恒为 null，原始编号(如 Zeek uid)保留在 raw_log
     raw_log: str = ""                  # 原始日志行（Zeek/CSV 可保留，PCAP 留空由输出层合成摘要）
+    dataset_label: str | None = None   # 公开数据集自带标签（如 CTU-13 的 flow=From-Botnet），进 detail 供评估
 
     @property
     def duration(self) -> float:
