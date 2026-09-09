@@ -259,29 +259,64 @@ const App = {
       /* Promise.all 并发加载事件、攻击链、主机映射：
        * 三个请求互不依赖，串行等会把启动时间翻倍。 */
       const [ev, ch, hm] = await Promise.all([loadEvents(), getAttackChain(), loadHostMap()]);
-      this.DATA.events = ev.events;
-      this.DATA.chain = ch.chain;
-      this.DATA.hostMap = hm;
-      /* 两组数据都来自后端才算 live；
-       * 只要有一个回退了 mock，就整站标"演示模式"，避免误导。 */
-      this.DATA.mode = ev.mode === "live" && ch.mode === "live" ? "live" : "demo";
+      /* 封箱规则：events/chain 永远是数组（错误/空态给 []），
+       * 页面模块渲染空数据不会崩；真实状态记在 evState/chState，
+       * 由下方徽章如实展示——Live 模式绝不拿 mock 充数。 */
+      this.DATA.events = Array.isArray(ev.events) ? ev.events : [];
+      this.DATA.chain = ch.chain && Array.isArray(ch.chain.links) ? ch.chain : { nodes: [], links: [] };
+      this.DATA.hostMap = hm || {};
+      this.DATA.evState = ev.state || (ev.mode === "demo" ? "ok" : "error");
+      this.DATA.chState = ch.state || (ch.mode === "demo" ? "ok" : "error");
+      this.DATA.evError = ev.error || "";
+      this.DATA.chError = ch.error || "";
+      this.DATA.mode = ev.mode === "demo" && ch.mode === "demo" ? "demo" : "live";
     } catch (err) {
       /* 能走到这里说明连本地 mock 都挂了（比如没起 http.server） */
       report.innerHTML = `<p style="color:var(--anomaly)">数据加载失败：${this.esc(err.message)}</p>`;
       return;
     }
 
-    // 演示模式徽章：mock 模式才显示（index.html 里默认带 hidden 类）
+    /* 状态徽章（封箱）：Demo → 常驻演示徽章；Live → 按真实状态显示
+     * 错误/空态提示，正常时隐藏。绝不在 Live 下显示演示徽章。 */
     const badge = document.getElementById("mode-badge");
-    if (this.DATA.mode !== "live") badge.classList.remove("hidden");
+    if (this.DATA.mode === "demo") {
+      badge.textContent = "演示模式（手动开启，数据为内置样例）";
+      badge.classList.remove("hidden");
+    } else if (this.DATA.evState === "error" && this.DATA.chState === "error") {
+      badge.textContent = `Live 模式 · 后端未连接（不回退演示数据）：${this.DATA.evError}`;
+      badge.classList.remove("hidden");
+    } else if (this.DATA.evState === "error" || this.DATA.chState === "error") {
+      badge.textContent = `Live 模式 · 部分接口异常：${this.DATA.evError || this.DATA.chError}`;
+      badge.classList.remove("hidden");
+    } else if (this.DATA.evState === "empty" && this.DATA.chState === "empty") {
+      badge.textContent = "Live 模式 · 数据库为空，未检测到任何事件";
+      badge.classList.remove("hidden");
+    } else {
+      badge.classList.add("hidden");
+    }
 
     this.bindTabs();
     this.bindModal();
+    this.bindDemoToggle();
     // 四个页面模块各渲染各的，互相不依赖
     renderStats(this.DATA);
     renderTimeline(this.DATA);
     renderChain(this.DATA);
     initReport(this.DATA);
+  },
+
+  /* ---------- Demo Mode 开关（封箱：mock 只在显式 Demo 模式使用） ----------
+   * 页脚按钮切换 + 整页刷新重取数据。URL ?demo=1 优先级更高，
+   * 评委演示可以用带参数的链接直达确定性 Demo。 */
+  bindDemoToggle() {
+    const btn = document.getElementById("demo-toggle");
+    if (!btn) return;
+    const sync = () => { btn.textContent = isDemoMode() ? "退出演示模式（回到 Live）" : "进入演示模式（mock 数据）"; };
+    sync();
+    btn.addEventListener("click", () => {
+      setDemoMode(!isDemoMode());
+      location.reload();
+    });
   },
 
   /* ---------- Tab 切换 ---------- */

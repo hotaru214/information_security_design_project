@@ -345,3 +345,11 @@ main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
   max-height: 260px; overflow: auto;
 }
 .rawlog-title { font-size: 12px; font-weight: 600; margin-top: 12px; }
+
+/* ---------- Demo Mode 开关按钮（封箱：mock 仅显式 Demo 模式使用） ---------- */
+.demo-toggle {
+  margin-left: 16px; padding: 3px 10px; font-size: 11px; cursor: pointer;
+  border: 1px solid #d1d5db; border-radius: 6px; background: transparent;
+  color: inherit; opacity: .75;
+}
+.demo-toggle:hover { opacity: 1; border-color: #9ca3af; }

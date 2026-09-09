@@ -118,11 +118,26 @@ async function runAnalysis() {
     ? { scope: "all" }
     : { scope: "host", host: scopeSel.value };
 
-  let report, mode;
+  let report, mode, state, error;
   try {
-    ({ report, mode } = await getAnalysisReport(scope));
+    ({ report, mode, state, error } = await getAnalysisReport(scope));
   } catch (err) {
     box.innerHTML = `<p style="color:var(--anomaly)">分析请求失败：${App.esc(err.message)}</p>`;
+    btn.disabled = false;
+    btn.textContent = "开始分析";
+    return;
+  }
+
+  /* 封箱规则（2026-09-09）：Live 模式下失败/空链如实展示，
+   * 绝不静默换成固定 mock 报告。 */
+  if (state === "error") {
+    box.innerHTML = `<p style="color:var(--anomaly)">分析失败（Live 模式，不回退演示数据）：${App.esc(error || "未知错误")}</p>`;
+    btn.disabled = false;
+    btn.textContent = "开始分析";
+    return;
+  }
+  if (state === "empty") {
+    box.innerHTML = '<p class="muted">当前分析范围内未检测到攻击链，无法生成分析报告。</p>';
     btn.disabled = false;
     btn.textContent = "开始分析";
     return;
@@ -267,7 +282,7 @@ function buildReportHtml(r) {
     <p class="muted">—— 报告生成于 ${App.esc(nowLabel())} ·
       ${REPORT_LIVE
         ? "数据来源：后端 POST /api/analysis（LLM 分析结果经后端解析为结构化 JSON，前端不直接调用 LLM API）"
-        : "数据来源：前端固定 mock（后端未连接的演示模式；接入后端后结构不变，前端零改动）"}</p>
+        : "数据来源：前端演示模式（手动开启的 Demo，内置样例数据）"}</p>
   `;
 }
 
