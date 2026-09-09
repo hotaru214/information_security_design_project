@@ -39,9 +39,9 @@ def t1():
     ev = make_event(timestamp="t", host="h")
     assert list(ev.keys()) == STANDARD_FIELDS, "make_event的键和STANDARD_FIELDS不一致"
     assert len(STANDARD_FIELDS) == 19, f"契约字段应为19个, 实际{len(STANDARD_FIELDS)}"
-    # Event V2: source枚举6值
+    # Event V2: source枚举8值（2026-09-09 D通知新增firewall/waf，C侧网络日志用）
     for s in ("windows_evtx", "sysmon", "linux_auth", "linux_audit",
-              "network_pcap", "network_zeek"):
+              "network_pcap", "network_zeek", "firewall", "waf"):
         assert s in SOURCES, f"V2要求source枚举缺 {s}"
     try:
         make_event(不存在的字段=1)
@@ -50,7 +50,7 @@ def t1():
         pass  # 预期行为：报KeyError
 
 
-check("任务1", "Event V2: 19字段齐全, source枚举6值, 未知字段会被拒绝", t1)
+check("任务1", "Event V2: 19字段齐全, source枚举8值, 未知字段会被拒绝", t1)
 
 # ---------- 任务2：环境 + 样例数据 ----------
 def t2():
