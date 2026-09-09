@@ -114,6 +114,25 @@ INITIAL_ACCESS_URI_KEYWORDS = [
     "../",
 ]
 
+INITIAL_ACCESS_FLAGS = [
+    "web_attack",
+    "initial_access",
+    "exploit",
+    "rce",
+    "command_injection",
+    "webshell_upload",
+]
+
+INITIAL_ACCESS_ATTACK_TYPES = [
+    "rce",
+    "remote_code_execution",
+    "command_injection",
+    "webshell",
+    "file_upload",
+    "path_traversal",
+    "sql_injection",
+]
+
 
 def correlate_events(
     events: list[dict[str, Any]], host_map: dict[str, str] | None = None,
@@ -266,7 +285,7 @@ def detect_initial_access(
     steps = []
 
     for event in events:
-        if event["_event_type"] != "http_request":
+        if event["_event_type"] not in {"http_request", "network_connection"}:
             continue
 
         src_ip = get_value(event, "src_ip")
@@ -279,8 +298,31 @@ def detect_initial_access(
 
         uri = as_text(get_detail(event, "uri")).lower()
         suspicious_uri = any(keyword in uri for keyword in INITIAL_ACCESS_URI_KEYWORDS)
-        anomalous = has_any_flag(event, ["web_attack", "initial_access", "exploit"])
-        if not suspicious_uri and not anomalous and int_value(event.get("severity")) < 2:
+        source = event["_source"]
+        attack_type = as_text(get_detail(event, "attack_type")).lower()
+        firewall_action = as_text(get_detail(event, "action")).lower()
+        web_port = int_value(event.get("dst_port")) in {80, 443, 8080, 8443}
+        anomalous = has_any_flag(event, INITIAL_ACCESS_FLAGS)
+        waf_alert = source == "waf" and (
+            anomalous
+            or any(keyword in attack_type for keyword in INITIAL_ACCESS_ATTACK_TYPES)
+            or int_value(event.get("severity"), 0) >= 2
+        )
+        firewall_boundary_hit = (
+            source == "firewall"
+            and web_port
+            and firewall_action in {"", "allow", "allowed", "accept", "accepted"}
+        )
+        if (
+            not suspicious_uri
+            and not anomalous
+            and not waf_alert
+            and not firewall_boundary_hit
+            and int_value(event.get("severity"), 0) < 2
+        ):
+            continue
+
+        if event["_event_type"] == "network_connection" and not firewall_boundary_hit:
             continue
 
         target_host = resolve_host(dst_ip, host_map) or event["_host"] or None
@@ -297,6 +339,7 @@ def detect_initial_access(
                 )
             )
 
+        source_note = "WAF alert" if source == "waf" else "boundary firewall event" if source == "firewall" else "HTTP request"
         steps.append(
             make_step(
                 stage="Initial Access",
@@ -306,7 +349,7 @@ def detect_initial_access(
                 target_host=target_host,
                 source_ip=src_ip,
                 target_ip=dst_ip,
-                description=f"External HTTP request reached {target_host or dst_ip} through a suspicious web path",
+                description=f"External {source_note} reached {target_host or dst_ip} as a suspicious boundary access",
                 evidence_events=evidence,
             )
         )

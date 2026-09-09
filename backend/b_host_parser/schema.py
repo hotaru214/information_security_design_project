@@ -92,6 +92,8 @@ SOURCES = [
     "linux_audit",
     "network_pcap",   # C同学：PCAP解析
     "network_zeek",   # C同学：Zeek日志
+    "firewall",       # C/E：防火墙或边界设备日志
+    "waf",            # C/E：WAF或Web攻击告警
 ]
 
 # Windows 登录类型含义（解析4624/4625时给人看的说明）

@@ -264,7 +264,7 @@ _REQUIRED_NON_EMPTY = ("host", "description", "raw_log")
 # 禁止的占位值：契约规定缺失一律 null，不允许 unknown/0/空串制造占位
 _PLACEHOLDERS = ("", "unknown", "Unknown", "UNKNOWN", "-", "N/A", "none")
 _SOURCES = ("windows_evtx", "sysmon", "linux_auth", "linux_audit",
-            "network_pcap", "network_zeek")
+            "network_pcap", "network_zeek", "firewall", "waf")
 
 
 def _is_ip_like(value) -> bool:

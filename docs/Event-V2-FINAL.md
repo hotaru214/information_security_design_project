@@ -1,6 +1,6 @@
 # 统一数据契约 · Event V2 FINAL（唯一权威版本）
 
-> **状态**：2026-09-08 A 发布冻结（Event V2 FINAL）；2026-09-09 补充批次隔离约定与 EventOut 说明。
+> **状态**：2026-09-08 A 发布冻结（Event V2 FINAL）；2026-09-09 补充批次隔离约定、`case_id`、`source=firewall/waf` 与 EventOut 说明。
 > **取代**：`docs/数据格式契约-v1.md`（其中 event_id 命名已废止，见第 2 条）。
 > **执行**：A/B/C/D/F 全部以本文档为准；修改需全组同步。
 > **校验卡点**：`backend/parsers/network/normalize.py` 的 `validate_events` / `validate_eventout`；
@@ -24,7 +24,15 @@ detail, description, anomaly_flags, severity, raw_log
 
 ## 3. source 枚举
 
-`windows_evtx` / `sysmon` / `linux_auth` / `linux_audit` / `network_pcap` / `network_zeek`
+`windows_evtx` / `sysmon` / `linux_auth` / `linux_audit` / `network_pcap` / `network_zeek` / `firewall` / `waf`
+
+使用约定：
+
+- `network_pcap`：PCAP / PCAPNG 直接解析结果。
+- `network_zeek`：Zeek 日志或 CSV 连接日志兜底格式。
+- `firewall`：防火墙、网关、边界设备访问日志。
+- `waf`：WAF 或 Web 攻击告警。
+- `source` 表示证据来源，`event_type` 仍表示行为类型。例如 WAF 的 Web 请求仍写 `event_type=http_request`。
 
 ## 4. null 规则
 
@@ -55,7 +63,7 @@ host 字段只放主机名；映射不到时 AttackStep 的 target_host = null �
 
 - D 直接消费后端 EventOut；source_type→source、command_line→cmdline、
   parent_process/registry_* 从 detail 读取。
-- D 输出 AttackStep：step_id、stage、technique_id、technique_name、timestamp、
+- D 输出 AttackStep：step_id、case_id、stage、technique_id、technique_name、timestamp、
   source_host、target_host、source_ip、target_ip、description、evidence_event_ids（存数据库 id）。
 
 ## 8. 时间

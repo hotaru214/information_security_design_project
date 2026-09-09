@@ -72,6 +72,11 @@ def test_network_source_event_id_must_be_null():
     assert validate_events([base_event(source="sysmon", source_event_id=1)]) == []   # 主机侧可非空
 
 
+@pytest.mark.parametrize("source", ["network_pcap", "network_zeek", "firewall", "waf"])
+def test_network_and_boundary_sources_are_accepted(source):
+    assert validate_events([base_event(source=source)]) == []
+
+
 def test_anomaly_flags_element_type():
     e = base_event(anomaly_flags=[1, 2])
     assert any("anomaly_flags" in p for p in validate_events([e]))
