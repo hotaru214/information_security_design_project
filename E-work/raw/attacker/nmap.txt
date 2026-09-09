@@ -1,0 +1,46 @@
+# Nmap 7.94SVN scan initiated Wed Sep  9 10:49:14 2026 as: nmap -Pn -sT -T2 --max-retries 1 --scan-delay 200ms --reason -p 22,25,80,8080,8088,9100 -oN /home/mxy/case01-run-final/nmap-final.txt 10.10.10.1 10.10.10.20 10.10.20.10 10.10.20.20
+Nmap scan report for _gateway (10.10.10.1)
+Host is up, received user-set.
+
+PORT     STATE    SERVICE    REASON
+22/tcp   filtered ssh        no-response
+25/tcp   filtered smtp       no-response
+80/tcp   filtered http       no-response
+8080/tcp filtered http-proxy no-response
+8088/tcp filtered radan-http no-response
+9100/tcp filtered jetdirect  no-response
+
+Nmap scan report for 10.10.10.20
+Host is up, received user-set (0.0050s latency).
+
+PORT     STATE  SERVICE    REASON
+22/tcp   closed ssh        conn-refused
+25/tcp   closed smtp       conn-refused
+80/tcp   closed http       conn-refused
+8080/tcp open   http-proxy syn-ack
+8088/tcp closed radan-http conn-refused
+9100/tcp closed jetdirect  conn-refused
+
+Nmap scan report for 10.10.20.10
+Host is up, received user-set (0.0032s latency).
+
+PORT     STATE  SERVICE    REASON
+22/tcp   closed ssh        conn-refused
+25/tcp   closed smtp       conn-refused
+80/tcp   open   http       syn-ack
+8080/tcp closed http-proxy conn-refused
+8088/tcp open   radan-http syn-ack
+9100/tcp closed jetdirect  conn-refused
+
+Nmap scan report for 10.10.20.20
+Host is up, received user-set (0.0069s latency).
+
+PORT     STATE  SERVICE    REASON
+22/tcp   closed ssh        conn-refused
+25/tcp   open   smtp       syn-ack
+80/tcp   closed http       conn-refused
+8080/tcp closed http-proxy conn-refused
+8088/tcp closed radan-http conn-refused
+9100/tcp closed jetdirect  conn-refused
+
+# Nmap done at Wed Sep  9 10:49:18 2026 -- 4 IP addresses (4 hosts up) scanned in 3.68 seconds
