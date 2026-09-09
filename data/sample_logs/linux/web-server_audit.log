@@ -5,4 +5,6 @@ type=PATH msg=audit(1736621703.456:502): item=1 name="/etc/shadow" inode=131074 
 type=SYSCALL msg=audit(1736621708.789:503): arch=c000003e syscall=257 success=yes exit=5 ppid=3102 uid=1001 auid=1001 ses=14 comm="curl" exe="/usr/bin/curl" key=(null)
 type=PATH msg=audit(1736621708.789:503): item=0 name="/etc/passwd" inode=131075 dev=08:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
 type=SYSCALL msg=audit(1736621712.000:504): arch=c000003e syscall=59 success=yes exit=0 ppid=3102 uid=1001 auid=1001 ses=14 comm="nc" exe="/tmp/nc" key=(null)
+type=SYSCALL msg=audit(1736621715.000:506): arch=c000003e syscall=257 success=yes exit=6 ppid=3102 uid=1001 auid=1001 ses=14 comm="bash" exe="/usr/bin/bash" key="sensitive" a0=0xffffff9c a1=0x7f1a2b3c4d5e a2=0x41
+type=PATH msg=audit(1736621715.000:506): item=0 name="/etc/cron.d/persist" inode=131076 dev=08:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
 type=USER_ACCT msg=audit(1736621720.000:505): pid=3103 uid=0 auid=4294967295 ses=4294967295 msg='op=PAM:accounting grantors=pam_permit acct="admin" exe="/usr/sbin/sshd" hostname=? addr=203.0.113.66 terminal=ssh res=success'

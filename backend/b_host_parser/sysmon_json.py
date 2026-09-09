@@ -178,8 +178,9 @@ def _sysmon_event(event_id: int, data: dict, ts, host: str) -> dict | None:
         details = _clean(data.get("Details"))
         description = f"注册表键值修改: {target} = {details}（进程: {image}）"
         detail = {"registry_key": target,
-                  "registry_value": details,
-                  "registry_event_type": _clean(data.get("EventType")),
+                  "registry_value_name": target.rsplit("\\", 1)[-1] if target else None,
+                  "registry_value_data": details,
+                  "registry_operation": _clean(data.get("EventType")),
                   "process_guid": _clean(data.get("ProcessGuid"))}
     elif event_id == 22:  # DNS查询：C2域名解析的主机侧证据
         qname = _clean(data.get("QueryName"))

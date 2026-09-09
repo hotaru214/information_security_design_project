@@ -24,7 +24,8 @@ parse_linux_audit —— auditd（2026-09-08按E真实数据适配，支持两�
     事件映射（按E的case01审计规则对齐D的需求）：
       type=USER_CMD（sudo提权，cmd是HEX编码）      → process_start（D决议，sudo信息放detail）
       SYSCALL execve + EXECVE（argv配对）          → process_start（进程+完整命令行，D的核心需求）
-      SYSCALL open/openat + PATH（敏感文件访问）    → file_read（相对路径会和CWD拼成绝对路径）
+      SYSCALL open/openat + PATH（敏感文件访问）    → file_read/file_write（按open flags
+                                                     区分读写，相对路径会和CWD拼成绝对路径）
       SYSCALL connect/accept + SOCKADDR（仅inet）   → network_connection（本地unix socket是噪音，跳过）
       SERVICE_START / SERVICE_STOP                 → service_started / service_stopped
       其余（CONFIG_CHANGE/BPF/USER_AUTH/...）       → skipped_other 计数
@@ -364,7 +365,7 @@ def parse_linux_audit(file_path: str, stats: dict = None, host: str = None) -> l
         events.append(_new_event(
             ts=ts, host=host, source="linux_audit", event_type="process_start",
             user=_resolve_user(pub), process=_basename(first_tok),
-            src_ip=None, detail=detail,
+            src_ip=None, detail=detail, cmdline=cmd,
             description=f"sudo提权执行: {cmd or '命令未解码'}",
             raw_line=line))
         stats["by_event_id"]["USER_CMD"] = stats["by_event_id"].get("USER_CMD", 0) + 1
@@ -385,21 +386,37 @@ def parse_linux_audit(file_path: str, stats: dict = None, host: str = None) -> l
                        "uid": sk.get("uid"), "auid": sk.get("auid"),
                        "tty": sk.get("tty") or None}
 
-        if name in FILE_OPEN_SYSCALLS:  # 敏感文件访问 → file_read
+        if name in FILE_OPEN_SYSCALLS:  # 敏感文件访问 → file_read / file_write
             paths = sorted(g.get("paths", []), key=lambda p: p[0])
             fname = paths[-1][1] if paths else None  # item最大的那条才是目标文件
             if fname and not fname.startswith("/") and g.get("cwd"):
                 fname = g["cwd"].rstrip("/") + "/" + fname  # 相对路径拼CWD成绝对路径
             exe = sk.get("exe")
             process = _basename(exe) or _basename(sk.get("comm"))
+            # 读写区分（D靠它匹配外传/落盘行为）：openat 的 flags 在 a2、open 在 a1。
+            # ausearch -i 是符号形态（O_RDONLY|O_CLOEXEC），原始格式是十六进制数字，两种都接：
+            # 命中 O_WRONLY/O_RDWR（或 hex 低2位≠0）→ file_write；没有 flags 就不猜，维持 file_read。
+            raw_flags = sk.get("a2" if name == "openat" else "a1")
+            is_write = False
+            if raw_flags:
+                if "O_WRONLY" in raw_flags or "O_RDWR" in raw_flags:
+                    is_write = True
+                else:
+                    try:
+                        is_write = int(raw_flags, 16) & 0b11 != 0
+                    except ValueError:
+                        is_write = False
+            event_type = "file_write" if is_write else "file_read"
             events.append(_new_event(
-                ts=g["ts"], host=host, source="linux_audit", event_type="file_read",
+                ts=g["ts"], host=host, source="linux_audit", event_type=event_type,
                 user=user, process=process, src_ip=None,
                 detail={**base_detail, "file_path": fname, "syscall": name,
-                        "comm": sk.get("comm") or None, "exe": exe},
-                description=f"敏感文件访问: {fname or '路径未记录'}（进程: {process or '未知'}）",
+                        "comm": sk.get("comm") or None, "exe": exe,
+                        "open_flags": raw_flags},
+                description=f"敏感文件{'写入' if is_write else '访问'}: "
+                            f"{fname or '路径未记录'}（进程: {process or '未知'}）",
                 raw_line="\n".join(g["raw"])))
-            stats["by_event_id"]["file_open"] = stats["by_event_id"].get("file_open", 0) + 1
+            stats["by_event_id"][event_type] = stats["by_event_id"].get(event_type, 0) + 1
 
         elif name in EXEC_SYSCALLS:  # 进程执行 → process_start（EXECVE带完整argv）
             args = []
