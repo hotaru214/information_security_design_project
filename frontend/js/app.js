@@ -32,12 +32,16 @@ const App = {
 
   /* 攻击阶段配色表——照抄全局契约的"攻击阶段映射"。
    * 攻击链图、时间线、报告页都用它，保证全站阶段颜色一致。
-   * （八阶段是 ATT&CK Kill Chain 的经典划分） */
+   * （ATT&CK Kill Chain 经典八阶段 + D 实际新增的 Defense Evasion，
+   *   2026-09-08 A 确认实际输出共 9 个阶段——D 用 Defense Evasion
+   *   标记 log_cleared（1102 清日志）等反取证行为）
+   * 取色一律走下面的 stageColor()（容错查找），不要直接查表。 */
   STAGE_COLORS: {
     "Initial Access": "#dc2626",        // 初始访问
     "Execution": "#ea580c",             // 执行
     "Persistence": "#d97706",           // 持久化
     "Privilege Escalation": "#7c3aed",  // 权限提升
+    "Defense Evasion": "#0f766e",       // 防御规避（D 新增第9阶段，teal 区分全表）
     "Lateral Movement": "#2563eb",      // 横向移动
     "Collection": "#0891b2",            // 收集
     "Command and Control": "#be185d",   // 命令与控制
@@ -53,6 +57,88 @@ const App = {
     linux_audit: "Linux audit",
     network_pcap: "PCAP 流量",
     network_zeek: "Zeek 日志",
+  },
+
+  /* anomaly_flags 规则名 → 中文标签（契约冻结 9 个规则名）。
+   * 时间线 / 详情弹窗共用：徽章显示中文，title 悬停保留英文原名
+   * （规则命中溯源回查原始规则名时用）。未知规则名回退显示原名。 */
+  FLAG_LABEL: {
+    offhour_login: "非工作时间登录",
+    brute_force: "暴力破解",
+    username_enumeration: "用户名枚举",
+    encoded_exec: "编码执行",
+    remote_download: "远程下载",
+    registry_persistence: "注册表持久化",
+    suspicious_process: "可疑进程",
+    webshell_execution: "Webshell执行",
+    remote_service_connection: "远程服务连接",
+  },
+
+  /* detail 已知键 → 中文标签。
+   * 依据：契约《统一数据契约.txt》第 6 节 + 项目各模块实际产出键的并集。
+   * 属于"详情组件"的一部分：时间线内嵌面板 / 攻击链侧栏事件详情共用。
+   * detail 是开放对象，未知键不在表里 → 原样展示（绝不丢字段）。 */
+  DETAIL_LABEL: {
+    parent_process: "父进程",
+    parent_cmdline: "父进程命令行",
+    file_path: "文件路径",
+    hashes: "文件哈希",
+    registry_key: "注册表键",
+    registry_value_name: "注册表值名",
+    registry_value_data: "注册表值数据",
+    registry_operation: "注册表操作",
+    src_port: "源端口",
+    domain: "域名",
+    uri: "URI",
+    method: "请求方法",
+    status_code: "状态码",
+    bytes_in: "入流量",
+    bytes_out: "出流量",
+    attack_stage: "攻击阶段",
+    mitre_technique: "MITRE 技术",
+    logon_id: "登录会话 ID",
+    substatus: "登录子状态码",
+    substatus_desc: "登录子状态说明",
+    /* 以下为 B/C/D 各模块实际产出中出现过的键（持续补充） */
+    log_name: "日志通道",
+    target_user: "目标用户",
+    group_name: "用户组",
+    privilege: "权限",
+    service_name: "服务名",
+    task_name: "计划任务名",
+    sudo_command: "sudo 命令",
+    sudo_user: "sudo 用户",
+    packets: "数据包数",
+    bytes: "字节数",
+    duration_sec: "持续时长（秒）",
+    end_time: "结束时间",
+    flow_key: "流标识",
+    peer_host: "对端主机",
+    direction: "连接方向",
+    dns_queries: "DNS 查询列表",
+  },
+
+  /* Windows logon_type 档位 → 中文含义（展示辅助；未知档位只显示数字） */
+  LOGON_TYPE_LABEL: {
+    2: "交互式登录", 3: "网络登录", 4: "批处理", 5: "服务", 7: "解锁",
+    8: "网络明文", 9: "新凭据", 10: "远程交互", 11: "缓存域凭据",
+  },
+
+  /**
+   * 攻击阶段 → 颜色（容错版查找）。
+   * 依次尝试：精确匹配 → 忽略大小写 → 包含匹配（比如数据源给出
+   * "Initial Access (T1190)" 或大小写变体也能命中）→ 兜底灰色。
+   * D 的 stage 取值口径尚未 100% 锁死为契约全名，所以查找要宽容。
+   */
+  stageColor(stage) {
+    if (!stage) return "#64748b";
+    const keys = Object.keys(this.STAGE_COLORS);
+    if (keys.includes(stage)) return this.STAGE_COLORS[stage];
+    const lower = String(stage).toLowerCase();
+    const ci = keys.find(k => k.toLowerCase() === lower);
+    if (ci) return this.STAGE_COLORS[ci];
+    const part = keys.find(k => lower.includes(k.toLowerCase()));
+    return part ? this.STAGE_COLORS[part] : "#64748b";
   },
 
   /**
@@ -92,23 +178,26 @@ const App = {
   },
 
   /**
-   * 详情表格一行。
+   * 详情表格一行（时间线内嵌面板与详情弹窗共用）。
    * 契约的 null 规则：缺失一律 null，禁止 "unknown"/0/"" 占位；
-   * 对应的前端约定：null 字段直接不显示——表格里显示为浅灰
-   * "null（不显示）"，让学习时能看清"这条事件哪些字段是空的"。
+   * 对应的前端约定（2026-09-08 统一口径）：null 字段整行不渲染，
+   * 不显示 "null" 字样——契约原话"前端渲染时 null 字段直接不显示"。
+   * 返回空字符串而不是占位行，调用方直接拼接即可。
    */
   kvRow(label, value, formatter) {
-    if (value === null || value === undefined) {
-      return `<tr><th>${label}</th><td class="null">null（不显示）</td></tr>`;
-    }
+    if (value === null || value === undefined) return "";
     const v = formatter ? formatter(value) : this.esc(value);
     return `<tr><th>${label}</th><td>${v}</td></tr>`;
   },
 
-  /** 异常规则名徽标（anomaly_flags 是数组，一个事件可带多个规则命中） */
+  /** 异常规则名徽标（anomaly_flags 是数组，一个事件可带多个规则命中）。
+   *  显示中文（App.FLAG_LABEL 映射），title 保留英文原名供回查；
+   *  映射表没有的规则名（未来新增）回退显示原名，绝不显示空白。 */
   flagBadges(flags) {
     if (!flags || flags.length === 0) return "";
-    return flags.map(f => `<span class="chip flag">${this.esc(f)}</span>`).join(" ");
+    return flags.map(f =>
+      `<span class="chip flag" title="${this.esc(f)}">${this.esc(this.FLAG_LABEL[f] || f)}</span>`
+    ).join(" ");
   },
 
   /** 按 id 查事件——契约：前端跳转/定位一律用 id，不用 source_event_id */
@@ -169,7 +258,7 @@ const App = {
     try {
       /* Promise.all 并发加载事件、攻击链、主机映射：
        * 三个请求互不依赖，串行等会把启动时间翻倍。 */
-      const [ev, ch, hm] = await Promise.all([loadEvents(), loadChain(), loadHostMap()]);
+      const [ev, ch, hm] = await Promise.all([loadEvents(), getAttackChain(), loadHostMap()]);
       this.DATA.events = ev.events;
       this.DATA.chain = ch.chain;
       this.DATA.hostMap = hm;
@@ -215,13 +304,10 @@ const App = {
   },
 
   /* ---------- 事件详情弹窗：点遮罩/✕ 关闭 ---------- */
-  _evidenceRequest: 0,
-
   bindModal() {
     const modal = document.getElementById("modal");
-    const close = () => { this._evidenceRequest++; modal.classList.add("hidden"); };
-    document.getElementById("modal-close").addEventListener("click", close);
-    modal.addEventListener("click", e => { if (e.target === modal) close(); });
+    document.getElementById("modal-close").addEventListener("click", () => modal.classList.add("hidden"));
+    modal.addEventListener("click", e => { if (e.target === modal) modal.classList.add("hidden"); });
   },
 
   /**
@@ -229,52 +315,9 @@ const App = {
    * 这是"契约逐一对得上"的验收现场：每条事件的所有字段
    * （包括 detail 里的独有键）都能在这里查到，raw_log 完整展示。
    */
-  async openStepEvidence(link) {
-    if (!link) return;
-    const request = ++this._evidenceRequest;
-    const ids = Array.isArray(link.evidence_event_ids) ? link.evidence_event_ids : [];
-    const body = document.getElementById("modal-body");
-    document.getElementById("modal-title").textContent = `攻击步骤 ${link.step_id ?? ""} · 精确证据`;
-    const heading = `<table class="kv">
-      ${this.kvRow("step_id", link.step_id)}
-      ${this.kvRow("attack_stage", link.attack_stage)}
-      ${this.kvRow("mitre_technique", link.mitre_technique)}
-      ${this.kvRow("technique_name", link.technique_name)}
-      ${this.kvRow("timestamp", link.timestamp)}
-      ${this.kvRow("description", link.description)}
-    </table>`;
-    body.innerHTML = heading + '<p class="muted">证据读取中…</p>';
-    document.getElementById("modal").classList.remove("hidden");
-    if (!ids.length) {
-      body.innerHTML = heading + '<p class="muted">该攻击步骤暂无关联证据（演示步骤可能没有精确证据 ID）</p>';
-      return;
-    }
-    const results = await Promise.allSettled(ids.map(id => loadEventById(id)));
-    if (request !== this._evidenceRequest) return;
-    body.innerHTML = heading + results.map((result, index) => {
-      if (result.status === "rejected") {
-        return `<p>Evidence #${this.esc(ids[index])} unavailable：证据读取失败（${this.esc(result.reason?.message ?? "网络错误")}）</p>`;
-      }
-      const event = result.value;
-      return `<div class="chain-link-item">
-        <button type="button" class="btn-primary" data-evidence-index="${index}">查看 Event #${this.esc(event.id)}</button>
-        <p>${this.esc(event.timestamp)} · ${this.esc(event.host)} · ${this.esc(event.event_type)}</p>
-        <p>${this.esc(event.description)}</p>
-      </div>`;
-    }).join("");
-    body.querySelectorAll("[data-evidence-index]").forEach(button => {
-      button.addEventListener("click", () => this.showEventDetail(results[Number(button.dataset.evidenceIndex)].value));
-    });
-  },
-
   openEventDetail(id) {
     const e = this.eventById(id);
     if (!e) return;
-    this.showEventDetail(e);
-  },
-
-  showEventDetail(e) {
-    this._evidenceRequest++;
     const sev = this.SEVERITY[e.severity] || this.SEVERITY[0];
 
     document.getElementById("modal-title").innerHTML =
@@ -299,7 +342,7 @@ const App = {
         ${this.kvRow("timestamp", e.timestamp)}
         ${this.kvRow("host", e.host)}
         ${this.kvRow("source", e.source, v => this.esc(this.SOURCE_LABEL[v] || v))}
-        ${this.kvRow("event_id", e.event_id ?? e.source_event_id ?? null)}
+        ${this.kvRow("source_event_id", e.source_event_id)}
         ${this.kvRow("event_type", e.event_type)}
         ${this.kvRow("user", e.user)}
         ${this.kvRow("process", e.process)}
@@ -320,7 +363,122 @@ const App = {
     `;
     document.getElementById("modal").classList.remove("hidden");
   },
+
+  /**
+   * 事件详情组件（共享）——三区详情面板 HTML。
+   * 时间线 tab（卡片内展开）与攻击链 tab（侧栏事件展开）复用同一份，
+   * 保证两处证据展示口径完全一致：
+   *   a. 关键字段——null 整行不渲染（契约：不显示 "null" 字样）；
+   *   b. detail——开放对象全遍历，已知键配中文标签（DETAIL_LABEL）；
+   *   c. raw_log——等宽深色代码块原样展示 + "溯源证据"说明条。
+   * 返回的 HTML 里有 .btn-copy 按钮，复制功能由 document 级委托统一处理
+   * （见文件底部的 copyButtonDelegation），页面模块无需各自绑定。
+   */
+  buildEventDetailHTML(e) {
+    /* ---- a. 关键字段：null 直接跳过，整行不渲染 ---- */
+    const row = (label, text, mono) =>
+      `<tr><th>${this.esc(label)}</th><td${mono ? ' class="mono"' : ""}>${this.esc(text)}</td></tr>`;
+    const rows = [];
+    const id = safeField(e, "id");
+    if (id !== null) rows.push(row("id（数据库唯一编号）", String(id)));
+    const seid = safeField(e, "source_event_id");
+    if (seid !== null) rows.push(row("原始日志编号（source_event_id）", String(seid)));
+    const user = safeField(e, "user");
+    if (user) rows.push(row("用户（user）", user));
+    const process = safeField(e, "process");
+    if (process) rows.push(row("进程（process）", process));
+    const sip = safeField(e, "src_ip");
+    if (sip) rows.push(row("源 IP（src_ip）", sip));
+    const dip = safeField(e, "dst_ip");
+    if (dip) rows.push(row("目的 IP（dst_ip）", dip));
+    const dport = safeField(e, "dst_port");
+    if (dport !== null) rows.push(row("目的端口（dst_port）", String(dport)));
+    const proto = safeField(e, "protocol");
+    if (proto) rows.push(row("协议（protocol）", proto));
+    const cmdline = safeField(e, "cmdline");
+    if (cmdline) rows.push(row("命令行（cmdline）", cmdline, true));   // 命令行等宽，便于读
+    const lt = safeField(e, "logon_type");
+    if (lt !== null) {
+      const zh = this.LOGON_TYPE_LABEL[Number(lt)];
+      rows.push(row("登录类型（logon_type）", `${lt}${zh ? `（${zh}）` : ""}`));
+    }
+    const source = safeField(e, "source");
+    if (source) rows.push(row("数据来源（source）", this.SOURCE_LABEL[source] || source));
+
+    /* ---- b. detail：开放对象全遍历，已知键配中文标签 ---- */
+    const d = safeField(e, "detail");
+    const dEntries = (d && typeof d === "object" && !Array.isArray(d))
+      ? Object.entries(d) : [];
+    const detailHtml = dEntries.length === 0
+      ? `<p class="muted">detail 为空对象 {}（契约：该类事件无独有字段）</p>`
+      : `<table class="kv">${dEntries.map(([k, v]) => {
+          const label = this.DETAIL_LABEL[k] ? `${this.DETAIL_LABEL[k]}（detail.${k}）` : `detail.${k}`;
+          // 值可能是对象/数组（如 C 模块的 dns_queries），统一 JSON.stringify 成字符串
+          const text = (v !== null && typeof v === "object") ? JSON.stringify(v) : String(v);
+          return `<tr><th>${this.esc(label)}</th><td class="mono">${this.esc(text)}</td></tr>`;
+        }).join("")}</table>`;
+
+    /* ---- c. raw_log：深色等宽代码块 + 溯源证据说明 ---- */
+    const raw = safeField(e, "raw_log") ?? "";
+
+    return `
+      <div class="tl-detail">
+        <div class="tl-detail-head">
+          <b>事件详情 #${this.esc(String(safeField(e, "id") ?? "?"))}</b>
+          <button class="btn-copy" data-id="${this.esc(String(id ?? ""))}">复制 JSON</button>
+        </div>
+        <h5>① 关键字段</h5>
+        <table class="kv">${rows.join("")}</table>
+        <h5>② detail（事件独有字段）</h5>
+        ${detailHtml}
+        <h5>③ raw_log · 原始日志（溯源证据）</h5>
+        <div class="evidence-note">以下为解析器入库时原样保留的原始日志，是攻击行为的直接证据，可用于回溯取证。</div>
+        <div class="rawlog">${this.esc(raw)}</div>
+      </div>`;
+  },
+
+  /**
+   * 复制完整事件 JSON（详情组件配套按钮 .btn-copy 用）。
+   * 两级策略：Clipboard API（https/localhost 安全上下文才可用）
+   * → 失败回退 隐藏 textarea + execCommand("copy")（http.server 部署到
+   * 局域网 IP 时 Clipboard API 会被浏览器禁掉，老 API 反而能用）。
+   */
+  async copyEventJSON(id, btn) {
+    const e = this.eventById(id);
+    const old = btn.textContent;
+    if (!e) { btn.textContent = "复制失败"; }
+    else {
+      const text = JSON.stringify(e, null, 2);   // 2 空格缩进，粘到编辑器可直接读
+      let ok = false;
+      if (navigator.clipboard && window.isSecureContext) {
+        try { await navigator.clipboard.writeText(text); ok = true; } catch (err) { /* 走回退 */ }
+      }
+      if (!ok) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try { ok = document.execCommand("copy"); } catch (err) { /* 放弃 */ }
+        ta.remove();
+      }
+      btn.textContent = ok ? "已复制 ✓" : "复制失败";
+    }
+    setTimeout(() => { btn.textContent = old; }, 1500);
+  },
 };
+
+/* .btn-copy（详情组件的"复制 JSON"按钮）document 级委托：
+ * 详情面板可能渲染在时间线卡片内、攻击链侧栏等任意容器，
+ * 统一在这里兜住复制动作，各页面模块不必重复绑定。
+ * 注意各容器自己的 click 处理器要先对 .tl-detail / .btn-copy 内的
+ * 点击早退，避免"复制一下面板被收起"的误触。 */
+document.addEventListener("click", ev => {
+  const btn = ev.target.closest(".btn-copy");
+  if (!btn) return;
+  App.copyEventJSON(Number(btn.dataset.id), btn);
+});
 
 /* DOMContentLoaded：HTML 解析完再启动。
  * 脚本放在 </body> 前其实已经保证 DOM 就绪，这里再兜一层，
