@@ -62,6 +62,7 @@ CLI 运行时会做 **Event V2 契约自检**（19 字段、event_type 枚举、
 | 数据外传 | `exfiltration` | 内→外单会话 ≥1MB；或时长 ≥300s 且 ≥200KB | T1048（数据外传） |
 | ICMP 隐蔽信道 | `icmp_tunnel` | 单包载荷 ≥256B；或同会话 ≥20 包 | T1095（命令与控制） |
 | 登录爆破（网络侧） | `brute_force_evidence` | 同源对同端口 300s 内 ≥15 连接且 ≥50% 未完成 | T1110（凭证访问） |
+| CC 列表轮询 | `cc_rotation` | 同源对同端口 1800s 内 ≥5 个不同外部主机（排除 Web/基础服务/P2P 端口） | T1071（命令与控制） |
 
 **event_type 映射（对齐全组冻结枚举）**：告警不再自造 event_type——
 端口扫描/可疑端口/C2心跳/横向移动/数据外传/ICMP隧道 一律映射为 `network_connection`，
@@ -189,7 +190,7 @@ assert validate_events(events) == []   # 导入前契约自检
 python -m pytest tests -q
 ```
 
-覆盖：熵计算、内网判定、8 个检测器（正/负用例）、PCAP 端到端、Zeek TSV（uid/raw_log/方向字节）、
+覆盖：熵计算、内网判定、10 个检测器（正/负用例）、PCAP 端到端、Zeek TSV（uid/raw_log/方向字节）、
 CSV、Event V2 契约（19 字段、event_type 冻结枚举、null 语义、severity 数字、anomaly_flags、UTC+8）。
 
 ## 7. 边界与说明
@@ -199,3 +200,6 @@ CSV、Event V2 契约（19 字段、event_type 冻结枚举、null 语义、seve
 - C2 心跳规则只看外联方向，内网 DNS 等周期性正常流量零误报。
 - 大 PCAP 流式读取，内存占用与会话数成正比，与总包数无关。
 - 契约变更需全组同步：Event V2 与 event_type 枚举冻结后，本模块不再单方面修改。
+- **数据留存约定（全组）**：外部获取的数据集（APT29/CTU-13 及日后任何下载的数据）
+  只保留在本地（data/datasets/ 已 gitignore，**绝不提交仓库**），仓库里只留
+  分析结果（评估 JSON、EventOut、报告）。原始数据随时可用 scripts/fetch_dataset.py 重新下载。

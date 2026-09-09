@@ -14,7 +14,7 @@ from collections import defaultdict
 from datetime import datetime
 
 from .config import DetectionConfig, SERVICE_NAMES
-from .models import Anomaly, FlowRecord
+from .models import Anomaly
 
 STAGE_ZH = {
     "Reconnaissance": "侦察",
@@ -170,7 +170,7 @@ def detect_dns_tunnel(flows, cfg: DetectionConfig):
     results = []
     for (src, domain), queries in groups.items():
         max_label, max_entropy, max_qname = 0, 0.0, ""
-        suspicious_qnames, txt_count = [], 0
+        txt_count = 0
         for ts, qname, qtype, _dst, _src_type in queries:
             labels = qname.rstrip(".").split(".")
             for label in labels[:-1]:          # 逐标签检查（排除 TLD）
