@@ -11,13 +11,12 @@
   - --out 指定路径时写统一事件 JSON（数组，可直接 POST /api/events/import）
 """
 import argparse
-import json
 import sys
 from collections import Counter
 from datetime import datetime
 
 from .config import DetectionConfig
-from .detectors import STAGE_ZH
+from .detectors import STAGE_ZH, run_all
 from .normalize import build_events, build_summary, load_host_map, save_events, validate_events
 from .pcap_parser import parse_pcap
 from .zeek_parser import parse_connection_csv, parse_zeek_logs
@@ -27,6 +26,7 @@ KIND_ZH = {
     "port_scan": "端口扫描", "c2_beacon": "C2心跳", "suspicious_port": "可疑端口",
     "dns_tunnel": "DNS隧道", "exfiltration": "数据外传", "icmp_tunnel": "ICMP隧道",
     "lateral_movement": "横向连接", "http_attack": "Web攻击",
+    "brute_force_evidence": "登录爆破", "cc_rotation": "CC列表轮询",
 }
 
 
@@ -60,7 +60,6 @@ def analyze_paths(paths: list, host_map: dict = None, cfg: DetectionConfig = Non
 
 
 def run_detectors(flows, cfg):
-    from .detectors import run_all
     return run_all(flows, cfg)
 
 
@@ -132,8 +131,6 @@ def main(argv=None):
         save_events(events, args.out)
         print(f"事件已写入: {args.out}（可直接 POST /api/events/import）")
     if args.summary_json:
-        import json
-        import os
         summary = build_summary(events)
         out_path = args.summary_json
         os.makedirs(os.path.dirname(os.path.abspath(out_path)) or ".", exist_ok=True)
@@ -142,7 +139,3 @@ def main(argv=None):
         print(f"汇总已写入: {out_path}（告警 {summary['anomaly_events']} 条 / "
               f"阶段 {len(summary['attack_timeline'])} 步 / 主机 {len(summary['hosts_involved'])} 台）")
     return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())

@@ -124,7 +124,7 @@ def compare_events(local_events: list, remote_events: list) -> dict:
     匹配键：(timestamp, host, event_type, description)。
     字段名映射：本地 source_event_id <-> 远端 event_id。
     """
-    def key(e, eid_key=None):
+    def key(e):
         return (_norm_ts(e.get("timestamp")), e.get("host"),
                 e.get("event_type"), e.get("description"))
 

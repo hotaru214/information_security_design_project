@@ -18,7 +18,6 @@ SERVICE_NAMES = {22: "SSH", 23: "Telnet", 139: "NetBIOS", 445: "SMB",
                  3389: "RDP", 5985: "WinRM", 5986: "WinRM-HTTPS"}
 
 HTTP_PORTS = {80, 8080, 8000, 8088}   # 明文 HTTP 请求行启发式端口（8088=E靶场 DVWA/Nginx 实际端口）
-DNS_PORTS = {53}
 
 # HTTP 请求中的攻击载荷特征（正则, 说明）
 HTTP_ATTACK_PATTERNS = [
@@ -53,7 +52,6 @@ class DetectionConfig:
     dns_entropy_threshold: float = 3.5  # 标签香农熵下限（随机编码串通常 >4）
     dns_min_label_for_entropy: int = 20 # 熵检测要求的最短标签（避免短词误报）
     dns_txt_volume: int = 6             # 同源对同域名的 TXT 查询次数阈值
-    dns_txt_window_sec: float = 600.0
 
     # 数据外传
     exfil_bytes: int = 1_000_000            # 内->外单会话字节数阈值
@@ -83,32 +81,33 @@ class DetectionConfig:
 
     def __post_init__(self):
         self._nets = [ipaddress.ip_network(n) for n in self.internal_networks]
-        self._cache = {}
+        self._cache_internal = {}    # is_internal 结果缓存（与 is_broadcast 缓存分离，避免相互污染）
+        self._cache_broadcast = {}   # is_broadcast 结果缓存
 
     def is_broadcast(self, ip: str) -> bool:
         """广播（x.y.z.255 / x.y.255.255 等）或多播地址，规则检测时应排除。"""
-        if ip in self._cache:
-            return self._cache[ip]
+        if ip in self._cache_broadcast:
+            return self._cache_broadcast[ip]
         result = False
         try:
             addr = ipaddress.ip_address(ip)
-            result = addr.is_multicast or addr.ip == addr.network_broadcast_address or str(addr).endswith(".255")
+            result = addr.is_multicast or str(addr).endswith(".255")
         except ValueError:
             pass
-        self._cache[ip] = result
+        self._cache_broadcast[ip] = result
         return result
 
     def is_internal(self, ip: str) -> bool:
         """判断 IP 是否属于内网网段。"""
-        if ip in self._cache:
-            return self._cache[ip]
+        if ip in self._cache_internal:
+            return self._cache_internal[ip]
         result = False
         try:
             addr = ipaddress.ip_address(ip)
             result = any(addr in net for net in self._nets)
         except ValueError:
             pass
-        self._cache[ip] = result
+        self._cache_internal[ip] = result
         return result
 
     @classmethod
