@@ -196,13 +196,29 @@ main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
 .chip.src { background: #ecfdf5; color: #047857; }
 
 /* ---------- 攻击链 ---------- */
+/* 顶部阶段图例（配色 = 契约攻击阶段映射表，chain.js 按链上实际阶段渲染） */
+.stage-legend-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin-bottom: 14px; padding: 10px 16px;
+}
+.lg-chip {
+  color: #fff; font-size: 12px; font-weight: 600;
+  border-radius: 999px; padding: 3px 12px;
+}
+.legend-note { margin-left: auto; }
+
 .chain-layout { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; }
 @media (max-width: 960px) { .chain-layout { grid-template-columns: 1fr; } }
 .chain-graph, .chain-links { min-height: 200px; }
+.chain-links h3 { margin-bottom: 10px; }
 .chain-link-item {
   border: 1px solid var(--border); border-radius: 10px;
   padding: 10px 12px; margin-bottom: 10px; font-size: 13px;
 }
+/* 可点击的步骤卡（点它 = 点图上对应的边，看证据事件） */
+.chain-link-item.clickable { cursor: pointer; transition: border-color 0.1s, background 0.1s; }
+.chain-link-item.clickable:hover { border-color: #93c5fd; background: #f8fafc; }
+.chain-link-item.edge-summary { background: #f8fafc; }
 .chain-link-item .stage {
   display: inline-block; font-size: 11px; font-weight: 700; color: #fff;
   border-radius: 4px; padding: 2px 8px; margin-bottom: 4px;
@@ -214,6 +230,27 @@ main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
 .chain-link-item .evid { margin-top: 5px; font-size: 11px; color: var(--text-muted); }
 .chain-link-item .evid-chip { cursor: pointer; }
 .chain-link-item .evid-chip:hover { background: #fee2e2; }
+
+/* 侧栏"返回攻击步骤"按钮 */
+.btn-back {
+  border: 1px solid var(--border); background: #f8fafc; color: var(--primary);
+  font-size: 12px; padding: 4px 12px; border-radius: 6px; cursor: pointer;
+  margin-bottom: 10px;
+}
+.btn-back:hover { background: #dbeafe; border-color: #93c5fd; }
+
+/* 侧栏证据事件卡（点整卡 → 内嵌展开共享详情组件 App.buildEventDetailHTML） */
+.evt-item {
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 8px 12px; margin-bottom: 8px; font-size: 13px; cursor: pointer;
+}
+.evt-item:hover { border-color: #93c5fd; background: #f8fafc; }
+.evt-item.open { border-color: #93c5fd; background: #f8fafc; cursor: default; }
+.evt-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.evt-item b { font-family: Consolas, monospace; font-size: 12px; color: var(--text-muted); }
+.evt-item .desc { font-size: 12px; margin-top: 3px; }
+/* 展开的详情面板在侧栏里稍微收窄边距 */
+.evt-item .tl-detail { margin-top: 8px; padding: 10px 12px; }
 
 /* ---------- 分析报告 ---------- */
 .report-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }

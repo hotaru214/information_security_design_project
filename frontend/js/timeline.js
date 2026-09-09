@@ -17,7 +17,8 @@
  *      条件之间 AND 组合。
  *   ⑤ 点击事件展开内嵌详情面板（三区）：
  *      a. 关键字段表——null 字段直接不渲染整行（契约：禁 "null" 字样）；
- *      b. detail 对象——遍历全部键值对，已知键配中文标签（DETAIL_LABELS），
+ *      b. detail 对象——遍历全部键值对，已知键配中文标签（App.DETAIL_LABEL，
+ *         与攻击链侧栏共用同一详情组件，见 app.js），
  *         未知键原样展示（detail 是开放对象，不能漏掉任何独有字段）；
  *      c. raw_log——等宽字体深色代码块原样展示，配"溯源证据"说明样式。
  *   ⑥ 面板带"复制 JSON"按钮（完整事件对象，答辩可粘贴到别处核对）；
@@ -57,53 +58,9 @@ const EVENT_TYPE_GROUPS = [
                       "scheduled_task_run", "scheduled_task_deleted"]],
 ];
 
-/* ---------- detail 已知键 → 中文标签（契约《统一数据契约.txt》第 6 节 +
- *            项目实际用到的键的并集；未知键不在表里，原样展示） ---------- */
-const DETAIL_LABELS = {
-  parent_process: "父进程",
-  parent_cmdline: "父进程命令行",
-  file_path: "文件路径",
-  hashes: "文件哈希",
-  registry_key: "注册表键",
-  registry_value_name: "注册表值名",
-  registry_value_data: "注册表值数据",
-  registry_operation: "注册表操作",
-  src_port: "源端口",
-  domain: "域名",
-  uri: "URI",
-  method: "请求方法",
-  status_code: "状态码",
-  bytes_in: "入流量",
-  bytes_out: "出流量",
-  attack_stage: "攻击阶段",
-  mitre_technique: "MITRE 技术",
-  logon_id: "登录会话 ID",
-  substatus: "登录子状态码",
-  substatus_desc: "登录子状态说明",
-  /* 以下为 B/C/D 各模块实际产出中出现过的键（开放对象，持续补充） */
-  log_name: "日志通道",
-  target_user: "目标用户",
-  group_name: "用户组",
-  privilege: "权限",
-  service_name: "服务名",
-  task_name: "计划任务名",
-  sudo_command: "sudo 命令",
-  sudo_user: "sudo 用户",
-  packets: "数据包数",
-  bytes: "字节数",
-  duration_sec: "持续时长（秒）",
-  end_time: "结束时间",
-  flow_key: "流标识",
-  peer_host: "对端主机",
-  direction: "连接方向",
-  dns_queries: "DNS 查询列表",
-};
-
-/* Windows logon_type 档位 → 中文含义（展示辅助；未知档位只显示数字） */
-const LOGON_TYPE_LABELS = {
-  2: "交互式登录", 3: "网络登录", 4: "批处理", 5: "服务", 7: "解锁",
-  8: "网络明文", 9: "新凭据", 10: "远程交互", 11: "缓存域凭据",
-};
+/* ---------- detail 中文标签 / logon_type 档位说明 ----------
+ * 已上移至 app.js（App.DETAIL_LABEL / App.LOGON_TYPE_LABEL）——
+ * 详情组件被时间线内嵌面板和攻击链侧栏共用，契约常量统一放 app.js。 */
 
 function renderTimeline(data) {
   const { events, hostMap } = data;
@@ -194,6 +151,9 @@ function renderTimeline(data) {
 
   /* ================================================================
    * 详情面板（需求⑤：三区 + 复制按钮）
+   * 面板 HTML 由共享详情组件 App.buildEventDetailHTML 生成（app.js），
+   * 攻击链侧栏的事件详情复用同一份；复制由 document 级 .btn-copy
+   * 委托统一处理，本文件不再自带面板组装与复制实现。
    * ================================================================ */
 
   /**
@@ -205,7 +165,7 @@ function renderTimeline(data) {
     const e = eventsById.get(id);
     if (!e) return;
     item.classList.add("open");
-    item.insertAdjacentHTML("beforeend", buildDetailPanelHTML(e));
+    item.insertAdjacentHTML("beforeend", App.buildEventDetailHTML(e));
     // 面板可能很高，展开后把面板顶部滚进视口，保证"点哪看哪"
     const panel = item.querySelector(".tl-detail");
     if (panel) panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -218,90 +178,15 @@ function renderTimeline(data) {
     if (panel) panel.remove();
   }
 
-  /**
-   * 组装详情面板 HTML（三区）。
-   * 契约要点落地：
-   *   - null 字段整行不渲染（5a：不显示 "null" 字样）；
-   *   - detail 开放对象全遍历（5b：独有字段一个不漏）；
-   *   - raw_log 原样等宽展示（5c：溯源证据）。
-   */
-  function buildDetailPanelHTML(e) {
-    /* ---- 5a. 关键字段：null 直接跳过，整行不渲染 ---- */
-    const row = (label, text, mono) =>
-      `<tr><th>${App.esc(label)}</th><td${mono ? ' class="mono"' : ""}>${App.esc(text)}</td></tr>`;
-    const rows = [];
-    const id = safeField(e, "id");
-    if (id !== null) rows.push(row("id（数据库唯一编号）", String(id)));
-    const seid = safeField(e, "source_event_id");
-    if (seid !== null) rows.push(row("原始日志编号（source_event_id）", String(seid)));
-    const user = safeField(e, "user");
-    if (user) rows.push(row("用户（user）", user));
-    const process = safeField(e, "process");
-    if (process) rows.push(row("进程（process）", process));
-    const sip = safeField(e, "src_ip");
-    if (sip) rows.push(row("源 IP（src_ip）", sip));
-    const dip = safeField(e, "dst_ip");
-    if (dip) rows.push(row("目的 IP（dst_ip）", dip));
-    const dport = safeField(e, "dst_port");
-    if (dport !== null) rows.push(row("目的端口（dst_port）", String(dport)));
-    const proto = safeField(e, "protocol");
-    if (proto) rows.push(row("协议（protocol）", proto));
-    const cmdline = safeField(e, "cmdline");
-    if (cmdline) rows.push(row("命令行（cmdline）", cmdline, true));   // 命令行等宽，便于读
-    const lt = safeField(e, "logon_type");
-    if (lt !== null) {
-      const zh = LOGON_TYPE_LABELS[Number(lt)];
-      rows.push(row("登录类型（logon_type）", `${lt}${zh ? `（${zh}）` : ""}`));
-    }
-    const source = safeField(e, "source");
-    if (source) rows.push(row("数据来源（source）", App.SOURCE_LABEL[source] || source));
-
-    /* ---- 5b. detail：开放对象全遍历，已知键配中文标签 ---- */
-    const d = safeField(e, "detail");
-    const dEntries = (d && typeof d === "object" && !Array.isArray(d))
-      ? Object.entries(d) : [];
-    const detailHtml = dEntries.length === 0
-      ? `<p class="muted">detail 为空对象 {}（契约：该类事件无独有字段）</p>`
-      : `<table class="kv">${dEntries.map(([k, v]) => {
-          const label = DETAIL_LABELS[k] ? `${DETAIL_LABELS[k]}（detail.${k}）` : `detail.${k}`;
-          // 值可能是对象/数组（如 C 模块的 dns_queries），统一 JSON.stringify 成字符串
-          const text = (v !== null && typeof v === "object") ? JSON.stringify(v) : String(v);
-          return `<tr><th>${App.esc(label)}</th><td class="mono">${App.esc(text)}</td></tr>`;
-        }).join("")}</table>`;
-
-    /* ---- 5c. raw_log：深色等宽代码块 + 溯源证据说明 ---- */
-    const raw = safeField(e, "raw_log") ?? "";
-
-    return `
-      <div class="tl-detail">
-        <div class="tl-detail-head">
-          <b>事件详情 #${App.esc(String(safeField(e, "id") ?? "?"))}</b>
-          <button class="btn-copy" data-id="${App.esc(String(id ?? ""))}">复制 JSON</button>
-        </div>
-        <h5>① 关键字段</h5>
-        <table class="kv">${rows.join("")}</table>
-        <h5>② detail（事件独有字段）</h5>
-        ${detailHtml}
-        <h5>③ raw_log · 原始日志（溯源证据）</h5>
-        <div class="evidence-note">以下为解析器入库时原样保留的原始日志，是攻击行为的直接证据，可用于回溯取证。</div>
-        <div class="rawlog">${App.esc(raw)}</div>
-      </div>`;
-  }
-
   /* ================================================================
-   * 事件委托：点击卡片 → 展开/收起；点击复制按钮 → 复制 JSON
+   * 事件委托：点击卡片 → 展开/收起
+   * （"复制 JSON"由 app.js 的 document 级 .btn-copy 委托统一处理；
+   *   .btn-copy 在 .tl-detail 内部，下面的早退判断天然放行该事件。）
    * ================================================================ */
   container.addEventListener("click", ev => {
-    // 优先处理"复制 JSON"按钮（它是面板内的子元素，必须先于卡片切换判断）
-    const copyBtn = ev.target.closest(".btn-copy");
-    if (copyBtn) {
-      ev.stopPropagation();
-      copyEventJSON(Number(copyBtn.dataset.id), copyBtn);
-      return;
-    }
-    // 面板内部的点击（拖选 raw_log 文字、点表格行等）不参与"收起"——
-    // 用户看证据时经常要手动选中文本复制，误触收起非常恼火。
-    // 只有点击卡片自身区域（头部/描述）才做展开/收起切换。
+    // 面板内部的点击（拖选 raw_log 文字、点表格行、点复制按钮等）
+    // 不参与"收起"——用户看证据时经常要手动选中文本复制，
+    // 误触收起非常恼火。只有点击卡片自身区域（头部/描述）才切换。
     if (ev.target.closest(".tl-detail")) return;
     const item = ev.target.closest(".tl-item");
     if (!item) return;
@@ -316,37 +201,6 @@ function renderTimeline(data) {
       injectPanel(item, id);
     }
   });
-
-  /**
-   * 复制完整事件 JSON（需求⑥）。
-   * 两级策略：Clipboard API（https/localhost 安全上下文才可用）
-   * → 失败回退 隐藏 textarea + execCommand("copy")（http.server 部署到
-   * 局域网 IP 时 Clipboard API 会被浏览器禁掉，老 API 反而能用）。
-   */
-  async function copyEventJSON(id, btn) {
-    const e = eventsById.get(id);
-    const old = btn.textContent;
-    if (!e) { btn.textContent = "复制失败"; }
-    else {
-      const text = JSON.stringify(e, null, 2);   // 2 空格缩进，粘到编辑器可直接读
-      let ok = false;
-      if (navigator.clipboard && window.isSecureContext) {
-        try { await navigator.clipboard.writeText(text); ok = true; } catch (err) { /* 走回退 */ }
-      }
-      if (!ok) {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        try { ok = document.execCommand("copy"); } catch (err) { /* 放弃 */ }
-        ta.remove();
-      }
-      btn.textContent = ok ? "已复制 ✓" : "复制失败";
-    }
-    setTimeout(() => { btn.textContent = old; }, 1500);
-  }
 
   /* ================================================================
    * 过滤条件落点：Dashboard / 其他模块跳转的入口

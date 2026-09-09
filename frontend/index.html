@@ -58,9 +58,11 @@
 
     <!-- ③ 攻击链 -->
     <section id="page-chain" class="page">
+      <!-- 阶段图例（chain.js 渲染）：配色严格照契约攻击阶段映射表 -->
+      <div class="card stage-legend-bar" id="chain-legend"></div>
       <div class="chain-layout">
-        <div class="card chart-card chain-graph"><h3>攻击链关系图</h3><div id="chain-graph" class="chart tall"></div></div>
-        <div class="card chain-links"><h3>攻击步骤</h3><div id="chain-links"></div></div>
+        <div class="card chart-card chain-graph"><h3>攻击链关系图（力导向，点击节点/边查看证据）</h3><div id="chain-graph" class="chart tall"></div></div>
+        <div class="card chain-links"><div id="chain-links"></div></div>
       </div>
     </section>
 

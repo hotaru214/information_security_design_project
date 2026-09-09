@@ -133,17 +133,22 @@ async function loadEvents() {
 }
 
 /**
- * 加载攻击链（攻击链页 / 分析报告页共用）。
+ * getAttackChain() — 加载攻击链（攻击链页 / 分析报告页共用）。
+ *
+ * 数据层封装约定（2026-09-09）：攻击链的获取统一走这一个函数，
+ * 页面模块只管调用、不关心数据从哪来。后续切换到真实后端时
+ * 只改这里一行即可（现状已经是 GET /api/attack-chain + mock 回退）：
+ *   const resp = await fetchWithTimeout(`${API_BASE}/api/attack-chain`);
  *
  * 和 loadEvents 的区别：
- *   攻击链接口 /api/attack-chain 是 D 模块的产出，后端"可能还没实现"，
- *   所以除了判HTTP状态，还要校验结构——**只要有 links 就算可用**：
- *   nodes 缺失时 normalizeChain() 能从 links 自动推导，页面照样出图
- *   （接口存在但返回空链时才回退 mock）。
+ *   攻击链接口 /api/attack-chain 是 D 模块的产出（A 的 adapter 已在
+ *   main 分支实现），除了判 HTTP 状态还要校验结构——**只要有 links
+ *   就算可用**：nodes 缺失时 normalizeChain() 能从 links 自动推导，
+ *   页面照样出图（接口存在但返回空链时才回退 mock）。
  *
  * @returns {Promise<{chain: {nodes: Array, links: Array}, mode: "live"|"demo"}>}
  */
-async function loadChain() {
+async function getAttackChain() {
   try {
     const resp = await fetchWithTimeout(`${API_BASE}/api/attack-chain`);
     if (resp.ok) {
