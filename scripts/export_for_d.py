@@ -15,8 +15,10 @@ import json
 import os
 import sys
 from datetime import datetime
+from urllib.parse import urlencode
 
 sys.path.insert(0, ".")
+from backend.schemas.event import EventCreate
 from scripts.post_events import _request, sync_hosts  # noqa: E402
 from backend.parsers.network.normalize import collect_warnings, validate_eventout  # noqa: E402
 
@@ -29,7 +31,7 @@ def build_key(e):
         ts = datetime.fromisoformat(str(ts)).isoformat()
     except ValueError:
         pass
-    return (ts, e.get("host"), e.get("event_type"), e.get("description"))
+    return (e.get("case_id"), (e.get("detail") or {}).get("batch_id"), ts, e.get("host"), e.get("event_type"), e.get("description"))
 
 
 def subset_for_dataset(events: list, dataset: str) -> list:
@@ -55,13 +57,19 @@ def main(argv=None):
     ap.add_argument("--base", default="http://127.0.0.1:8000")
     ap.add_argument("--sync-hosts", default="", metavar="HOSTS_CSV",
                     help="把数据集的 IP->主机名映射同步到后端（D 的 host_map 数据源）")
+    ap.add_argument("--case-id", default=None, help="Attack case, e.g. case01; independent of batch-id")
     ap.add_argument("--batch-id", default="", metavar="NAME",
                     help="批次标签：写入每条事件的 detail.batch_id（默认取输出文件名去掉 _eventout）")
     args = ap.parse_args(argv)
     batch_id = args.batch_id or os.path.splitext(os.path.basename(args.out))[0].replace("_eventout", "")
 
     events = json.load(open(args.events_json, encoding="utf-8"))
+    events = [EventCreate.model_validate(e).model_dump(mode="json") for e in events]
     for e in events:
+        if args.case_id is not None:
+            if e["case_id"] not in (None, args.case_id):
+                raise ValueError("Event case_id conflicts with --case-id")
+            e["case_id"] = args.case_id
         e.setdefault("detail", {})["batch_id"] = batch_id   # 批次标签：D/前端据此区分数据批次
     print(f"[batch] batch_id={batch_id}")
     if args.dataset == "ctu13":
@@ -75,7 +83,13 @@ def main(argv=None):
     if args.sync_hosts:
         sync_hosts(args.base, args.sync_hosts)
 
-    st, body = _request("POST", f"{args.base}/api/events/import", events)
+    st, existing = _request("GET", f"{args.base}/api/events")
+    if st != 200:
+        print(f"[abort] Cannot snapshot existing event IDs: HTTP {st}")
+        return 1
+    existing_ids = {e["id"] for e in existing}
+    query = "?" + urlencode({"case_id": args.case_id}) if args.case_id is not None else ""
+    st, body = _request("POST", f"{args.base}/api/events/import{query}", events)
     if st != 201:
         print(f"[import] 失败 HTTP {st}: {str(body)[:300]}")
         return 1
@@ -89,6 +103,8 @@ def main(argv=None):
 
     index = {}
     for r in remote:
+        if r["id"] in existing_ids:
+            continue
         index.setdefault(build_key(r), []).append(r)
 
     exported, unmatched = [], 0
@@ -98,7 +114,7 @@ def main(argv=None):
             unmatched += 1
             continue
         r = cands.pop(0)
-        out = dict(e)
+        out = dict(r)
         out["id"] = r["id"]                    # D 的 evidence_event_ids 用这个
         exported.append(out)
 
