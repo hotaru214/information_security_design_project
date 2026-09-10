@@ -35,10 +35,11 @@ def _classify(path: Path) -> str:
     suffix = path.suffix.lower()
     if suffix in _NETWORK_EXTS:
         content = path.read_text(encoding="utf-8", errors="replace")[:4096]
-        if '"@stream"' in content or content.lstrip().startswith('{"'):
-            return "network"                   # Zeek 合并 JSON 流 / Zeek JSON 行（C 模块解析）
+        # 顺序敏感：Sysmon JSON 也以 { 开头，必须先判特征字段再判 JSON 形态
         if '"EventTime"' in content or '"EventID"' in content or "Sysmon" in content:
             return "host_sysmon_json"          # Windows Sysmon/SecurityEvent JSON 行（B 模块解析）
+        if '"@stream"' in content or content.lstrip().startswith('{"'):
+            return "network"                   # Zeek 合并 JSON 流 / Zeek JSON 行（C 模块解析）
         return "network"                       # 其余 .json 按网络侧尝试
     if suffix in _LOG_EXTS and path.read_text(encoding="utf-8", errors="replace")[:0] == "":
         pass  # 占位（.log 的嗅探在下方按内容处理）

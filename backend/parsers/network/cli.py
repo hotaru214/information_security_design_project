@@ -49,6 +49,8 @@ def analyze_paths(paths: list, host_map: dict = None, cfg: DetectionConfig = Non
             f, s = parse_firewall_log(path, cfg)   # OPNsense/pfSense filterlog（source=firewall）
         elif path.lower().endswith(".log"):
             f, s = parse_zeek_logs(path)   # 单个 .log（含 APT29 combined_zeek.log 合并流）
+        elif path.lower().endswith(".json"):
+            f, s = parse_zeek_logs(path)   # Zeek JSON / 合并流（按内容嗅探，非 Zeek 则 0 会话）
         elif path.lower().endswith((".pcap", ".pcapng", ".cap")):
             f, s = parse_pcap(path, cfg)
         elif path.lower().endswith(".csv"):
