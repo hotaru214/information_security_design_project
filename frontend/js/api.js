@@ -606,6 +606,88 @@ const MOCK_ANALYSIS_REPORT = {
   ],
 };
 
+/* ============================================================
+ * getAttribution() — 身份溯源（Attribution）数据层（成员F）
+ * ============================================================
+ * 数据来源：A/D 已实现的 GET /api/attack-chain/attribution（case_id 可选）。
+ * 前端只做两件事：取结构化结果 + 交给 report.js 渲染；**不参与归因计算**，
+ * 也不补充任何外部情报（WHOIS / passive DNS / 注册信息）——后端返回什么
+ * 就展示什么，C2 部分由页面明确标注为"本地关联分析"。
+ *
+ * case_id 从哪来（**不写死 case01**）：
+ *   1) URL 查询参数 ?case=xxx（验收/多批次演示可显式指定）；
+ *   2) localStorage 的 isd-case-id（若页面上曾选择过 case）；
+ *   3) 都没有 → 不带 case_id 请求，由后端分析当前库里的全部事件
+ *      （库中只有一个 case 时，后端直接返回该 case 的单一画像）。
+ *
+ * 封箱规则（与其他接口一致）：
+ *   Live 失败 → state:"error"（**不回退 mock**）；
+ *   Live 空   → state:"empty"（多 case 形态下 profiles 为空 = 库里没有 case）；
+ *   Live 正常 → state:"ok"——注意 payload 里的 attribution_status 可能是
+ *               "insufficient_evidence"，那是**正常结果**，页面如实显示
+ *               "证据不足"，既不报错也不伪造相似度排名；
+ *   Demo 模式 → state:"demo_unavailable"：内置样例不含 attribution 结果
+ *               （它是后端实时分析产物），如实告知，不编造归因数据。
+ * ============================================================ */
+
+/** 当前 case（不写死具体值；取不到返回 null → 后端按全库分析） */
+function resolveCaseId() {
+  try {
+    const fromUrl = new URLSearchParams(location.search).get("case");
+    if (fromUrl) return fromUrl;
+    const stored = localStorage.getItem("isd-case-id");
+    if (stored) return stored;
+  } catch (e) { /* URL/localStorage 不可用 → 按全库分析 */ }
+  return null;
+}
+
+/**
+ * 加载身份溯源结果。
+ * @param {string|null} caseId 不传则用 resolveCaseId() 的结果
+ * @returns {Promise<{attribution: Object|null, mode: "live"|"demo",
+ *                    state: "ok"|"empty"|"error"|"demo_unavailable",
+ *                    error?: string}>}
+ */
+async function getAttribution(caseId = resolveCaseId()) {
+  if (isDemoMode()) {
+    /* 演示模式不内置 attribution 样例：不编造归因数据（封箱规则） */
+    return { attribution: null, mode: "demo", state: "demo_unavailable" };
+  }
+
+  try {
+    const url = `${API_BASE}/api/attack-chain/attribution` +
+      (caseId ? `?case_id=${encodeURIComponent(caseId)}` : "");
+    /* 与 /api/attack-chain 是同一个关联引擎（correlate_events + 指纹/相似度
+     * 匹配），因此复用同一超时常量；实测 case01（720 事件）约 0.22s，
+     * Final E 量级与攻击链同档。 */
+    const resp = await fetchWithTimeout(url, ATTACK_CHAIN_TIMEOUT_MS);
+    if (!resp.ok) {
+      return { attribution: null, mode: "live", state: "error", error: `后端返回 HTTP ${resp.status}` };
+    }
+    let data;
+    try {
+      data = await resp.json();
+    } catch (e) {
+      return { attribution: null, mode: "live", state: "error", error: "后端返回了非 JSON 内容" };
+    }
+    if (!data || typeof data !== "object") {
+      return { attribution: null, mode: "live", state: "error", error: "后端返回结构异常" };
+    }
+    /* 多 case 形态：{case_id:null, profiles:[...]}；profiles 为空 → 无数据。
+     * 单 case 形态（含 attribution_status="insufficient_evidence"）一律 ok，
+     * 由页面按 status 决定展示"画像"还是"证据不足"。 */
+    if (Array.isArray(data.profiles)) {
+      return data.profiles.length === 0
+        ? { attribution: null, mode: "live", state: "empty" }
+        : { attribution: data, mode: "live", state: "ok" };
+    }
+    return { attribution: data, mode: "live", state: "ok" };
+  } catch (e) {
+    return { attribution: null, mode: "live", state: "error",
+             error: e.name === "AbortError" ? `连接超时（${ATTACK_CHAIN_TIMEOUT_MS / 1000}s）` : "后端未连接" };
+  }
+}
+
 /**
  * 分析范围 → 后端请求体的适配。
  * A 的 AnalysisRequest 契约是 {host?, start?, end?}（都可空，空=全库）；
