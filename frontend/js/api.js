@@ -45,6 +45,18 @@ const ANALYSIS_TIMEOUT_MS = 60000;
  * 是轻量查询，快速失败语义对它们仍然正确。 */
 const ATTACK_CHAIN_TIMEOUT_MS = 10000;
 
+/* 事件接口专用超时（2026-09-10 Final E 浏览器验收暴露的 P0）：
+ * /api/events 在 Final E 数据集下要返回 30,963 条事件，实测 2.017s，
+ * 而它此前走的是通用 2s —— 请求被前端自己 abort，页面 Event=0。
+ * 注意这是"数据量"问题不是"后端慢"问题：2s 当初够用只是因为 mock
+ * 只有 50 条。取 10s：与 ATTACK_CHAIN_TIMEOUT_MS 同一余量级别
+ * （约 5 倍），数据量再涨、三请求并发抢 CPU 也不会被前端掐断。
+ * 单条事件查询 getEventById() 也复用本常量——单条虽轻，但它发生在
+ * 用户点击之后（弹窗同步等待），宁可多等也不能误报"取不到"。
+ * 通用 FETCH_TIMEOUT_MS 保持 2s 不动：/api/hosts/map 是轻量查询，
+ * "后端没启动就快速失败"的语义对它仍然正确。 */
+const EVENTS_TIMEOUT_MS = 10000;
+
 /* ============================================================
  * Live / Demo 模式开关（封箱规则，2026-09-09）
  * ============================================================
@@ -250,7 +262,9 @@ async function loadEvents() {
   }
 
   try {
-    const resp = await fetchWithTimeout(`${API_BASE}/api/events`);
+    /* 显式传 EVENTS_TIMEOUT_MS（10s）：Final E 30,963 条实测 2.017s，
+     * 通用 2s 会把正常响应掐断（见文件头常量区注释）。 */
+    const resp = await fetchWithTimeout(`${API_BASE}/api/events`, EVENTS_TIMEOUT_MS);
     if (!resp.ok) {
       return { events: null, mode: "live", state: "error", error: `后端返回 HTTP ${resp.status}` };
     }
@@ -269,7 +283,78 @@ async function loadEvents() {
     return { events: normalizeEvents(data, true), mode: "live", state: "ok" };
   } catch (e) {
     return { events: null, mode: "live", state: "error",
-             error: e.name === "AbortError" ? "连接超时（2s）" : "后端未连接" };
+             error: e.name === "AbortError" ? `连接超时（${EVENTS_TIMEOUT_MS / 1000}s）` : "后端未连接" };
+  }
+}
+
+/**
+ * getEventById(id) — 按数据库 id 取单条事件（证据详情弹窗的兜底取数）。
+ *
+ * 背景（2026-09-10 Final E P0）：攻击链/报告里的"证据事件"chip 点击原本
+ * 只走 App.eventById() —— 从启动时 loadEvents() 灌进内存的数组里 find()。
+ * 这个隐式依赖意味着：只要 events 列表那次请求失败（超时/后端没起），
+ * find() 就是 undefined，而弹窗代码 `if (!e) return;` 静默返回 ——
+ * 用户看到的现象是"点证据没反应"，实际是详情没有独立取数能力。
+ * 契约规定 events.id 是数据库主键，A 已提供单条查询（GET /api/events/{id}
+ * → read_event），所以详情可以直接按 id 取真身，不依赖那 30,963 条
+ * 是否已经全量灌进浏览器。
+ *
+ * 封箱规则不变：
+ *   Demo（显式开启）→ 读 mock/events.json，按下标补 id 后按 id 找；
+ *   Live 404        → state:"not_found"（如实告知，不编数据）；
+ *   Live 其他失败    → state:"error"（**不回退 mock**，也不拿本地数组凑数）。
+ *
+ * @param {number|string} id 数据库 events.id（不是 source_event_id）
+ * @returns {Promise<{event: Object|null, mode: "live"|"demo",
+ *                    state: "ok"|"not_found"|"error", error?: string}>}
+ */
+async function getEventById(id) {
+  const nid = Number(id);
+  /* id 非法（undefined/NaN）→ 直接报错，不发 /api/events/NaN 这种请求 */
+  if (!Number.isFinite(nid)) {
+    return { event: null, mode: "live", state: "error", error: "证据事件 id 非法" };
+  }
+
+  if (isDemoMode()) {
+    try {
+      const resp = await fetch("mock/events.json");
+      const all = normalizeEvents(withSimulatedIds(await resp.json()), false);
+      const hit = all.find(e => e.id === nid);
+      return hit ? { event: hit, mode: "demo", state: "ok" }
+                 : { event: null, mode: "demo", state: "not_found" };
+    } catch (e) {
+      return { event: null, mode: "demo", state: "error", error: "演示数据不可用" };
+    }
+  }
+
+  try {
+    const resp = await fetchWithTimeout(
+      `${API_BASE}/api/events/${encodeURIComponent(nid)}`, EVENTS_TIMEOUT_MS);
+    if (resp.status === 404) {
+      /* A 的实现：库里没有这条 → 404 Event not found。这是事实，照实说。 */
+      return { event: null, mode: "live", state: "not_found" };
+    }
+    if (!resp.ok) {
+      return { event: null, mode: "live", state: "error", error: `后端返回 HTTP ${resp.status}` };
+    }
+    let data;
+    try {
+      data = await resp.json();
+    } catch (e) {
+      return { event: null, mode: "live", state: "error", error: "后端返回了非 JSON 内容" };
+    }
+    /* 单条也走 normalizeEvent：event_id→source_event_id 改名、detail/flags
+     * 兜底、时间戳校验，保证"弹窗里看到的字段"与列表口径完全一致。
+     * live 模式下若这条缺 id / 时间戳不可解析，normalizeEvent 返回 null
+     * ——说明后端这条数据不合法，按 error 处理，绝不拿残缺数据渲染。 */
+    const ev = normalizeEvent(data, 0, true);
+    if (!ev || ev.id == null) {
+      return { event: null, mode: "live", state: "error", error: "后端返回的事件数据不合法" };
+    }
+    return { event: ev, mode: "live", state: "ok" };
+  } catch (e) {
+    return { event: null, mode: "live", state: "error",
+             error: e.name === "AbortError" ? `连接超时（${EVENTS_TIMEOUT_MS / 1000}s）` : "后端未连接" };
   }
 }
 

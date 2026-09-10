@@ -349,10 +349,42 @@ const App = {
    * 事件详情弹窗——把 19+1 个字段逐行展示。
    * 这是"契约逐一对得上"的验收现场：每条事件的所有字段
    * （包括 detail 里的独有键）都能在这里查到，raw_log 完整展示。
+   *
+   * 取数策略（2026-09-10 Final E P0 修复）：
+   *   1) 本地 events 数组命中 → 直接渲染（零延迟，列表页点开无感）；
+   *   2) 未命中（events 列表加载失败 / 该证据不在已加载集合里）→
+   *      按 id 走 getEventById() 现取真实事件（GET /api/events/{id}）。
+   * 修复前的实现只有第 1 步，且查不到就 `if (!e) return;` 静默退出——
+   * 于是 events 请求一失败，"点证据没反应"（连提示都没有）。
+   * 现在取数中/失败/不存在都有明确反馈，Live 失败仍只进 error 提示，
+   * 绝不用 mock 数据顶上。
    */
-  openEventDetail(id) {
-    const e = this.eventById(id);
-    if (!e) return;
+  async openEventDetail(id) {
+    const cached = this.eventById(id);
+    if (cached) return this.renderEventDetail(cached);
+
+    /* 未命中：先把弹窗打开给"读取中"占位——点击立刻有反馈，
+     * 不让用户以为按钮失灵。 */
+    const badgeTitle = document.getElementById("modal-title");
+    const body = document.getElementById("modal-body");
+    badgeTitle.textContent = `事件 #${id}`;
+    body.innerHTML = '<p class="muted">正在按 id 从后端读取事件…</p>';
+    document.getElementById("modal").classList.remove("hidden");
+
+    const res = await getEventById(id);
+    if (res.event) return this.renderEventDetail(res.event);
+
+    /* 取不到就如实说，分"确实没有这条"和"读失败"两种，
+     * 后者带错误原因（超时/未连接/HTTP 码），便于现场排查。 */
+    badgeTitle.textContent = "事件详情不可用";
+    body.innerHTML = res.state === "not_found"
+      ? `<p class="muted">${res.mode === "demo" ? "演示数据" : "后端"}中没有 id=${this.esc(id)} 的事件（证据引用可能已失效）。</p>`
+      : `<p style="color:var(--anomaly)">事件 #${this.esc(id)} 读取失败：${this.esc(res.error || "未知原因")}</p>
+         <p class="muted">当前仍是 Live 模式（不显示演示数据）。请确认后端可用后重试。</p>`;
+  },
+
+  /** 渲染事件详情（已拿到事件对象时调用；取数逻辑见 openEventDetail） */
+  renderEventDetail(e) {
     const sev = this.SEVERITY[e.severity] || this.SEVERITY[0];
 
     document.getElementById("modal-title").innerHTML =
