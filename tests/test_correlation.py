@@ -48,6 +48,72 @@ def test_harmless_text_file_is_not_collection():
     assert not any(step["stage"] == "Collection" for step in steps)
 
 
+def test_internal_http_sensitive_resource_is_collection_edge():
+    request = network_event(
+        id=201,
+        timestamp="2026-09-08T13:00:00+08:00",
+        host="core-server",
+        event_type="http_request",
+        src_ip="10.10.30.10",
+        dst_ip="10.10.30.20",
+        dst_port=12345,
+        protocol="tcp",
+        detail={"method": "GET", "uri": "/private/finance_report.txt", "status_code": 200},
+    )
+    file_read = network_event(
+        id=202,
+        timestamp="2026-09-08T13:00:01+08:00",
+        host="core-server",
+        source="linux_audit",
+        event_type="file_read",
+        src_ip=None,
+        dst_ip=None,
+        dst_port=None,
+        detail={"file_path": "/srv/private/finance_report.txt"},
+        anomaly_flags=["sensitive_file_access"],
+        severity=2,
+    )
+
+    steps = correlate_events(
+        [request, file_read],
+        {"10.10.30.10": "win10-jump", "10.10.30.20": "core-server"},
+        FINAL_NETWORKS,
+    )
+
+    collection = [
+        step for step in steps
+        if step["stage"] == "Collection"
+        and step["source_host"] == "win10-jump"
+        and step["target_host"] == "core-server"
+    ]
+    assert len(collection) == 1
+    assert collection[0]["technique_id"] == "T1005"
+    assert collection[0]["source_ip"] == "10.10.30.10"
+    assert collection[0]["target_ip"] == "10.10.30.20"
+    assert collection[0]["evidence_event_ids"] == [201, 202]
+
+
+def test_internal_http_normal_resource_without_context_is_not_collection():
+    request = network_event(
+        id=201,
+        host="core-server",
+        event_type="http_request",
+        src_ip="10.10.30.10",
+        dst_ip="10.10.30.20",
+        dst_port=12345,
+        protocol="tcp",
+        detail={"method": "GET", "uri": "/index.html", "status_code": 200},
+    )
+
+    steps = correlate_events(
+        [request],
+        {"10.10.30.10": "win10-jump", "10.10.30.20": "core-server"},
+        FINAL_NETWORKS,
+    )
+
+    assert not any(step["stage"] == "Collection" for step in steps)
+
+
 def test_http_request_to_suspicious_external_c2_is_detected():
     event = network_event(
         event_type="http_request",

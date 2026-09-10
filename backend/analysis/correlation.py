@@ -94,6 +94,19 @@ SENSITIVE_FILE_KEYWORDS = [
     ".7z",
 ]
 
+STATIC_RESOURCE_SUFFIXES = [
+    ".css",
+    ".js",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".ico",
+    ".svg",
+    ".woff",
+    ".woff2",
+]
+
 ARCHIVE_COMMAND_KEYWORDS = [
     "zip ",
     "rar ",
@@ -599,6 +612,7 @@ def detect_lateral_movement(
 def detect_collection(
     events: list[dict[str, Any]], context: dict[str, Any], host_map: dict[str, str]
 ) -> list[dict[str, Any]]:
+    networks = context.get("internal_networks")
     steps = []
 
     for event in events:
@@ -639,6 +653,48 @@ def detect_collection(
                     target_ip=None,
                     description=f"Archive command may indicate data collection on {host}",
                     evidence_events=[event],
+                )
+            )
+            continue
+
+        if event_type == "http_request" and is_internal_http_resource_request(event, networks):
+            src_ip = get_value(event, "src_ip")
+            dst_ip = get_value(event, "dst_ip")
+            source_host = resolve_host(src_ip, host_map)
+            target_host = resolve_host(dst_ip, host_map) or host
+            if source_host and target_host and source_host == target_host:
+                continue
+
+            target_events = context["by_host"].get(target_host, []) if target_host else []
+            target_evidence = [
+                candidate
+                for candidate in find_events_in_window(
+                    target_events,
+                    event["_time"],
+                    before_minutes=1,
+                    after_minutes=5,
+                    event_types={"file_read", "file_write", "file_create", "process_start"},
+                    limit=10,
+                )
+                if is_collection_context_event(candidate)
+            ][:3]
+            sensitive_resource = is_sensitive_http_resource(event)
+            if not target_evidence and not sensitive_resource:
+                continue
+
+            uri = http_uri(event) or "an internal resource"
+            evidence = [event] + target_evidence
+            steps.append(
+                make_step(
+                    stage="Collection",
+                    technique_id="T1005",
+                    timestamp=event["timestamp"],
+                    source_host=source_host,
+                    target_host=target_host,
+                    source_ip=src_ip,
+                    target_ip=dst_ip,
+                    description=f"{source_host or src_ip} retrieved sensitive internal resource {uri} from {target_host or dst_ip}",
+                    evidence_events=evidence,
                 )
             )
 
@@ -987,6 +1043,76 @@ def is_archive_command(event: dict[str, Any]) -> bool:
         return False
     command_text = f"{event['_process']} {event['_cmdline']}"
     return any(keyword in command_text for keyword in ARCHIVE_COMMAND_KEYWORDS)
+
+
+def is_internal_http_resource_request(event: dict[str, Any], internal_networks=None) -> bool:
+    if event["_event_type"] != "http_request":
+        return False
+    if http_method(event) != "get":
+        return False
+    uri = http_uri(event)
+    if not uri or uri == "/" or uri.startswith("/?"):
+        return False
+    if any(uri.lower().split("?", 1)[0].endswith(suffix) for suffix in STATIC_RESOURCE_SUFFIXES):
+        return False
+    status = int_value(get_detail(event, "status_code"))
+    if status is not None and not 200 <= status < 300:
+        return False
+    src_ip = get_value(event, "src_ip")
+    dst_ip = get_value(event, "dst_ip")
+    return is_internal_ip(src_ip, internal_networks) and is_internal_ip(dst_ip, internal_networks)
+
+
+def is_sensitive_http_resource(event: dict[str, Any]) -> bool:
+    resource_text = " ".join(
+        [
+            http_uri(event),
+            as_text(get_detail(event, "file_path")),
+            as_text(get_detail(event, "resource")),
+            as_text(get_detail(event, "path")),
+        ]
+    ).lower()
+    return any(keyword in resource_text for keyword in SENSITIVE_FILE_KEYWORDS)
+
+
+def is_collection_context_event(event: dict[str, Any]) -> bool:
+    attack_stage = as_text(get_detail(event, "attack_stage")).lower()
+    technique = as_text(get_detail(event, "mitre_technique")).lower()
+    if "collection" in attack_stage or technique == "t1005":
+        return True
+    if has_any_flag(
+        event,
+        ["collection", "collection_candidate", "internal_data_access", "sensitive_file_access", "t1005"],
+    ):
+        return True
+    return is_sensitive_file_event(event) or is_archive_command(event)
+
+
+def http_method(event: dict[str, Any]) -> str:
+    method = as_text(get_detail(event, "method")).lower()
+    if method:
+        return method
+    first_request = first_http_request(event)
+    if first_request:
+        return as_text(first_request.get("method")).lower()
+    return ""
+
+
+def http_uri(event: dict[str, Any]) -> str:
+    uri = as_text(get_detail(event, "uri"))
+    if uri:
+        return uri
+    first_request = first_http_request(event)
+    if first_request:
+        return as_text(first_request.get("uri"))
+    return ""
+
+
+def first_http_request(event: dict[str, Any]) -> dict[str, Any] | None:
+    requests = get_detail(event, "http_requests")
+    if isinstance(requests, list) and requests and isinstance(requests[0], dict):
+        return requests[0]
+    return None
 
 
 def is_web_parent(parent_process: str) -> bool:

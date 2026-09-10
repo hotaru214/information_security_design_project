@@ -131,7 +131,7 @@ ATT&CK 映射：填充 stage / technique_id / technique_name
 | Persistence | 注册表 Run 键、计划任务、服务创建 | `T1547.001`, `T1053`, `T1543.003` |
 | Privilege Escalation | sudo、管理员组变更、权限变化 | `T1548.003`, `T1078` |
 | Lateral Movement | 内网主机访问 22/445/3389/5985 等远程服务端口 | `T1021 Remote Services` |
-| Collection | 读取敏感文件或执行压缩打包命令 | `T1005 Data from Local System` |
+| Collection | 读取敏感文件、执行压缩打包命令，或内网主机通过 HTTP 成功获取敏感内部资源并与目标主机文件访问证据关联 | `T1005 Data from Local System` |
 | Command and Control | 内网主机连接外部可疑端口或周期性外联 | `T1071 Application Layer Protocol` |
 | Exfiltration | 数据收集后出现大流量外联 | `T1041 Exfiltration Over C2 Channel` |
 | Defense Evasion | 日志清除事件 | `T1070.002 Clear Windows Event Logs` |
@@ -183,6 +183,24 @@ detail.registry_key 命中 CurrentVersion\Run
 ```
 
 模块还提供 `find_attack_paths(attack_steps)`，用于从攻击图中提取主要攻击路径。
+
+### 内网 HTTP 数据访问关联
+
+对于 Win10 访问 Core 这类非远程登录型内网数据访问，模块不按具体 IP、端口或文件名硬编码，
+而是使用通用 HTTP 语义：
+
+```text
+内部主机 -> 内部服务器
+event_type = http_request
+method = GET
+status_code 为 2xx 或未知
+URI 指向非静态资源
+并且 URI 命中敏感资源关键词，或目标主机在时间窗口内出现敏感文件访问/Collection 语义事件
+=> Collection / T1005
+```
+
+这类规则会生成从请求发起主机到资源所在服务器的攻击图边，并保留 HTTP 请求事件与目标主机
+文件访问事件的数据库 `id` 作为证据。
 
 ## 当前文件
 
