@@ -48,6 +48,39 @@ def test_harmless_text_file_is_not_collection():
     assert not any(step["stage"] == "Collection" for step in steps)
 
 
+def test_web_application_code_read_is_not_collection_noise():
+    event = network_event(
+        id=201,
+        host="web-server",
+        source="linux_audit",
+        event_type="file_read",
+        process="nginx",
+        src_ip=None,
+        dst_ip=None,
+        dst_port=None,
+        detail={"file_path": "/var/www/html/dvwa/vulnerabilities/brute/source/high.php"},
+        anomaly_flags=[],
+        severity=0,
+    )
+
+    steps = correlate_events([event])
+
+    assert not any(step["stage"] == "Collection" for step in steps)
+
+
+def test_repeated_sensitive_file_reads_are_semantically_merged():
+    first = file_event("/srv/private/finance_report.txt")
+    second = file_event("/srv/private/finance_report.txt")
+    first.update(id=201, timestamp="2026-09-08T13:00:00+08:00")
+    second.update(id=202, timestamp="2026-09-08T13:00:02+08:00")
+
+    steps = correlate_events([first, second])
+    collection = [step for step in steps if step["stage"] == "Collection"]
+
+    assert len(collection) == 1
+    assert collection[0]["evidence_event_ids"] == [201, 202]
+
+
 def test_internal_http_sensitive_resource_is_collection_edge():
     request = network_event(
         id=201,

@@ -97,6 +97,7 @@ SENSITIVE_FILE_KEYWORDS = [
 STATIC_RESOURCE_SUFFIXES = [
     ".css",
     ".js",
+    ".map",
     ".png",
     ".jpg",
     ".jpeg",
@@ -105,6 +106,34 @@ STATIC_RESOURCE_SUFFIXES = [
     ".svg",
     ".woff",
     ".woff2",
+]
+
+WEB_CODE_RESOURCE_SUFFIXES = [
+    ".asp",
+    ".aspx",
+    ".cgi",
+    ".html",
+    ".htm",
+    ".jsp",
+    ".php",
+]
+
+WEB_CONTENT_PATH_HINTS = [
+    "/var/www/",
+    "/usr/share/nginx/",
+    "/usr/share/apache",
+    "/srv/www/",
+    "/wwwroot/",
+    "\\inetpub\\",
+    "\\wwwroot\\",
+]
+
+COLLECTION_FLAGS = [
+    "collection",
+    "collection_candidate",
+    "internal_data_access",
+    "sensitive_file_access",
+    "t1005",
 ]
 
 ARCHIVE_COMMAND_KEYWORDS = [
@@ -614,28 +643,16 @@ def detect_collection(
 ) -> list[dict[str, Any]]:
     networks = context.get("internal_networks")
     steps = []
+    file_groups: dict[tuple[str | None, str], list[dict[str, Any]]] = defaultdict(list)
 
     for event in events:
         event_type = event["_event_type"]
         host = event["_host"] or None
 
         if event_type in {"file_read", "file_write", "file_create"}:
-            file_path = event["_file_path"]
-            if not any(keyword in file_path for keyword in SENSITIVE_FILE_KEYWORDS):
+            if not is_sensitive_file_event(event):
                 continue
-            steps.append(
-                make_step(
-                    stage="Collection",
-                    technique_id="T1005",
-                    timestamp=event["timestamp"],
-                    source_host=host,
-                    target_host=host,
-                    source_ip=None,
-                    target_ip=None,
-                    description=f"Sensitive file access was detected on {host}",
-                    evidence_events=[event],
-                )
-            )
+            file_groups[(host, collection_file_key(event))].append(event)
             continue
 
         if event_type == "process_start":
@@ -697,6 +714,23 @@ def detect_collection(
                     evidence_events=evidence,
                 )
             )
+
+    for (host, _file_key), group in file_groups.items():
+        group.sort(key=lambda event: event["_time"])
+        first = group[0]
+        steps.append(
+            make_step(
+                stage="Collection",
+                technique_id="T1005",
+                timestamp=first["timestamp"],
+                source_host=host,
+                target_host=host,
+                source_ip=None,
+                target_ip=None,
+                description=f"Sensitive file access was detected on {host}",
+                evidence_events=group[:5],
+            )
+        )
 
     return steps
 
@@ -1033,9 +1067,40 @@ def is_sudo_execution(event: dict[str, Any]) -> bool:
 
 
 def is_sensitive_file_event(event: dict[str, Any]) -> bool:
-    return event["_event_type"] in {"file_read", "file_write", "file_create"} and any(
-        keyword in event["_file_path"] for keyword in SENSITIVE_FILE_KEYWORDS
-    )
+    if event["_event_type"] not in {"file_read", "file_write", "file_create"}:
+        return False
+    if has_explicit_collection_marker(event):
+        return True
+    if is_web_application_noise_file(event):
+        return False
+    return is_sensitive_path(event["_file_path"])
+
+
+def is_sensitive_path(path: str) -> bool:
+    return any(keyword in path for keyword in SENSITIVE_FILE_KEYWORDS)
+
+
+def has_explicit_collection_marker(event: dict[str, Any]) -> bool:
+    attack_stage = as_text(get_detail(event, "attack_stage")).lower()
+    technique = as_text(get_detail(event, "mitre_technique")).lower()
+    if "collection" in attack_stage or technique == "t1005":
+        return True
+    return has_any_flag(event, COLLECTION_FLAGS)
+
+
+def is_web_application_noise_file(event: dict[str, Any]) -> bool:
+    path = event["_file_path"].replace("\\", "/")
+    if not path:
+        return False
+
+    suffix = path_suffix(path)
+    if suffix not in set(STATIC_RESOURCE_SUFFIXES + WEB_CODE_RESOURCE_SUFFIXES):
+        return False
+
+    process_text = f"{event['_process']} {event['_parent_process']}"
+    web_process = is_web_parent(process_text)
+    web_path = any(hint.replace("\\", "/") in path for hint in WEB_CONTENT_PATH_HINTS)
+    return web_process or web_path
 
 
 def is_archive_command(event: dict[str, Any]) -> bool:
@@ -1076,16 +1141,20 @@ def is_sensitive_http_resource(event: dict[str, Any]) -> bool:
 
 
 def is_collection_context_event(event: dict[str, Any]) -> bool:
-    attack_stage = as_text(get_detail(event, "attack_stage")).lower()
-    technique = as_text(get_detail(event, "mitre_technique")).lower()
-    if "collection" in attack_stage or technique == "t1005":
-        return True
-    if has_any_flag(
-        event,
-        ["collection", "collection_candidate", "internal_data_access", "sensitive_file_access", "t1005"],
-    ):
+    if has_explicit_collection_marker(event):
         return True
     return is_sensitive_file_event(event) or is_archive_command(event)
+
+
+def collection_file_key(event: dict[str, Any]) -> str:
+    return event["_file_path"].replace("\\", "/").lower()
+
+
+def path_suffix(path: str) -> str:
+    cleaned = path.split("?", 1)[0].split("#", 1)[0]
+    if "." not in cleaned.rsplit("/", 1)[-1]:
+        return ""
+    return "." + cleaned.rsplit(".", 1)[-1].lower()
 
 
 def http_method(event: dict[str, Any]) -> str:

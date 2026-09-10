@@ -202,6 +202,21 @@ URI 指向非静态资源
 这类规则会生成从请求发起主机到资源所在服务器的攻击图边，并保留 HTTP 请求事件与目标主机
 文件访问事件的数据库 `id` 作为证据。
 
+### Collection 噪声抑制
+
+为降低 Web 主机普通文件访问造成的 Collection 误报，模块对文件访问类事件增加了两类约束：
+
+```text
+同一主机、同一敏感资源的重复 file_read/file_write/file_create 会语义合并为一个 Collection step
+Web 根目录或 Web 服务进程读取 .php/.html/.css/.js/图片/字体等普通应用文件时，不再仅凭路径关键词生成 Collection
+```
+
+如果 B/C 已明确标注 `anomaly_flags` 包含 `collection`、`collection_candidate`、
+`internal_data_access`、`sensitive_file_access` 或 `T1005`，或者 `detail.attack_stage=Collection`、
+`detail.mitre_technique=T1005`，D 仍会保留为 Collection 证据。
+
+这保证了规则偏向真实敏感数据访问，而不是把 Web 服务正常读取页面源码、静态资源、图片、样式文件等行为误判为数据收集。
+
 ## 当前文件
 
 - `backend/analysis/correlation.py`：D 关联分析核心代码。
