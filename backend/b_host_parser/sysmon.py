@@ -6,8 +6,8 @@ Sysmon 日志解析器（Day2任务7提前完成——应A同学"要进程/文�
 输出 : 标准事件 dict 列表（结构见 schema.py，19字段齐全，空值一律null不造假）
 
 支持的事件（这正是任务书"关键实体提取：用户、进程、文件、注册表键值"的来源）:
-    ID 1   进程创建      → process_create（cmdline + 父进程，D分析恶意执行的关键）
-    ID 3   网络连接      → network_connect（src/dst IP + 端口 + 协议，桥接C的流量数据）
+    ID 1   进程创建      → process_start（cmdline + 父进程，D分析恶意执行的关键）
+    ID 3   网络连接      → network_connection（src/dst IP + 端口 + 协议，桥接C的流量数据）
     ID 11  文件创建      → file_create
     ID 13  注册表键值修改 → registry_set
 

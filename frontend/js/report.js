@@ -79,27 +79,37 @@ function initReport(data) {
   document.getElementById("btn-copy-report").addEventListener("click", copyReportMarkdown);
   document.getElementById("btn-export-report").addEventListener("click", exportReport);
 
-  /* 报告区交互用事件委托绑在持久容器 #report 上：
+  /* 报告区交互用事件委托绑在持久容器上：
    * 打字机每次 innerHTML 覆盖都会丢掉子元素上的监听器，
-   * 委托到容器则一次绑定终身有效（打字期间点击也能响应）。 */
-  document.getElementById("report").addEventListener("click", ev => {
-    // 证据 chip（ATT&CK 映射区的 #id）→ 详情弹窗
-    const chip = ev.target.closest(".evid-chip");
-    if (chip) {
-      App.openEventDetail(Number(chip.dataset.eid));
-      return;
-    }
-    // 关键证据表行 → 切到时间线并展开对应事件（跨 tab 定位）
-    const row = ev.target.closest(".evid-row");
-    if (row) {
-      const id = Number(row.dataset.eid);
-      // 优先时间线内嵌定位（能看到 raw_log 原文，与攻击链互证）；
-      // 时间线模块未就绪时退化为详情弹窗，保证"点了一定有反馈"。
-      if (typeof App._locateTimelineEvent === "function" &&
-          App._locateTimelineEvent(id)) return;
-      App.openEventDetail(id);
-    }
-  });
+   * 委托到容器则一次绑定终身有效（打字期间点击也能响应）。
+   * #attribution（身份溯源区）复用同一处理函数——那里的证据 chip
+   * 同样是数据库 events.id，点击后同样按 id 回源 GET /api/events/{id}。 */
+  document.getElementById("report").addEventListener("click", reportEvidenceClick);
+  initAttribution();
+}
+
+/**
+ * 证据 chip（.evid-chip）与关键证据行（.evid-row）的点击处理。
+ * #report（LLM 报告区）与 #attribution（身份溯源区）共用同一个实现：
+ * 两处渲染的都是数据库 events.id，行为必须完全一致。
+ */
+function reportEvidenceClick(ev) {
+  // 证据 chip（ATT&CK 映射区 / 身份溯源区的 #id）→ 详情弹窗
+  const chip = ev.target.closest(".evid-chip");
+  if (chip) {
+    App.openEventDetail(chip.dataset.eid);
+    return;
+  }
+  // 关键证据表行 → 切到时间线并展开对应事件（跨 tab 定位）
+  const row = ev.target.closest(".evid-row");
+  if (row) {
+    const id = Number(row.dataset.eid);
+    // 优先时间线内嵌定位（能看到 raw_log 原文，与攻击链互证）；
+    // 时间线模块未就绪时退化为详情弹窗，保证"点了一定有反馈"。
+    if (typeof App._locateTimelineEvent === "function" &&
+        App._locateTimelineEvent(id)) return;
+    App.openEventDetail(id);
+  }
 }
 
 /* ============================================================
@@ -491,4 +501,305 @@ function typeWriter(target, html, done) {
     target.innerHTML = html.slice(0, i) + caret;
     setTimeout(step, TYPE_INTERVAL);
   })();
+}
+
+/* ============================================================
+ * 身份溯源（Attribution）渲染区（2026-09-10，E 的最后一个展示层任务）
+ * ============================================================
+ * 数据来源：后端既有接口 GET /api/attack-chain/attribution?case_id=...
+ * （数据层见 api.js 的 getAttribution，前端不参与任何归因计算）。
+ * 最小展示六段：① 溯源状态 ② 攻击者画像 ③ C2 与外联基础设施
+ * ④ 观察到的 TTP ⑤ APT/TTP 相似度 ⑥ 证据事件。
+ *
+ * 展示红线（逐条对应需求）：
+ *   - 不写死 case、不写死任何 APT 组名——全部来自接口返回；
+ *   - 不伪造 WHOIS / passive DNS / 注册信息：C2 段落明确标注为
+ *     "本地关联分析"，并注明数据来自当前事件库 + 本地情报参考文件；
+ *   - attribution_status="insufficient_evidence" → 明确显示"证据不足"，
+ *     且不渲染空的相似度排名；
+ *   - evidence_event_ids 全部是数据库 events.id，点击按 id 回源查看；
+ *   - Live 失败只进错误态，绝不回退 mock。
+ * ============================================================ */
+
+const ATTR_STATUS_STYLE = {
+  ok:                    { label: "已生成攻击者画像（基于可观测 TTP 相似度）", color: "#047857" },
+  insufficient_evidence: { label: "证据不足（insufficient_evidence）",        color: "#b45309" },
+};
+
+let ATTR_LOADED = false;  // 首次进入报告页时自动加载一次
+
+/** 绑定重新加载按钮 + 证据点击委托 + "进入报告页自动加载一次" */
+function initAttribution() {
+  const btn = document.getElementById("btn-attribution-reload");
+  if (btn) btn.addEventListener("click", loadAttribution);
+
+  /* 证据点击委托绑在持久容器 #attribution 上：容器内部会被整体重写
+   * （加载中 → 结果 → 错误态），委托到容器不会丢监听器。 */
+  const box = document.getElementById("attribution");
+  if (box) box.addEventListener("click", reportEvidenceClick);
+
+  /* 懒加载：首次切到"分析报告"页时加载一次。
+   * 刻意不并入 App.init 的启动并发——启动阶段保持 P0 修复后的三个
+   * 请求（events / attack-chain / hosts）不变，避免再加启动压力。 */
+  const tab = document.querySelector('#tabs .tab[data-tab="report"]');
+  if (tab) tab.addEventListener("click", () => { if (!ATTR_LOADED) loadAttribution(); });
+
+  /* 暴露给自动化验收/外部联动（与 App._chainApi 同一约定） */
+  App._loadAttribution = loadAttribution;
+}
+
+/** 加载并渲染身份溯源结果（四态：ok / empty / error / demo_unavailable） */
+async function loadAttribution() {
+  const box = document.getElementById("attribution");
+  if (!box) return;
+  box.innerHTML = '<p class="muted">正在加载身份溯源结果（GET /api/attack-chain/attribution）…</p>';
+
+  let attribution, state, error;
+  try {
+    ({ attribution, state, error } = await getAttribution());
+  } catch (err) {
+    box.innerHTML = `<p style="color:var(--anomaly)">身份溯源加载失败：${App.esc(err.message)}</p>`;
+    return;
+  }
+
+  /* 演示模式：内置样例不含 attribution（后端实时分析产物）→ 如实告知，
+   * 不编造归因数据，也不用 mock 顶上。 */
+  if (state === "demo_unavailable") {
+    box.innerHTML = '<p class="muted">演示模式（内置样例数据）未包含身份溯源结果——' +
+      '该结果由后端对当前事件库实时分析产生，演示模式下不编造。</p>';
+    return;
+  }
+  if (state === "error") {
+    box.innerHTML = `<p style="color:var(--anomaly)">身份溯源加载失败（Live 模式，不回退演示数据）：${App.esc(error || "未知错误")}</p>
+      <p class="muted">请确认后端 /api/attack-chain/attribution 可用后点"重新加载"。</p>`;
+    return;
+  }
+  if (state === "empty") {
+    box.innerHTML = '<p class="muted">当前事件库中没有可用于溯源的数据（后端未返回任何 case 画像）。</p>';
+    return;
+  }
+
+  ATTR_LOADED = true;
+  /* 直接 innerHTML 渲染（本区数据量小、无流式观感需求；
+   * 报告区的打字机效果仅用于 LLM 报告，保持原样不动）。
+   * 渲染异常也必须给出反馈：绝不停在"正在加载…"上什么都不说。 */
+  try {
+    box.innerHTML = buildAttributionHtml(attribution);
+  } catch (err) {
+    ATTR_LOADED = false;   // 允许重试
+    box.innerHTML = `<p style="color:var(--anomaly)">身份溯源结果渲染失败：${App.esc(err.message)}</p>
+      <p class="muted">接口返回了预期外的字段结构（Live 数据不伪造、不吞错），请把该 case 反馈给后端。</p>`;
+  }
+}
+
+/* ---------- 渲染辅助（全部复用报告区既有样式类） ---------- */
+
+/** 溯源状态徽章（复用 .risk-badge） */
+function attrStatusBadge(status) {
+  const s = ATTR_STATUS_STYLE[status];
+  const label = s ? s.label : (status || "未知状态");
+  return `<span class="risk-badge" style="background:${s ? s.color : "#475569"}">${App.esc(label)}</span>`;
+}
+
+/** 普通值 chip 列表（空数组/空串 → 显示"无"，不渲染空行） */
+function attrChips(values) {
+  const list = (Array.isArray(values) ? values : [])
+    .filter(v => v !== null && v !== undefined && String(v) !== "");
+  if (list.length === 0) return '<span class="muted">无</span>';
+  return list.map(v => `<span class="chip">${App.esc(String(v))}</span>`).join(" ");
+}
+
+/**
+ * 证据事件 chip（**全部是数据库 events.id**）。
+ * 点击 → reportEvidenceClick → App.openEventDetail：
+ * 命中年线内存列表直接渲染，否则按 id 回源 GET /api/events/{id}。
+ * @param {number} [limit] 最多渲染几个，超出部分以"…共 N 条"提示
+ */
+function attrEvidenceChips(ids, limit) {
+  const list = (Array.isArray(ids) ? ids : [])
+    .filter(id => id !== null && id !== undefined && Number.isFinite(Number(id)))
+    .map(Number);
+  if (list.length === 0) return '<span class="muted">无</span>';
+  const shown = (limit && list.length > limit) ? list.slice(0, limit) : list;
+  const more = list.length - shown.length;
+  return shown.map(id =>
+    `<span class="chip flag evid-chip" data-eid="${id}" title="点击查看事件详情（GET /api/events/${id}）">#${id}</span>`
+  ).join(" ") + (more > 0 ? ` <span class="muted">…共 ${list.length} 条</span>` : "");
+}
+
+function attrKvRow(label, html) {
+  return `<tr><th>${App.esc(label)}</th><td>${html}</td></tr>`;
+}
+
+/** 数组字段防御：契约里这些字段都是数组，但渲染层不做形状假设——
+ *  万一后端给了非数组（字符串/数字），按空数组处理，
+ *  绝不让 .join 抛错把整块渲染打断。 */
+function attrList(v) {
+  return Array.isArray(v) ? v : [];
+}
+
+/** 时间字段安全格式化：App.fmtTime 内部做 .slice，非字符串不能直接喂给它 */
+function attrTimeLabel(v) {
+  if (typeof v === "string" && v) return App.fmtTime(v);
+  return v ? String(v) : null;
+}
+
+/** 数值展示（后端给 0~1 的分数；非法值显示 "-"） */
+function attrNum(v, digits = 4) {
+  return Number.isFinite(Number(v)) ? Number(v).toFixed(digits) : "-";
+}
+
+/** 单个 case 的画像区块（多 case 形态会被调用多次） */
+function buildAttributionProfileHtml(p) {
+  const status = safeField(p, "attribution_status");
+  const ep = safeField(p, "entry_points") || {};
+  const fp = safeField(p, "fingerprints") || {};
+  const c2 = Array.isArray(safeField(p, "c2_infrastructure")) ? p.c2_infrastructure : [];
+  const apt = Array.isArray(safeField(p, "apt_matches")) ? p.apt_matches : [];
+  const seq = Array.isArray(safeField(p, "behavior_sequence")) ? p.behavior_sequence : [];
+  const evids = Array.isArray(safeField(p, "evidence_event_ids")) ? p.evidence_event_ids : [];
+  const note = safeField(p, "note");
+  const insufficient = status === "insufficient_evidence";
+
+  /* ---------- ① 溯源状态 ---------- */
+  const statusHtml = `
+    <h4>一、溯源状态</h4>
+    <p>${attrStatusBadge(status)}
+      ${insufficient
+        ? '<span class="muted">当前数据未形成足够的可观测证据（无攻击步骤 / 技术指纹 / C2 关联），因此不输出 APT 相似度排名。</span>'
+        : '<span class="muted">基于攻击链步骤、事件指纹与本地威胁情报参考文件的可观测 TTP 相似度结果。</span>'}</p>
+    ${note ? `<p class="muted">${App.esc(note)}</p>` : ""}`;
+
+  /* ---------- ② 攻击者画像 ---------- */
+  /* 只渲染有内容的行：空数组不占行（沿用"null/空字段不渲染"的项目约定） */
+  const profileRows = [
+    attrList(ep.source_ips).length
+      ? attrKvRow("攻击来源 IP（entry_points.source_ips）", attrChips(ep.source_ips)) : "",
+    attrList(ep.target_hosts).length
+      ? attrKvRow("被攻目标主机（entry_points.target_hosts）", attrChips(ep.target_hosts)) : "",
+    attrList(ep.target_ips).length
+      ? attrKvRow("被攻目标 IP（entry_points.target_ips）", attrChips(ep.target_ips)) : "",
+    attrList(ep.evidence_event_ids).length
+      ? attrKvRow("入口证据事件（entry_points.evidence_event_ids）", attrEvidenceChips(ep.evidence_event_ids)) : "",
+    attrList(fp.tools).length
+      ? attrKvRow("攻击者工具（fingerprints.tools）", attrChips(fp.tools)) : "",
+    attrList(fp.scripts).length
+      ? attrKvRow("落地脚本（fingerprints.scripts）", attrChips(fp.scripts)) : "",
+    attrList(fp.config_files).length
+      ? attrKvRow("配置文件（fingerprints.config_files）", attrChips(fp.config_files)) : "",
+    attrList(fp.external_ips).length
+      ? attrKvRow("外部 IP 指纹（fingerprints.external_ips）", attrChips(attrList(fp.external_ips).slice(0, 8)) +
+          (attrList(fp.external_ips).length > 8 ? ` <span class="muted">…共 ${attrList(fp.external_ips).length} 个</span>` : "")) : "",
+    attrList(fp.domains).length
+      ? attrKvRow("域名 / 主机名指纹（fingerprints.domains）", attrChips(attrList(fp.domains).slice(0, 10)) +
+          (attrList(fp.domains).length > 10 ? ` <span class="muted">…共 ${attrList(fp.domains).length} 个</span>` : "")) : "",
+  ].join("");
+  const profileHtml = profileRows
+    ? `<h4>二、攻击者画像（Attacker Profile）</h4><table class="kv">${profileRows}</table>`
+    : `<h4>二、攻击者画像（Attacker Profile）</h4><p class="muted">（当前证据不足以形成画像字段）</p>`;
+
+  /* ---------- ③ C2 与外联基础设施 ---------- */
+  const c2Rows = c2.map(item => {
+    const ip = safeField(item, "ip") ?? safeField(item, "id") ?? "-";
+    const ports = attrList(safeField(item, "ports")).join("、") || "-";
+    const protocols = attrList(safeField(item, "protocols")).join("、") || "-";
+    const domains = attrList(safeField(item, "domains")).join("、") || "-";
+    const hosts = attrList(safeField(item, "source_hosts")).join("、") || "-";
+    const srcIps = attrList(safeField(item, "source_ips")).join("、");
+    const first = safeField(item, "first_seen");
+    const last = safeField(item, "last_seen");
+    const span = [attrTimeLabel(first), attrTimeLabel(last)]
+      .filter(Boolean).join(" → ") || "-";
+    /* intel 来自本地情报参考文件（data/threat_intel/c2_intel.json）；
+     * 为空对象就不渲染，绝不编造。 */
+    const intel = safeField(item, "intel") || {};
+    const intelBits = [intel.registered_org, intel.asn, intel.country]
+      .filter(Boolean).join(" · ");
+    const tags = Array.isArray(intel.tags) ? intel.tags.join("、") : "";
+    const intelLine = (intelBits || tags)
+      ? `<div class="muted">本地情报库：${App.esc([intelBits, tags].filter(Boolean).join(" · "))}</div>` : "";
+    return `<tr>
+      <td class="mono">${App.esc(String(ip))}${intelLine}</td>
+      <td class="mono">${App.esc(String(ports))}</td>
+      <td>${App.esc(String(protocols))}</td>
+      <td class="mono">${App.esc(String(domains))}</td>
+      <td class="mono">${App.esc(span)}</td>
+      <td>${App.esc(hosts)}${srcIps ? `<div class="muted mono">${App.esc(srcIps)}</div>` : ""}</td>
+      <td>${attrEvidenceChips(safeField(item, "evidence_event_ids"), 12)}</td>
+    </tr>`;
+  }).join("");
+  const c2Html = `<h4>三、C2 与外联基础设施（本地关联分析）</h4>` + (c2.length
+    ? `<table>
+        <tr><th>端点 IP</th><th>端口</th><th>协议</th><th>域名</th><th>出现时间（UTC+8）</th><th>外联主机</th><th>证据事件</th></tr>
+        ${c2Rows}
+      </table>
+      <p class="muted">数据口径：来自当前事件库中 C2 / 数据外传阶段的攻击链步骤与本地威胁情报参考文件
+        （data/threat_intel/c2_intel.json）的关联分析结果，<b>不包含</b>外部 WHOIS / passive DNS / 注册信息查询。</p>`
+    : '<p class="muted">（当前事件库中未检出 C2 / 外联基础设施）</p>');
+
+  /* ---------- ④ 观察到的 TTP ---------- */
+  const techniques = Array.isArray(fp.techniques) ? fp.techniques : [];
+  const tnames = fp.technique_names || {};
+  const ttpRows = techniques.map(tid =>
+    `<span class="mitre-tag"><b class="mono">${App.esc(tid)}</b> ` +
+    `${App.esc(tnames[tid] || MITRE_TECHNIQUE_NAMES[tid] || "（接口未给中文/英文名）")}</span>`
+  ).join(" ");
+  const seqChips = seq.map(stage =>
+    `<span class="lg-chip" style="background:${App.stageColor(stage)}">${App.esc(stage)}</span>`).join(" ");
+  const ttpHtml = `<h4>四、观察到的 TTP（ATT&CK 技术）</h4>` + (techniques.length
+    ? `<div class="mitre-row">${ttpRows}</div>
+       ${seq.length ? `<p class="muted">行为阶段序列（关联引擎观测顺序）：</p><div>${seqChips}</div>` : ""}`
+    : '<p class="muted">（未从当前证据中提取到 ATT&CK 技术编号）</p>');
+
+  /* ---------- ⑤ APT / TTP 相似度 ---------- */
+  /* 证据不足时**不渲染排名**，只给明确结论（需求第 6 条） */
+  const aptHtml = `<h4>五、APT / TTP 相似度</h4>` + (insufficient
+    ? '<p class="muted"><b>证据不足，未输出相似度排名。</b>当前数据无法形成可观测 TTP 画像，' +
+      '按后端口径直接给出 insufficient_evidence，而不是给一个无意义的名次。</p>'
+    : (apt.length === 0
+      ? '<p class="muted">（后端未返回相似度匹配结果）</p>'
+      : apt.map(m => {
+          const name = safeField(m, "name") ?? "（未标注名称）";
+          const gid = safeField(m, "group_id");
+          const aliases = Array.isArray(safeField(m, "aliases")) ? m.aliases : [];
+          const score = safeField(m, "final_score");
+          const pct = Number.isFinite(Number(score)) ? (Number(score) * 100).toFixed(1) + "%" : "-";
+          const mTech = Array.isArray(safeField(m, "matched_techniques")) ? m.matched_techniques : [];
+          const mTools = Array.isArray(safeField(m, "matched_tools")) ? m.matched_tools : [];
+          const techChips = mTech.map(t =>
+            `<span class="chip">${App.esc(t)}</span>`).join(" ");
+          return `<div class="mitre-row">
+            <span class="lg-chip" style="background:#6d28d9">相似度 ${App.esc(pct)}</span>
+            <span class="mitre-tag"><b class="mono">${App.esc(gid ?? "-")}</b> ${App.esc(name)}` +
+            `${aliases.length ? ` <span class="muted">（别名：${App.esc(aliases.join("、"))}）</span>` : ""}</span>
+            <span class="mitre-evid">命中技术：${techChips || '<span class="muted">无</span>'}
+              ${mTools.length ? ` · 命中工具：${App.esc(mTools.join("、"))}` : ""}
+              <span class="muted">（规则 ${App.esc(attrNum(safeField(m, "rule_score")))} / 语义 ${App.esc(attrNum(safeField(m, "semantic_score")))}
+              · 编号为后端情报库组编号）</span></span>
+          </div>`;
+        }).join("") +
+      `<p class="muted">口径：以上为 TTP 相似度排序（分组编号与名称来自后端情报库），
+        用于线索参考，<b>不是确认的身份归因</b>。</p>`));
+
+  /* ---------- ⑥ 证据事件 ---------- */
+  const evidHtml = `<h4>六、证据事件（${evids.length}）</h4>` + (evids.length
+    ? `<div>${attrEvidenceChips(evids)}</div>
+       <p class="muted">全部为数据库 events.id；点击 chip 查看事件详情（缓存未命中时按 id 回源 GET /api/events/{id}）。</p>`
+    : '<p class="muted">（后端未返回证据事件 id）</p>');
+
+  return statusHtml + profileHtml + c2Html + ttpHtml + aptHtml + evidHtml;
+}
+
+/** 顶层：单 case 画像 或 多 case（profiles 数组） */
+function buildAttributionHtml(a) {
+  const profiles = Array.isArray(safeField(a, "profiles")) ? a.profiles : null;
+  if (profiles && profiles.length > 0) {
+    if (profiles.length === 1) return buildAttributionProfileHtml(profiles[0]);
+    /* 多 case：后端为避免跨 case 混淆而分开分析，页面按 case 分块展示 */
+    return profiles.map(p => {
+      const cid = safeField(p, "case_id");
+      return `<p><b>${App.esc(cid ?? "（未标注 case）")}</b></p>` + buildAttributionProfileHtml(p);
+    }).join("");
+  }
+  return buildAttributionProfileHtml(a);
 }

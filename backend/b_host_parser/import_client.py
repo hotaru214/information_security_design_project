@@ -20,8 +20,7 @@ import requests
 def save_jsonl(events: list, out_path: str) -> str:
     """把标准事件列表写成 .jsonl 文件（每行一个JSON对象）。
 
-    为什么用 jsonl 不用 json 数组：可以一行一行追加、一行一行读，
-    文件大了不怕内存爆，后续Day2全量导入时还能断点续传。
+    为什么用 jsonl 不用 json 数组：可以一行一行写、一行一行读，文件大了不怕内存爆。
     返回输出文件的绝对路径。
     """
     with open(out_path, "w", encoding="utf-8") as f:

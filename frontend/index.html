@@ -81,6 +81,14 @@
         </span>
       </div>
       <div class="card"><div id="report" class="report"><p class="muted">点击"开始分析"生成报告。</p></div></div>
+      <!-- 身份溯源（Attribution）：复用后端 GET /api/attack-chain/attribution，
+           首次进入本页时自动加载；渲染逻辑在 report.js，样式复用报告区 -->
+      <div class="card report-head">
+        <h3 style="margin:0">身份溯源（Attribution）</h3>
+        <button id="btn-attribution-reload" class="btn-ghost">重新加载</button>
+        <span class="muted">数据来源：GET /api/attack-chain/attribution · 可观测 TTP 相似度，非确认身份归因</span>
+      </div>
+      <div class="card"><div id="attribution" class="report"><p class="muted">进入本页会自动加载身份溯源结果…</p></div></div>
     </section>
   </main>
 
