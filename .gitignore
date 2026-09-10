@@ -17,3 +17,5 @@ Thumbs.db
 .idea/
 data/datasets/
 data/ingest/
+data/ingest/
+backend/data/

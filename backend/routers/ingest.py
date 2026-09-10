@@ -23,7 +23,7 @@ from backend.schemas.event import EventCreate
 
 router = APIRouter(prefix="/api")
 
-INGEST_ROOT = Path(__file__).resolve().parent.parent / "data" / "ingest"
+INGEST_ROOT = Path(__file__).resolve().parents[2] / "data" / "ingest"   # 仓库根 data/（与数据集同区）
 B_PARSER_DIR = Path(__file__).resolve().parent.parent / "b_host_parser"
 
 _NETWORK_EXTS = {".pcap", ".pcapng", ".cap", ".csv", ".json"}
