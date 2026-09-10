@@ -1,17 +1,41 @@
 /* ============================================================
  * data.js — 数据管理页（2026-09-10 平台化需求，成员C/F）
- * ============================================================
- * 两个功能区：
- *   上区·导入：批次名 + 多文件上传 -> POST /api/ingest（后端自动
- *              嗅探格式并解析入库，事件打 case_id）
- *   下区·批次：GET /api/batches 清单 + 每批「开始分析」->
- *              GET /api/attack-chain?case_id= 展示 D 关联摘要
- * 页眉的下拉（app.js 渲染）与本页共用同一 case 口径。
+ * 2026-09-10晚 修复：①多文件上传 ②已选文件清单可见 ③成功后清空
+ * 文件选择（防止再点按钮重复上传）。
  * ============================================================ */
 
 async function initDataManage() {
   await refreshBatchTable();
   document.getElementById("ingest-btn").addEventListener("click", runIngest);
+
+  /* 已选文件清单：选择变化即渲染（名称/大小），让用户看清选了什么 */
+  const filesInput = document.getElementById("ingest-files");
+  filesInput.addEventListener("change", renderIngestFileList);
+}
+
+function formatSize(bytes) {
+  if (bytes >= 1e9) return (bytes / 1e9).toFixed(2) + " GB";
+  if (bytes >= 1e6) return (bytes / 1e6).toFixed(1) + " MB";
+  if (bytes >= 1e3) return (bytes / 1e3).toFixed(1) + " KB";
+  return bytes + " B";
+}
+
+function renderIngestFileList() {
+  const input = document.getElementById("ingest-files");
+  const box = document.getElementById("ingest-file-list");
+  if (!input.files.length) {
+    box.textContent = "未选择文件";
+    return;
+  }
+  const names = [...input.files].map(f => `${f.name}（${formatSize(f.size)}）`);
+  const total = [...input.files].reduce((s, f) => s + f.size, 0);
+  box.textContent = `已选 ${input.files.length} 个文件（共 ${formatSize(total)}）：${names.join("、")}`;
+}
+
+function clearIngestFiles() {
+  const input = document.getElementById("ingest-files");
+  input.value = "";                       // 清空选择，防止再点按钮重复上传
+  renderIngestFileList();
 }
 
 async function refreshBatchTable() {
@@ -44,7 +68,7 @@ async function runIngest() {
   const resultBox = document.getElementById("ingest-result");
   const caseId = caseInput.value.trim();
   if (!caseId) { resultBox.innerHTML = '<p style="color:var(--anomaly)">请先填写批次名称（case_id）。</p>'; return; }
-  if (!filesInput.files.length) { resultBox.innerHTML = '<p style="color:var(--anomaly)">请选择至少一个数据文件。</p>'; return; }
+  if (!filesInput.files.length) { resultBox.innerHTML = '<p style="color:var(--anomaly)">请先选择数据文件（当前未选择）。</p>'; return; }
 
   const fd = new FormData();
   fd.append("case_id", caseId);
@@ -52,10 +76,10 @@ async function runIngest() {
 
   const btn = document.getElementById("ingest-btn");
   btn.disabled = true;
-  btn.textContent = "上传解析中…";
+  btn.textContent = `上传解析中（${filesInput.files.length} 个文件）…`;
   resultBox.innerHTML = '<p class="muted">上传与解析中（大文件需要一点时间）…</p>';
   try {
-    const resp = await fetchWithTimeout(`${API_BASE}/api/ingest`, 120000, { method: "POST", body: fd });
+    const resp = await fetchWithTimeout(`${API_BASE}/api/ingest`, 300000, { method: "POST", body: fd });
     const body = await resp.json();
     const rows = (body.per_file || []).map(pf =>
       `<tr><td>${App.esc(pf.file)}</td><td>${App.esc(pf.parser)}</td>` +
@@ -65,12 +89,14 @@ async function runIngest() {
       `<p>批次 <b>${App.esc(body.case_id)}</b> 导入完成：成功 ${body.imported} 条` +
       (body.failed ? `，解析失败 ${body.failed} 条` : "") + "</p>" +
       '<table class="kv"><tr><th>文件</th><th>解析器</th><th>事件数</th><th>说明</th></tr>' + rows + "</table>" +
-      `<p class="muted">页眉下拉已可切换到批次 ${App.esc(body.case_id)}。</p>`;
+      '<p class="muted">文件选择已清空——如需继续上传请重新选择文件（同名批次会追加）。</p>';
+    clearIngestFiles();                    // 修复③：成功后清空，避免再点重复上传
     await refreshBatchTable();
-    await fillCaseSelect();       // 新批次进入页眉下拉
-    setCaseId(body.case_id);      // 自动切到新批次视图
+    await fillCaseSelect();                // 页眉下拉同步
+    setCaseId(body.case_id);               // 自动切到新批次视图
+    App.fillCaseSelect();
   } catch (err) {
-    resultBox.innerHTML = `<p style="color:var(--anomaly)">上传失败：${App.esc(err.message)}</p>`;
+    resultBox.innerHTML = `<p style="color:var(--anomaly)">上传失败：${App.esc(err.message)}（文件选择保留，可直接重试）</p>`;
   } finally {
     btn.disabled = false;
     btn.textContent = "上传并解析入库";
@@ -101,6 +127,11 @@ async function analyzeBatch(caseId) {
   }
 }
 
+function selectBatch(caseId) {
+  setCaseId(caseId);
+  location.reload();              // 切批次后整页刷新，四个页面统一按新 case 过滤
+}
+
 async function deleteBatch(caseId) {
   if (!confirm(`确定删除批次 ${caseId} 的全部事件？此操作不可恢复。`)) return;
   const resp = await fetch(`${API_BASE}/api/ingest/${encodeURIComponent(caseId)}`, { method: "DELETE" });
@@ -109,9 +140,4 @@ async function deleteBatch(caseId) {
   await refreshBatchTable();
   await fillCaseSelect();
   location.reload();              // 当前展示批次被删时，整页回退"全部数据"
-}
-
-function selectBatch(caseId) {
-  setCaseId(caseId);
-  location.reload();              // 切批次后整页刷新，四个页面统一按新 case 过滤
 }

@@ -353,3 +353,12 @@ main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
   color: inherit; opacity: .75;
 }
 .demo-toggle:hover { opacity: 1; border-color: #9ca3af; }
+
+/* 数据管理页：已选文件清单 */
+.ingest-form label {
+  display: block;
+  margin-bottom: 8px;
+}
+#ingest-file-list {
+  word-break: break-all;
+}
