@@ -34,7 +34,7 @@ parse_linux_audit —— auditd（2026-09-08按E真实数据适配，支持两�
     （同一个事件会同时出现在 audit.log 和 ausearch 按规则提取的 .txt 里）。
 
 统计 dict 与 Windows 解析器同构: {"parsed", "skipped_other", "failed", "by_event_id"}，
-by_event_id 用记录类型作键（USER_CMD/execve/file_open/connect_inet/...）。
+by_event_id 用记录类型作键（USER_CMD/execve/file_read/file_write/connect_inet/...）。
 
 用法:
     from linux_log import parse_linux_auth, parse_linux_audit

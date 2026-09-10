@@ -4,7 +4,7 @@
 ====================================
 这里定义的 dict 结构就是全组的"JSON契约"，文档版见 docs/Event-V2-FINAL.md（唯一权威版本）。
 
-规矩（任务1开小会时要和A、D确认的）：
+规矩（已与A、D确认，2026-09-08随Event V2 FINAL冻结）：
   1. 每个标准事件的键必须全部存在，没有的值填 None（不许删键）——
      这样A建表有唯一依据，D写关联规则也不用判断"这个字段存不存在"。
   2. timestamp 统一输出 UTC+8（任务书要求"时间序列对齐、统一时钟源"），
@@ -123,7 +123,7 @@ def make_event(**kwargs) -> dict:
 
     用法示例：
         ev = make_event(timestamp=..., host=..., event_type="login_success", ...)
-    好处：保证17个键一个不少，字段名写错会直接报错（防止静默产生脏数据）。
+    好处：保证19个键一个不少，字段名写错会直接报错（防止静默产生脏数据）。
     """
     ev = {k: None for k in STANDARD_FIELDS}
     ev["detail"] = {}
