@@ -24,6 +24,7 @@ def test_attribution_profile_extracts_fingerprints_and_c2():
     profile = build_attribution_profile(sample["events"], steps, sample["host_map"])
 
     assert profile["case_id"] == "apt29_case_001"
+    assert profile["attribution_status"] == "ok"
     assert "bash" in profile["fingerprints"]["tools"]
     assert "reg.exe" in profile["fingerprints"]["tools"]
     assert "wevtutil.exe" in profile["fingerprints"]["tools"]
@@ -106,3 +107,41 @@ def test_attribution_endpoint_returns_profile(monkeypatch):
     data = response.json()
     assert data["case_id"] == "apt29_case_001"
     assert data["apt_matches"][0]["name"] == "APT29 emulation profile"
+
+
+def test_attribution_profile_returns_no_candidates_without_evidence():
+    profile = build_attribution_profile([], [])
+
+    assert profile["attribution_status"] == "insufficient_evidence"
+    assert profile["apt_matches"] == []
+    assert profile["evidence_event_ids"] == []
+
+
+def test_attribution_endpoint_returns_no_candidates_for_absent_case(monkeypatch):
+    sample = load_sample()
+
+    def fake_get_events(case_id=None):
+        if case_id == "absent":
+            return []
+        return sample["events"]
+
+    monkeypatch.setattr(attack_chain_module, "get_events", fake_get_events)
+    monkeypatch.setattr(
+        attack_chain_module,
+        "get_hosts",
+        lambda: [
+            {"ip": ip, "hostname": hostname, "role": "host"}
+            for ip, hostname in sample["host_map"].items()
+        ],
+    )
+
+    app = FastAPI()
+    app.include_router(attack_chain_router)
+    client = TestClient(app)
+
+    response = client.get("/api/attack-chain/attribution?case_id=absent")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["attribution_status"] == "insufficient_evidence"
+    assert data["apt_matches"] == []

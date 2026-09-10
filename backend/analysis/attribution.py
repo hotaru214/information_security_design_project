@@ -149,11 +149,13 @@ def build_case_profile(
         "infrastructure_tags": infrastructure_tags(c2_infrastructure),
     }
     profile_text = build_profile_text(observed_profile, steps)
-    matches = match_apt_profiles(observed_profile, profile_text, apt_profiles)
     evidence_event_ids = collect_profile_evidence_ids(steps, fingerprints, c2_infrastructure)
+    has_evidence = has_attribution_evidence(steps, fingerprints, c2_infrastructure)
+    matches = match_apt_profiles(observed_profile, profile_text, apt_profiles) if has_evidence else []
 
     return {
         "case_id": case_id,
+        "attribution_status": "ok" if has_evidence else "insufficient_evidence",
         "entry_points": entry_points,
         "fingerprints": fingerprints,
         "c2_infrastructure": c2_infrastructure,
@@ -454,6 +456,18 @@ def match_apt_profiles(
 
     matches.sort(key=lambda item: item["final_score"], reverse=True)
     return matches[:3]
+
+
+def has_attribution_evidence(
+    attack_steps: list[dict[str, Any]],
+    fingerprints: dict[str, Any],
+    c2_infrastructure: list[dict[str, Any]],
+) -> bool:
+    if attack_steps:
+        return True
+    if fingerprints.get("techniques") or fingerprints.get("evidence_event_ids"):
+        return True
+    return bool(c2_infrastructure)
 
 
 def rule_similarity(observed: dict[str, Any], profile: dict[str, Any]) -> tuple[float, dict[str, Any]]:
