@@ -65,9 +65,23 @@ GET /api/attack-chain/attribution?case_id=apt29_case_001
       "first_seen": "2026-09-08T13:16:00+08:00",
       "last_seen": "2026-09-08T13:16:00+08:00",
       "evidence_event_ids": [9, 10],
+      "registration": {
+        "registered_org": "Course Lab VPS Provider",
+        "registrar": "Local Course Threat Intel",
+        "asn": "AS-LAB-64512",
+        "country": "Lab",
+        "source": "local_lab_intel"
+      },
+      "history": [
+        "Observed as the C2/exfiltration endpoint in the local APT29-style course case."
+      ],
+      "related_domains": ["apt29-c2.lab"],
       "intel": {
         "registered_org": "Course Lab VPS Provider",
-        "related_domains": ["apt29-c2.lab"]
+        "related_domains": ["apt29-c2.lab"],
+        "history": [
+          "Observed as the C2/exfiltration endpoint in the local APT29-style course case."
+        ]
       }
     }
   ],
@@ -109,8 +123,13 @@ GET /api/attack-chain/attribution?case_id=apt29_case_001
 如果发现内网主机访问外部地址，且命中 C2/外传标签、可疑端口或短时间重复连接，
 就按外部 IP/域名聚合为 C2 基础设施节点。
 
-基础设施节点会补充本地情报库中的注册组织、ASN、关联域名、历史记录和标签。
-当前实现使用本地 JSON 模拟威胁情报库，后续可替换为 WHOIS、Passive DNS 或商业情报接口。
+基础设施节点会补充本地情报库中的注册组织、注册来源、ASN、国家/地区、关联域名、
+历史记录和标签。输出中 `registration`、`history`、`related_domains` 是报告和前端
+可直接展示的字段，`intel` 保留完整原始情报对象，便于后续扩展。
+
+当前实现使用本地 JSON 模拟威胁情报库，适合课程靶场和离线演示；如果要做真实公网
+归因，可以把 `data/threat_intel/c2_intel.json` 替换或扩展为 WHOIS、Passive DNS、
+域名历史解析、证书透明日志或商业情报接口的查询结果。
 
 ### 3. APT/TTP 相似性匹配
 

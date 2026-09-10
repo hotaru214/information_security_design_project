@@ -10,6 +10,23 @@
       ],
       "tags": ["external-ip", "cloud-vps", "non-standard-port"]
     },
+    "10.10.10.20": {
+      "registration": {
+        "registered_org": "Case01 Lab C2 Server",
+        "registrar": "Local Course Threat Intel",
+        "asn": "AS-LAB-CASE01",
+        "country": "Lab",
+        "source": "local_lab_intel"
+      },
+      "related_domains": ["case01-c2.lab", "apt29-c2.lab"],
+      "historical_ips": ["47.88.10.9"],
+      "history": [
+        "Observed as the HTTP beacon receiver for Case01 on port 8080.",
+        "Observed receiving callbacks from win10-jump after lateral movement and collection activity.",
+        "Linked to the same local APT29-style behavior profile as apt29-c2.lab."
+      ],
+      "tags": ["external-ip", "lab-c2", "http-c2", "non-standard-port", "apt29-style"]
+    },
     "45.77.11.23": {
       "registered_org": "Course Lab Attacker Host",
       "asn": "AS-LAB-64513",
