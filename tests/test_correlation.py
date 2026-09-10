@@ -80,6 +80,52 @@ def test_normal_external_http_is_not_c2():
     assert not any(step["stage"] == "Command and Control" for step in steps)
 
 
+def test_waf_http_alert_is_initial_access():
+    event = network_event(
+        source="waf",
+        event_type="http_request",
+        src_ip="10.10.10.10",
+        dst_ip="10.10.20.10",
+        dst_port=80,
+        protocol="http",
+        detail={"uri": "/upload.php?cmd=whoami", "attack_type": "command_injection"},
+        anomaly_flags=["web_attack", "initial_access"],
+        severity=3,
+    )
+
+    steps = correlate_events([event], internal_networks=FINAL_NETWORKS)
+
+    assert any(
+        step["stage"] == "Initial Access"
+        and step["technique_id"] == "T1190"
+        and step["evidence_event_ids"] == [101]
+        for step in steps
+    )
+
+
+def test_firewall_boundary_connection_is_initial_access():
+    event = network_event(
+        source="firewall",
+        event_type="network_connection",
+        src_ip="10.10.10.10",
+        dst_ip="10.10.20.10",
+        dst_port=80,
+        protocol="tcp",
+        detail={"action": "allow", "rule_name": "allow_web"},
+        anomaly_flags=["initial_access"],
+        severity=2,
+    )
+
+    steps = correlate_events([event], internal_networks=FINAL_NETWORKS)
+
+    assert any(
+        step["stage"] == "Initial Access"
+        and step["technique_id"] == "T1190"
+        and step["evidence_event_ids"] == [101]
+        for step in steps
+    )
+
+
 @pytest.mark.parametrize("event_type", ["network_connection", "http_request"])
 @pytest.mark.parametrize("detail", [{}, {"bytes_out": None}, {"bytes_out": "invalid"}, {"bytes_out": 0}])
 @pytest.mark.parametrize("flagged", [False, True])

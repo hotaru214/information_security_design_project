@@ -114,6 +114,25 @@ INITIAL_ACCESS_URI_KEYWORDS = [
     "../",
 ]
 
+INITIAL_ACCESS_FLAGS = [
+    "web_attack",
+    "initial_access",
+    "exploit",
+    "rce",
+    "command_injection",
+    "webshell_upload",
+]
+
+INITIAL_ACCESS_ATTACK_TYPES = [
+    "rce",
+    "remote_code_execution",
+    "command_injection",
+    "webshell",
+    "file_upload",
+    "path_traversal",
+    "sql_injection",
+]
+
 
 def correlate_events(
     events: list[dict[str, Any]], host_map: dict[str, str] | None = None,
@@ -125,12 +144,33 @@ def correlate_events(
     internal ``id`` field, not the original ``source_event_id``.
     """
 
-    # Explicit CIDRs define the scenario boundary, independently of host names.
     host_map = host_map or {}
+    compiled_internal_networks = compile_internal_networks(internal_networks)
     normalized = preprocess_events(events)
     normalized.sort(key=lambda event: event["_time"])
-    context = build_context(normalized, host_map)
-    context["internal_networks"] = compile_internal_networks(internal_networks)
+    grouped_events = group_events_by_case(normalized)
+
+    steps: list[dict[str, Any]] = []
+    for case_events in grouped_events.values():
+        steps.extend(correlate_case_events(case_events, host_map, compiled_internal_networks))
+
+    steps = deduplicate_steps(steps)
+    steps.sort(key=lambda step: step["timestamp"])
+
+    for index, step in enumerate(steps, start=1):
+        step["step_id"] = f"S{index:03d}"
+
+    return steps
+
+
+def correlate_case_events(
+    events: list[dict[str, Any]],
+    host_map: dict[str, str],
+    internal_networks,
+) -> list[dict[str, Any]]:
+    # Explicit CIDRs define the scenario boundary, independently of host names.
+    context = build_context(events, host_map)
+    context["internal_networks"] = internal_networks
 
     steps: list[dict[str, Any]] = []
     detectors = [
@@ -146,13 +186,7 @@ def correlate_events(
     ]
 
     for detector in detectors:
-        steps.extend(detector(normalized, context, host_map))
-
-    steps = deduplicate_steps(steps)
-    steps.sort(key=lambda step: step["timestamp"])
-
-    for index, step in enumerate(steps, start=1):
-        step["step_id"] = f"S{index:03d}"
+        steps.extend(detector(events, context, host_map))
 
     return steps
 
@@ -187,10 +221,20 @@ def preprocess_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
             get_detail(copied, "registry_value_data")
         ).lower()
         copied["_anomaly_flags"] = normalize_flags(copied.get("anomaly_flags"))
+        copied["_case_id"] = get_case_id(copied)
 
         normalized.append(copied)
 
     return normalized
+
+
+def group_events_by_case(
+    events: list[dict[str, Any]]
+) -> dict[str | None, list[dict[str, Any]]]:
+    grouped: dict[str | None, list[dict[str, Any]]] = defaultdict(list)
+    for event in events:
+        grouped[event.get("_case_id")].append(event)
+    return dict(grouped)
 
 
 def build_context(
@@ -241,7 +285,7 @@ def detect_initial_access(
     steps = []
 
     for event in events:
-        if event["_event_type"] != "http_request":
+        if event["_event_type"] not in {"http_request", "network_connection"}:
             continue
 
         src_ip = get_value(event, "src_ip")
@@ -254,8 +298,31 @@ def detect_initial_access(
 
         uri = as_text(get_detail(event, "uri")).lower()
         suspicious_uri = any(keyword in uri for keyword in INITIAL_ACCESS_URI_KEYWORDS)
-        anomalous = has_any_flag(event, ["web_attack", "initial_access", "exploit"])
-        if not suspicious_uri and not anomalous and int_value(event.get("severity")) < 2:
+        source = event["_source"]
+        attack_type = as_text(get_detail(event, "attack_type")).lower()
+        firewall_action = as_text(get_detail(event, "action")).lower()
+        web_port = int_value(event.get("dst_port")) in {80, 443, 8080, 8443}
+        anomalous = has_any_flag(event, INITIAL_ACCESS_FLAGS)
+        waf_alert = source == "waf" and (
+            anomalous
+            or any(keyword in attack_type for keyword in INITIAL_ACCESS_ATTACK_TYPES)
+            or int_value(event.get("severity"), 0) >= 2
+        )
+        firewall_boundary_hit = (
+            source == "firewall"
+            and web_port
+            and firewall_action in {"", "allow", "allowed", "accept", "accepted"}
+        )
+        if (
+            not suspicious_uri
+            and not anomalous
+            and not waf_alert
+            and not firewall_boundary_hit
+            and int_value(event.get("severity"), 0) < 2
+        ):
+            continue
+
+        if event["_event_type"] == "network_connection" and not firewall_boundary_hit:
             continue
 
         target_host = resolve_host(dst_ip, host_map) or event["_host"] or None
@@ -272,6 +339,7 @@ def detect_initial_access(
                 )
             )
 
+        source_note = "WAF alert" if source == "waf" else "boundary firewall event" if source == "firewall" else "HTTP request"
         steps.append(
             make_step(
                 stage="Initial Access",
@@ -281,7 +349,7 @@ def detect_initial_access(
                 target_host=target_host,
                 source_ip=src_ip,
                 target_ip=dst_ip,
-                description=f"External HTTP request reached {target_host or dst_ip} through a suspicious web path",
+                description=f"External {source_note} reached {target_host or dst_ip} as a suspicious boundary access",
                 evidence_events=evidence,
             )
         )
@@ -750,6 +818,7 @@ def make_step(
 ) -> dict[str, Any]:
     return {
         "step_id": None,
+        "case_id": infer_case_id(evidence_events),
         "stage": stage,
         "technique_id": technique_id,
         "technique_name": ATTACK_TECHNIQUES[technique_id],
@@ -796,6 +865,7 @@ def build_attack_graph(attack_steps: list[dict[str, Any]], internal_networks=Non
                     "source": source_id,
                     "target": target_id,
                     "step_id": step.get("step_id"),
+                    "case_id": step.get("case_id"),
                     "stage": step.get("stage"),
                     "technique_id": step.get("technique_id"),
                     "timestamp": step.get("timestamp"),
@@ -847,6 +917,7 @@ def deduplicate_steps(steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for step in steps:
         key = (
             step["stage"],
+            step.get("case_id"),
             step["technique_id"],
             step.get("source_host"),
             step.get("target_host"),
@@ -947,6 +1018,31 @@ def event_ids(events: list[dict[str, Any]]) -> list[int]:
         seen.add(event_id)
         ids.append(event_id)
     return ids
+
+
+def infer_case_id(events: list[dict[str, Any]]) -> str | None:
+    case_ids = [event.get("_case_id") for event in events if event.get("_case_id")]
+    if not case_ids:
+        return None
+    return case_ids[0]
+
+
+def get_case_id(event: dict[str, Any]) -> str | None:
+    # Preferred Event field. detail.case_id and detail.batch_id are accepted only
+    # for compatibility with earlier sample data and parser drafts.
+    case_id = get_value(event, "case_id")
+    if case_id:
+        return str(case_id)
+
+    detail_case_id = get_detail(event, "case_id")
+    if detail_case_id:
+        return str(detail_case_id)
+
+    batch_id = get_detail(event, "batch_id")
+    if batch_id:
+        return str(batch_id)
+
+    return None
 
 
 def resolve_host(ip: Any, host_map: dict[str, str]) -> str | None:

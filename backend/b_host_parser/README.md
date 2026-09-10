@@ -1,6 +1,6 @@
 # B模块：主机日志解析器
 
-把 Windows/Linux 主机日志解析成全组统一的标准安全事件JSON。**契约：Event V2（2026-09-07冻结，19字段；2026-09-08 D确认补充 `log_cleared`）**，见 `../../docs/数据格式契约-v1.md`。
+把 Windows/Linux 主机日志解析成全组统一的标准安全事件JSON。**契约：Event V2 FINAL（2026-09-08 A发布冻结，19字段；原始事件编号字段统一命名 `source_event_id`，每批事件带 `detail.batch_id`）**，见 `../../docs/Event-V2-FINAL.md`（唯一权威版本；旧版 `数据格式契约-v1.md` 已废止）。
 （2026-09-08 起本模块位于 `backend/b_host_parser/`，与A的后端同仓。）
 
 ## 当前能力（Day 2）
@@ -24,7 +24,7 @@
 | Linux auth.log | sshd Accepted/Failed | login_success / login_failed（含invalid_user线索；合成样本见 data/sample_logs/linux/） |
 | Linux audit.log | sudo USER_CMD（HEX命令解码） | process_start（sudo信息放detail，D决议） |
 | Linux audit（原始/ausearch -i解释 双格式） | execve + EXECVE | process_start（完整命令行cmdline） |
-| Linux audit（同上） | open/openat + PATH/CWD | file_read（相对路径自动拼CWD成绝对路径） |
+| Linux audit（同上） | open/openat + PATH/CWD | file_read / file_write（按open flags区分读写，D的外传/落盘匹配用；相对路径自动拼CWD成绝对路径） |
 | Linux audit（同上） | connect/accept + SOCKADDR(仅inet) | network_connection（本地unix socket噪音自动跳过） |
 | Linux audit（同上） | SERVICE_START / SERVICE_STOP | service_started / service_stopped |
 
@@ -63,6 +63,7 @@ backend/b_host_parser/
 ├── schema.py          # 标准事件结构（任务1契约的代码版，19字段+V2词表），所有解析器共用
 ├── windows_evtx.py    # Windows Security解析器（4624/4625/4634/4647/4688/1102/4720/4728/4673/7045/4698）
 ├── sysmon.py          # Sysmon日志解析器（ID 1/3/11/13）
+├── sysmon_json.py     # JSON行格式Windows日志适配器（APT29等已导出数据集）
 ├── sessions.py        # 任务7b：登录↔注销会话重建（(host,LogonId)配对）
 ├── anomaly.py         # 任务8：异常预标记规则引擎（5条规则→anomaly_flags+severity）
 ├── import_client.py   # 落地.jsonl / 批量POST给A
@@ -71,6 +72,19 @@ backend/b_host_parser/
 ├── verify_day2.py     # 一键自检（Day2新功能，6项）
 └── requirements.txt
 ```
+
+## E 最终批次导出（2026-09-09，A 封箱合并用）
+
+一条命令从 E 最终原始主机日志复现整批标准事件（47,055 条，全过 C 侧 `validate_events` 预检）：
+
+```bash
+python backend/b_host_parser/build_e_final_batch.py          # → data/output/e_final_host_events.json
+python scripts/reset_import_export.py --name e_final_host \
+    --events data/output/e_final_host_events.json --hosts data/hosts_e_case01.csv
+# → data/sample_events/e_final_host_eventout.json（EventOut，id 1~47055，batch_id=e_final_host）
+```
+
+覆盖输入：core-server 的 `core-auth.log`（**rsyslog ISO 8601 时间格式已支持**，见 linux_log.py `_AUTH_HEAD_ISO`）+ 三个 auditd txt、web-server 的三个 auditd txt、office-win 的 `security-final.evtx` + `system-final.evtx`。evtx 的 Computer 字段（DESKTOP-88HQCN9/WIN-UL7KE8FN5I6）自动对齐成 `hosts_e_case01.csv` 里的靶机名 win10-jump。eventout 约 72MB，按 apt29 先例保持未跟踪、不进 git。
 
 ## 给A同学（联调状态：✅ 已打通）
 

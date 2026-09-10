@@ -26,8 +26,41 @@
 const API_BASE = "http://127.0.0.1:8000";
 
 /* 超时 2 秒：后端没启动时，浏览器 fetch 默认会等很久（几十秒的
- * TCP 超时），页面会白屏转圈。必须主动掐断，快速回退 mock。 */
+ * TCP 超时），页面会白屏转圈。必须主动掐断，快速失败。 */
 const FETCH_TIMEOUT_MS = 2000;
+
+/* LLM 分析专用超时：后端要等 LLM 生成完再返回（llm_analysis 默认
+ * 30s 超时 + 网络余量）。沿用 2s 会在后端正常工作时把请求掐死——
+ * 这是"前端 2 秒 vs 后端长 LLM"冲突的解法：按接口语义分超时。 */
+const ANALYSIS_TIMEOUT_MS = 60000;
+
+/* ============================================================
+ * Live / Demo 模式开关（封箱规则，2026-09-09）
+ * ============================================================
+ * 默认 Live 模式：接口失败→错误状态、空库→空状态、空链→"未检测
+ * 到攻击链"、LLM 失败→后端真实降级结果或失败提示。**禁止静默
+ * 替换成固定 mock**——把假数据当真数据展示是演示事故。
+ * Demo Mode 必须显式开启，mock 只在这一模式下使用：
+ *   1. URL 带 ?demo=1（评委演示的确定性入口；demo=0 强制关闭）；
+ *   2. 页脚"演示模式"开关（localStorage 持久化，断网答辩一键切）。
+ */
+const DEMO_STORAGE_KEY = "isd-demo-mode";
+
+function isDemoMode() {
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.has("demo")) return q.get("demo") !== "0";
+    return localStorage.getItem(DEMO_STORAGE_KEY) === "1";
+  } catch (e) {
+    return false;   // localStorage 被禁（隐私模式等）→ 默认 live
+  }
+}
+
+function setDemoMode(on) {
+  try {
+    localStorage.setItem(DEMO_STORAGE_KEY, on ? "1" : "0");
+  } catch (e) { /* 写不进去就算了，isDemoMode 会兜回 false */ }
+}
 
 /**
  * 带超时控制的 fetch。
@@ -77,14 +110,14 @@ function withSimulatedIds(events) {
  * ============================================================
  * 2026-09-09 联调引入。职责：把后端 EventOut 的实际形态修整成
  * 全组契约（Event V2 FINAL）的形态，页面模块永远只认契约字段。
- * 四条处理规则（联调任务书 3a-3d）+ 一条时间规则（任务书 4）：
+ * 四条处理规则（联调任务书 3a-3d，d 已按封箱规则收紧）+ 一条时间规则：
  *   a) 接口字段 event_id → source_event_id（改名，语义=原始日志编号）；
  *   b) detail / anomaly_flags 缺失 → 补 {} / []（契约必填，缺了页
  *      面组件会炸）；
  *   c) event_type 不在冻结枚举 → console.warn 并原样保留（不私造
  *      也不丢弃——擅自改值会破坏过滤器和统计口径）；
- *   d) id 缺失 → 用数组下标模拟并 console.warn（live 数据缺 id 属
- *      于 A 侧事故，必须留痕；mock 缺 id 是设计内行为，不警告）；
+ *   d) id 缺失 → live 事件整条剔除并警告（保真实数据血缘）；mock
+ *      由 withSimulatedIds 静默补下标 id（显式 Demo 的设计内行为）；
  *   时间规则：timestamp 解析失败（非 ISO8601 / 空 / 类型不对）→
  *      该事件整体跳过并 console.warn——时间线排序和"按小时统计"
  *      都依赖它，坏一条会污染整页。
@@ -156,12 +189,16 @@ function normalizeEvent(e, idx, liveMode) {
     console.warn("[api.js] event_type 不在冻结枚举（原样保留）：", e.event_type);
   }
 
-  /* d) id 缺失 → 下标模拟；live 模式下必须留痕（这是 A 侧事故信号） */
+  /* d) id 血缘规则（封箱）：live 事件缺 id → 整条剔除并警告。
+   *    不允许用 idx+1 冒充真实 ID——攻击链 evidence_event_ids 和
+   *    时间线跳转全靠真 id 关联，假 id 会造成证据错链。
+   *    （Demo 模式下 withSimulatedIds 已补下标 id，不会走到这里。） */
   if (e.id === undefined || e.id === null) {
-    e.id = idx + 1;
     if (liveMode) {
-      console.warn("[api.js] live 事件缺失数据库 id，已用数组下标模拟（index=%d）——请反馈 A", idx);
+      console.warn("[api.js] live 事件缺失数据库 id，已剔除以保证证据血缘——请反馈 A（index=%d）", idx, e);
+      return null;
     }
+    e.id = idx + 1;
   }
   return e;
 }
@@ -182,68 +219,88 @@ function normalizeEvents(list, liveMode) {
 /**
  * 加载事件列表（Dashboard / 时间线页共用）。
  *
- * 回退判定不只是"请求失败"：
- *   - 没启动后端 → fetch 直接 reject（连接被拒）→ 进 catch；
- *   - 后端启动了但库里没数据 → resp.ok 但 data.length === 0
- *     → 空数组渲染不出任何东西，也视为不可用，回退 mock。
+ * 封箱规则（2026-09-09）：严格 Live / Demo 两态，不再有"失败静默回退"。
+ *   Demo（显式开启）→ mock 数据，mode:"demo"；
+ *   Live（默认）    → 后端失败 → {state:"error"}（页面显示错误状态）；
+ *                     空库     → {state:"empty"}（页面显示空状态）；
+ *                     正常     → {state:"ok"}。
+ * live 下缺 id 的事件会被 normalizeEvents 剔除（不用 idx+1 冒充，
+ * 保住 evidence_event_ids → Event 的真实数据血缘）。
  *
- * @returns {Promise<{events: Array, mode: "live"|"demo"}>}
- *          mode 交给 app.js 控制演示模式徽章
+ * @returns {Promise<{events: Array|null, mode: "live"|"demo",
+ *                     state: "ok"|"error"|"empty", error?: string}>}
  */
 async function loadEvents() {
+  if (isDemoMode()) {
+    const resp = await fetch("mock/events.json");
+    const events = await resp.json();
+    /* mock：先按下标补 id（Demo 模式的设计内行为，静默），再归一化 */
+    return { events: normalizeEvents(withSimulatedIds(events), false), mode: "demo", state: "ok" };
+  }
+
   try {
     const resp = await fetchWithTimeout(`${API_BASE}/api/events`);
-    if (resp.ok) {
-      const data = await resp.json();
-      // Array.isArray 防御：万一后端返回了 {error: ...} 之类的对象
-      if (Array.isArray(data) && data.length > 0) {
-        // live 数据走完整归一化（缺 id 警告 / 坏时间戳跳过）
-        return { events: normalizeEvents(data, true), mode: "live" };
-      }
+    if (!resp.ok) {
+      return { events: null, mode: "live", state: "error", error: `后端返回 HTTP ${resp.status}` };
     }
+    let data;
+    try {
+      data = await resp.json();
+    } catch (e) {
+      return { events: null, mode: "live", state: "error", error: "后端返回了非 JSON 内容" };
+    }
+    if (!Array.isArray(data)) {
+      return { events: null, mode: "live", state: "error", error: "后端返回结构不是事件数组" };
+    }
+    if (data.length === 0) {
+      return { events: [], mode: "live", state: "empty" };   // 空库 → 空状态
+    }
+    return { events: normalizeEvents(data, true), mode: "live", state: "ok" };
   } catch (e) {
-    /* 后端未连接——这里故意不弹错误提示，
-     * 因为回退 mock 之后页面照常能看，只是顶部出徽章。 */
+    return { events: null, mode: "live", state: "error",
+             error: e.name === "AbortError" ? "连接超时（2s）" : "后端未连接" };
   }
-  /* 注意路径是相对路径 "mock/events.json"：
-   * 我们用 python -m http.server 直接跑 frontend/ 目录，
-   * 相对路径跟部署位置无关，绝对路径反而容易写错。 */
-  const resp = await fetch("mock/events.json");
-  const events = await resp.json();
-  /* mock：先按下标补 id（设计内行为，静默），再走同一套归一化 */
-  return { events: normalizeEvents(withSimulatedIds(events), false), mode: "demo" };
 }
 
 /**
  * getAttackChain() — 加载攻击链（攻击链页 / 分析报告页共用）。
  *
- * 数据层封装约定（2026-09-09）：攻击链的获取统一走这一个函数，
- * 页面模块只管调用、不关心数据从哪来。后续切换到真实后端时
- * 只改这里一行即可（现状已经是 GET /api/attack-chain + mock 回退）：
- *   const resp = await fetchWithTimeout(`${API_BASE}/api/attack-chain`);
+ * 封箱规则：与 loadEvents 同一套严格 Live/Demo 两态。
+ *   Live 失败 → state:"error"（页面显示错误状态，不换 mock）；
+ *   Live 空链 → state:"empty"（页面显示"未检测到攻击链"）；
+ *   有链才返回 state:"ok" 的真实链数据。
  *
- * 和 loadEvents 的区别：
- *   攻击链接口 /api/attack-chain 是 D 模块的产出（A 的 adapter 已在
- *   main 分支实现），除了判 HTTP 状态还要校验结构——**只要有 links
- *   就算可用**：nodes 缺失时 normalizeChain() 能从 links 自动推导，
- *   页面照样出图（接口存在但返回空链时才回退 mock）。
- *
- * @returns {Promise<{chain: {nodes: Array, links: Array}, mode: "live"|"demo"}>}
+ * @returns {Promise<{chain: {nodes: Array, links: Array}|null,
+ *                     mode: "live"|"demo", state: "ok"|"error"|"empty",
+ *                     error?: string}>}
  */
 async function getAttackChain() {
+  if (isDemoMode()) {
+    const resp = await fetch("mock/chain.json");
+    return { chain: normalizeChain(await resp.json()), mode: "demo", state: "ok" };
+  }
+
   try {
     const resp = await fetchWithTimeout(`${API_BASE}/api/attack-chain`);
-    if (resp.ok) {
-      const data = await resp.json();
-      if (data && Array.isArray(data.links) && data.links.length > 0) {
-        return { chain: normalizeChain(data), mode: "live" };
-      }
+    if (!resp.ok) {
+      return { chain: null, mode: "live", state: "error", error: `后端返回 HTTP ${resp.status}` };
     }
+    let data;
+    try {
+      data = await resp.json();
+    } catch (e) {
+      return { chain: null, mode: "live", state: "error", error: "后端返回了非 JSON 内容" };
+    }
+    const links = data && Array.isArray(data.links) ? data.links : [];
+    if (links.length === 0) {
+      /* 空链（库里没事件 / 关联引擎没跑出链）→ 空状态，如实展示 */
+      return { chain: { nodes: [], links: [] }, mode: "live", state: "empty" };
+    }
+    return { chain: normalizeChain(data), mode: "live", state: "ok" };
   } catch (e) {
-    /* 回退 mock */
+    return { chain: null, mode: "live", state: "error",
+             error: e.name === "AbortError" ? "连接超时（2s）" : "后端未连接" };
   }
-  const resp = await fetch("mock/chain.json");
-  return { chain: normalizeChain(await resp.json()), mode: "demo" };
 }
 
 /**
@@ -343,9 +400,16 @@ function safeField(obj, key) {
  * @returns {Promise<Object>} 归一化的 { "10.0.0.5": "web-server", ... }
  */
 async function loadHostMap() {
+  /* Demo 模式直接用 mock 映射；Live 模式只信后端——拿不到就返回
+   * {}，展示层回退显示 IP（{} 是"没有映射"这一事实，不是假数据）。 */
+  if (isDemoMode()) {
+    try {
+      return await (await fetch("mock/host_map.json")).json();
+    } catch (e) {
+      return {};
+    }
+  }
   let raw = null;
-  /* 主选 /api/hosts/map（精确的 {ip:hostname} 字典）；
-   * 失败再试 /api/hosts（完整主机表）；都失败才走 mock。 */
   for (const path of ["/api/hosts/map", "/api/hosts"]) {
     try {
       const resp = await fetchWithTimeout(`${API_BASE}${path}`);
@@ -357,11 +421,9 @@ async function loadHostMap() {
     } catch (e) { /* 该来源不可用，试下一个 */ }
   }
   if (!raw || typeof raw !== "object") {
-    try {
-      raw = await (await fetch("mock/host_map.json")).json();
-    } catch (e) {
-      return {};
-    }
+    /* Live 模式拿不到映射 → 返回空 map（展示层回退显示 IP），
+     * 不回退 mock——映射缺失是事实，不是换数据的理由。 */
+    return {};
   }
   // 归一化成平面对象 {ip: hostname}，过滤掉缺 ip 或缺主机名的脏行
   const map = {};
@@ -460,30 +522,51 @@ function toAnalysisPayload(scope) {
 }
 
 /**
- * 请求 LLM 分析报告。
- * 结构校验只卡最核心的 attack_path（数组非空）——其余字段缺失时
- * report.js 渲染层会用 safeField 兜底成"该区不渲染"，不会崩页。
+ * 请求 LLM 分析报告（封箱规则：严格三态，无静默 mock）。
+ *   Demo（显式）  → 固定 mock 报告（mode:"demo"，页脚标注数据来源）；
+ *   Live 失败     → state:"error"（网络/HTTP/非 JSON/超时，前端 60s
+ *                    上限，覆盖后端 LLM 30s 超时）；
+ *   Live 空链     → state:"empty"（当前范围没检出攻击链，无法分析）；
+ *   Live 正常     → state:"ok"。后端 source="fallback"（LLM 不可用
+ *                    时的真实规则模板）也算正常结果——它是后端基于
+ *                    当前真实攻击链/事件算出来的，不是前端假数据。
  *
  * @param {Object} scope 分析范围：{scope:"all"}（默认全部数据）或
  *                       {scope:"host", host:"web-server"}（仅某主机）
- * @returns {Promise<{report: Object, mode: "live"|"demo"}>}
+ * @returns {Promise<{report: Object|null, mode: "live"|"demo",
+ *                     state: "ok"|"error"|"empty", error?: string}>}
  */
 async function getAnalysisReport(scope = { scope: "all" }) {
-  try {
-    const resp = await fetchWithTimeout(`${API_BASE}/api/analysis`, FETCH_TIMEOUT_MS, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(toAnalysisPayload(scope)),
-    });
-    if (resp.ok) {
-      const data = await resp.json();
-      if (data && Array.isArray(data.attack_path) && data.attack_path.length > 0) {
-        return { report: data, mode: "live" };
-      }
-    }
-  } catch (e) {
-    /* 后端未连接 / 超时 —— 回退 mock，由 report.js 在页面上标注演示模式 */
+  if (isDemoMode()) {
+    /* mock 是共享常量，浅拷贝一层防止页面代码改动污染常量本身 */
+    return { report: { ...MOCK_ANALYSIS_REPORT }, mode: "demo", state: "ok" };
   }
-  /* mock 是共享常量，浅拷贝一层防止页面代码改动污染常量本身 */
-  return { report: { ...MOCK_ANALYSIS_REPORT }, mode: "demo" };
+
+  let data;
+  try {
+    const resp = await fetchWithTimeout(
+      `${API_BASE}/api/analysis`, ANALYSIS_TIMEOUT_MS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(toAnalysisPayload(scope)),
+      });
+    if (!resp.ok) {
+      return { report: null, mode: "live", state: "error", error: `后端返回 HTTP ${resp.status}` };
+    }
+    data = await resp.json();   // 非 JSON（网关错误页等）→ 进下方 catch
+  } catch (e) {
+    const msg = e.name === "AbortError"
+      ? `分析超时（前端 ${ANALYSIS_TIMEOUT_MS / 1000}s 上限，LLM 仍在后端执行）`
+      : "分析服务未连接";
+    return { report: null, mode: "live", state: "error", error: msg };
+  }
+
+  /* malformed 响应防御：结构不对一律按 error 处理，绝不带病渲染 */
+  if (!data || typeof data !== "object" || !Array.isArray(data.attack_path)) {
+    return { report: null, mode: "live", state: "error", error: "后端返回了畸形分析结果" };
+  }
+  if (data.attack_path.length === 0) {
+    return { report: { ...data }, mode: "live", state: "empty" };
+  }
+  return { report: { ...data }, mode: "live", state: "ok" };
 }

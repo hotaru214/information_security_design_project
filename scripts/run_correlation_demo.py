@@ -9,7 +9,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from backend.analysis import build_attack_graph, correlate_events, find_attack_paths
+from backend.analysis import (
+    build_attack_graph,
+    build_attribution_profile,
+    correlate_events,
+    find_attack_paths,
+)
 
 
 SAMPLE_PATH = PROJECT_ROOT / "data" / "sample_events" / "d_attack_chain_events.json"
@@ -23,6 +28,7 @@ def main() -> None:
     steps = correlate_events(events, host_map)
     graph = build_attack_graph(steps)
     paths = find_attack_paths(steps)
+    attribution = build_attribution_profile(events, steps, host_map)
 
     print("Attack steps:")
     print(json.dumps(steps, ensure_ascii=False, indent=2))
@@ -32,6 +38,9 @@ def main() -> None:
     print()
     print("Attack paths:")
     print(json.dumps(paths, ensure_ascii=False, indent=2))
+    print()
+    print("Attribution profile:")
+    print(json.dumps(attribution, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

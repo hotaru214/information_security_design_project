@@ -83,7 +83,7 @@ def t2():
     e = xml_to_event(ev_xml(4634, ts="2020-09-09T14:30:00Z",
                             TargetUserName="IEUser", TargetDomainName="MSEDGEWIN10",
                             TargetLogonId="0x8F1A5", LogonType="2"))
-    assert e["event_type"] == "logout" and e["event_id"] == 4634
+    assert e["event_type"] == "logout" and e["source_event_id"] == 4634
     assert e["session_id"] == "MSEDGEWIN10:0x8F1A5", f"注销也要带配对键: {e['session_id']}"
     assert e["detail"]["logon_id"] == "0x8F1A5" and e["user"] == "IEUser"
     assert e["logon_type"] == 2
@@ -374,22 +374,27 @@ def t7():
     assert any(e["user"] == "oracle" and e["detail"]["invalid_user"] for e in fails)
     # 时间统一UTC+8（auth.log本地时间直接打时区标记）
     assert all(e["timestamp"].endswith("+08:00") for e in evs)
-    assert all(e["source"] == "linux_auth" and e["event_id"] is None for e in evs)
+    assert all(e["source"] == "linux_auth" and e["source_event_id"] is None for e in evs)
 
     # --- audit.log（原始格式）：sudo提权 + 敏感文件访问 + execve兜底 ---
     st2 = {}
     evs2 = parse_linux_audit(str(audit_path), st2)
-    assert st2["parsed"] == 4 and st2["failed"] == 0 and st2["skipped_other"] == 1, st2
-    assert st2["by_event_id"] == {"USER_CMD": 1, "file_open": 2, "execve": 1}
+    assert st2["parsed"] == 5 and st2["failed"] == 0 and st2["skipped_other"] == 1, st2
+    assert st2["by_event_id"] == {"USER_CMD": 1, "file_read": 2, "file_write": 1, "execve": 1}, st2
     sudo_ev = evs2[0]
     assert sudo_ev["event_type"] == "process_start"  # D决议：sudo→process_start不加新词
     assert sudo_ev["process"] == "cat" and sudo_ev["detail"]["sudo_command"] == "cat /etc/shadow"
+    assert sudo_ev["cmdline"] == "cat /etc/shadow", "sudo命令要填公共字段cmdline（D的TTP匹配用）"
     assert sudo_ev["detail"]["res"] == "success" and sudo_ev["host"] == "web-server"
     fr = [e for e in evs2 if e["event_type"] == "file_read"]
     assert {e["detail"]["file_path"] for e in fr} == {"/etc/shadow", "/etc/passwd"}
     shadow = next(e for e in fr if e["detail"]["file_path"] == "/etc/shadow")
     assert shadow["detail"]["audit_key"] == "sensitive", "audit规则key要保留（E配置的监控点）"
     assert shadow["process"] == "cat" and shadow["detail"]["syscall"] == "open"
+    # 写模式（hex flags 0x41 = O_WRONLY|O_CREAT）→ file_write，D的外传/落盘匹配用
+    fw = next(e for e in evs2 if e["event_type"] == "file_write")
+    assert fw["detail"]["file_path"] == "/etc/cron.d/persist" and fw["detail"]["open_flags"] == "0x41"
+    assert "写入" in fw["description"]
     # execve没有EXECVE记录时：process从exe取，cmdline如实null（不造假）
     nc = next(e for e in evs2 if e["event_type"] == "process_start" and e["process"] == "nc")
     assert nc["cmdline"] is None and nc["detail"]["exe"] == "/tmp/nc"
@@ -399,7 +404,7 @@ def t7():
     st3 = {}
     evs3 = parse_linux_audit(str(interp_path), st3, host="ubuntu-vm")
     assert st3["parsed"] == 4 and st3["failed"] == 0 and st3["skipped_other"] == 1, st3
-    assert st3["by_event_id"] == {"file_open": 1, "execve": 1, "connect_inet": 1,
+    assert st3["by_event_id"] == {"file_read": 1, "execve": 1, "connect_inet": 1,
                                   "SERVICE_START": 1}
     f1 = next(e for e in evs3 if e["event_type"] == "file_read")
     assert f1["timestamp"] == "2026-09-08T10:06:41.516000+08:00", f"中文时间戳: {f1['timestamp']}"

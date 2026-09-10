@@ -2,7 +2,7 @@
 """
 任务1（代码部分）：标准事件结构定义
 ====================================
-这里定义的 dict 结构就是全组的"JSON契约"，文档版见 docs/数据格式契约-v1.md。
+这里定义的 dict 结构就是全组的"JSON契约"，文档版见 docs/Event-V2-FINAL.md（唯一权威版本）。
 
 规矩（任务1开小会时要和A、D确认的）：
   1. 每个标准事件的键必须全部存在，没有的值填 None（不许删键）——
@@ -17,10 +17,10 @@
 # 标准事件的全部字段：所有解析器生成的事件都必须有这些键
 # v1.1：新增 dst_port / protocol（与A后端的网络事件字段对齐，仅Sysmon ID 3有值）
 STANDARD_FIELDS = [
-    "timestamp",     # str  统一UTC+8，如 "2026-09-08 13:05:02+08:00"
+    "timestamp",     # str  统一UTC+8，ISO8601 T分隔，如 "2026-09-08T13:05:02+08:00"
     "host",          # str  主机名，如 "web-server"
     "source",        # str  数据来源，见 SOURCES
-    "event_id",      # int  原始事件ID，如 4624（方便溯源到原始日志）
+    "source_event_id",  # int  原始事件ID，如 4624（Event V2 FINAL：由v1的event_id改名，避免与入库id混淆）
     "event_type",    # str  统一事件类型，见 EVENT_TYPES
     "user",          # str  涉及的用户名，如 "alice"
     "process",       # str  进程名（可执行文件名），如 "chrome.exe"
@@ -92,6 +92,8 @@ SOURCES = [
     "linux_audit",
     "network_pcap",   # C同学：PCAP解析
     "network_zeek",   # C同学：Zeek日志
+    "firewall",       # C/E：防火墙或边界设备日志
+    "waf",            # C/E：WAF或Web攻击告警
 ]
 
 # Windows 登录类型含义（解析4624/4625时给人看的说明）

@@ -50,6 +50,7 @@ EVENT_TYPE_ENUM = {
     # 服务与计划任务
     "service_created", "service_started", "service_stopped", "service_deleted",
     "scheduled_task_created", "scheduled_task_run", "scheduled_task_deleted",
+    "log_cleared",
 }
 
 # 网络侧告警 -> 冻结 event_type 映射（检测名称一律放 anomaly_flags，不再自造 event_type）
@@ -318,7 +319,7 @@ def _is_ip_like(value) -> bool:
 def validate_events(events: list) -> list:
     """Event V2 契约自检（阻断级）：返回问题列表（空列表=全部合规）。
 
-    覆盖：字段集恰好 19、event_type 冻结枚举、source 枚举、severity 0-3、
+    覆盖：19 个基础字段 + 可选 case_id、event_type 冻结枚举、source 枚举、severity 0-3、
     时间 UTC+8 且可解析、必填字段非空、禁止占位值（unknown/空串/0）、
     网络事件 source_event_id 必须 null、detail/anomaly_flags 类型。
     """
@@ -329,10 +330,12 @@ def validate_events(events: list) -> list:
             problems.append(f"事件#{i} 不是对象")
             continue
         keys = set(e.keys())
-        if keys != required:
-            missing, extra = required - keys, keys - required
+        if keys - {"case_id"} != required:
+            missing, extra = required - keys, keys - required - {"case_id"}
             problems.append(f"事件#{i} 字段不符: 缺 {missing or '{}'} 多 {extra or '{}'}")
             continue
+        if e.get("case_id") is not None and (not isinstance(e["case_id"], str) or not e["case_id"]):
+            problems.append(f"事件#{i} case_id 必须为非空字符串或 null")
         if not isinstance(e["detail"], dict):
             problems.append(f"事件#{i} detail 不是对象")
         if not isinstance(e["anomaly_flags"], list):
@@ -392,8 +395,8 @@ def validate_eventout(events: list) -> list:
             problems.append(f"事件#{i} 不是对象")
             continue
         keys = set(e.keys())
-        if keys != required:
-            missing, extra = required - keys, keys - required
+        if keys - {"case_id"} != required:
+            missing, extra = required - keys, keys - required - {"case_id"}
             problems.append(f"EventOut#{i} 字段不符: 缺 {missing or '{}'} 多 {extra or '{}'}")
             continue
         eid = e["id"]

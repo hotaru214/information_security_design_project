@@ -5,5 +5,11 @@ from backend.analysis.correlation import (
     correlate_events,
     find_attack_paths,
 )
+from backend.analysis.attribution import build_attribution_profile
 
-__all__ = ["correlate_events", "build_attack_graph", "find_attack_paths"]
+__all__ = [
+    "correlate_events",
+    "build_attack_graph",
+    "find_attack_paths",
+    "build_attribution_profile",
+]
