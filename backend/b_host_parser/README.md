@@ -1,6 +1,6 @@
 # B模块：主机日志解析器
 
-把 Windows/Linux 主机日志解析成全组统一的标准安全事件JSON。**契约：Event V2 FINAL（2026-09-08 A发布冻结，19字段；原始事件编号字段统一命名 `source_event_id`，每批事件带 `detail.batch_id`）**，见 `../../docs/Event-V2-FINAL.md`（唯一权威版本；旧版 `数据格式契约-v1.md` 已废止）。
+把 Windows/Linux 主机日志解析成全组统一的标准安全事件JSON。**契约：Event V2 FINAL（2026-09-08 A发布冻结，19字段；原始事件编号字段统一命名 `source_event_id`；`detail.batch_id` 由批次导入流程 `scripts/reset_import_export.py` 注入）**，见 `../../docs/Event-V2-FINAL.md`（唯一权威版本；旧版 `数据格式契约-v1.md` 已废止）。
 （2026-09-08 起本模块位于 `backend/b_host_parser/`，与A的后端同仓。）
 
 ## 当前能力（Day 2）
