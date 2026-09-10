@@ -72,6 +72,11 @@ def test_network_source_event_id_must_be_null():
     assert validate_events([base_event(source="sysmon", source_event_id=1)]) == []   # 主机侧可非空
 
 
+@pytest.mark.parametrize("source", ["network_pcap", "network_zeek", "firewall", "waf"])
+def test_network_and_boundary_sources_are_accepted(source):
+    assert validate_events([base_event(source=source)]) == []
+
+
 def test_anomaly_flags_element_type():
     e = base_event(anomaly_flags=[1, 2])
     assert any("anomaly_flags" in p for p in validate_events([e]))
@@ -116,3 +121,53 @@ def test_all_eventout_files_in_sample_events_are_compliant():
         # 警告不阻断，但必须处于已知受控范围（host IP 兜底），出现其他类型警告要人工审查
         unexpected = [w for w in warns if "host 为 IP" not in w]
         assert not unexpected, f"{f.name} 出现未知警告: {unexpected[:3]}"
+
+
+@pytest.mark.parametrize("case_id", [None, "case01", "case02"])
+def test_optional_case_contract(case_id):
+    assert validate_events([base_event(case_id=case_id)]) == []
+    assert validate_eventout([dict(base_event(case_id=case_id), id=11)]) == []
+
+
+@pytest.mark.parametrize("case_id", [1, False, "", [], {}])
+def test_invalid_case_contract(case_id):
+    assert validate_events([base_event(case_id=case_id)])
+
+
+def test_case_contract_still_rejects_unknown_fields():
+    assert validate_events([base_event(case_id="case01", unexpected=True)])
+    assert validate_eventout([dict(base_event(case_id="case01"), id=1, unexpected=True)])
+
+
+def test_host_log_cleared_is_canonical():
+    assert validate_events([base_event(case_id="case01", source="windows_evtx",
+                                      source_event_id=1102, event_type="log_cleared")]) == []
+
+
+def test_export_orchestration_case_and_legacy_normalization(tmp_path, monkeypatch):
+    from scripts import export_for_d as tool
+    original = base_event(source="windows_evtx", source_event_id=4624)
+    original["event_id"] = original.pop("source_event_id")
+    source = tmp_path / "parser.json"
+    target = tmp_path / "export.json"
+    source.write_text(json.dumps([original]), encoding="utf-8")
+    old = dict(base_event(case_id="case01", source="windows_evtx", source_event_id=4624),
+               id=50, detail={"batch_id": "upload1"})
+    saved = [old]
+    def request(method, url, payload=None):
+        if url.endswith("/health"):
+            return 200, {}
+        if method == "POST":
+            assert url.endswith("/api/events/import?case_id=case01")
+            assert payload[0]["case_id"] == "case01"
+            assert payload[0]["source_event_id"] == 4624 and "event_id" not in payload[0]
+            saved.extend(dict(e, id=51+i) for i, e in enumerate(payload))
+            return 201, {"imported": len(payload)}
+        return 200, list(saved)
+    monkeypatch.setattr(tool, "_request", request)
+    assert tool.main([str(source), "--out", str(target), "--case-id", "case01",
+                      "--batch-id", "upload1"]) == 0
+    exported = json.loads(target.read_text(encoding="utf-8"))
+    assert exported[0]["id"] == 51
+    assert exported[0]["case_id"] == "case01"
+    assert exported[0]["detail"]["batch_id"] == "upload1"

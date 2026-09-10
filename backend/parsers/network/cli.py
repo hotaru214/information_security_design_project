@@ -11,11 +11,13 @@
   - --out 指定路径时写统一事件 JSON（数组，可直接 POST /api/events/import）
 """
 import argparse
+import os
 import sys
 from collections import Counter
 from datetime import datetime
 
-from .config import DetectionConfig
+from .config import PROFILES, DetectionConfig
+from .firewall_parser import _is_filterlog, parse_firewall_log
 from .detectors import STAGE_ZH, run_all
 from .normalize import build_events, build_summary, load_host_map, save_events, validate_events
 from .pcap_parser import parse_pcap
@@ -43,6 +45,8 @@ def analyze_paths(paths: list, host_map: dict = None, cfg: DetectionConfig = Non
         path = str(path)
         if _is_dir_zeek(path):
             f, s = parse_zeek_logs(path)
+        elif path.lower().endswith(".log") and _is_filterlog(path):
+            f, s = parse_firewall_log(path, cfg)   # OPNsense/pfSense filterlog（source=firewall）
         elif path.lower().endswith(".log"):
             f, s = parse_zeek_logs(path)   # 单个 .log（含 APT29 combined_zeek.log 合并流）
         elif path.lower().endswith((".pcap", ".pcapng", ".cap")):
@@ -111,15 +115,25 @@ def main(argv=None):
     parser.add_argument("--anomalies-only", action="store_true", help="只输出告警事件，不含普通会话")
     parser.add_argument("--internal", default="", help="内网网段，逗号分隔（默认 RFC1918）")
     parser.add_argument("--config", default="", help="检测阈值 JSON 配置文件")
+    parser.add_argument("--profile", default="", choices=[""] + sorted(PROFILES),
+                        help="批次网络配置预设：固定 internal 网段与默认 hosts 映射（E case01 用 e_case01）")
     args = parser.parse_args(argv)
 
+    profile = PROFILES.get(args.profile, {})
     if args.config:
         cfg = DetectionConfig.from_json(args.config)
     else:
         cfg = DetectionConfig()
+    # profile 提供 internal 默认值；显式 --internal 仍可覆盖
     if args.internal:
         cfg.internal_networks = [n.strip() for n in args.internal.split(",") if n.strip()]
-        cfg.__post_init__()
+    elif profile.get("internal_networks"):
+        cfg.internal_networks = list(profile["internal_networks"])
+    cfg.__post_init__()
+
+    # profile 提供默认 hosts；显式 --hosts 覆盖
+    if not args.hosts and profile.get("hosts"):
+        args.hosts = profile["hosts"]
 
     host_map = load_host_map(args.hosts)
     events, flows, anomalies, stats = analyze_paths(

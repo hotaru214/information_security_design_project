@@ -1,0 +1,32 @@
+{
+  "infrastructure": {
+    "47.88.10.9": {
+      "registered_org": "Course Lab VPS Provider",
+      "asn": "AS-LAB-64512",
+      "country": "Lab",
+      "related_domains": ["apt29-c2.lab"],
+      "history": [
+        "Observed as the C2/exfiltration endpoint in the local APT29-style course case."
+      ],
+      "tags": ["external-ip", "cloud-vps", "non-standard-port"]
+    },
+    "45.77.11.23": {
+      "registered_org": "Course Lab Attacker Host",
+      "asn": "AS-LAB-64513",
+      "country": "Lab",
+      "related_domains": ["apt29-staging.lab"],
+      "history": [
+        "Observed as the initial external attacker and payload staging host in the local course case."
+      ],
+      "tags": ["external-ip", "cloud-vps", "staging"]
+    },
+    "apt29-c2.lab": {
+      "registered_org": "Course Lab VPS Provider",
+      "related_domains": ["apt29-staging.lab"],
+      "history": [
+        "Local intelligence alias for the C2 endpoint used in demonstration data."
+      ],
+      "tags": ["domain", "cloud-vps"]
+    }
+  }
+}

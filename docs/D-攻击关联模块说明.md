@@ -7,7 +7,11 @@ D 模块负责攻击事件关联与溯源分析。它不直接解析原始日志
 核心接口：
 
 ```python
-def correlate_events(events: list[dict], host_map: dict[str, str] | None = None) -> list[dict]:
+def correlate_events(
+    events: list[dict],
+    host_map: dict[str, str] | None = None,
+    internal_networks: list[str] | None = None,
+) -> list[dict]:
     ...
 ```
 
@@ -15,6 +19,7 @@ def correlate_events(events: list[dict], host_map: dict[str, str] | None = None)
 
 - `events`：标准化事件列表，字段遵循 Event V2。
 - `host_map`：IP 到主机名的映射，由后端或靶场资产表提供。
+- `internal_networks`：可选的内网 CIDR 列表，例如 `["192.168.1.0/24"]`，用于明确区分内外网。
 - 返回值：攻击步骤列表 `attack_steps`。
 
 ## 输入依赖
@@ -23,6 +28,7 @@ D 直接消费 Event V2，重点使用以下字段：
 
 ```text
 id
+case_id
 timestamp
 host
 source
@@ -46,9 +52,13 @@ raw_log
 
 其中 `id` 是后端数据库内部唯一 ID，D 的 `evidence_event_ids` 必须保存这个 ID，不保存原始日志的 `source_event_id`。
 
-**批次隔离约定（2026-09-09）**：多批数据不混库，每批独立入库（id 每批从 1 起）。每条事件
-`detail.batch_id` 标记来源批次（如 case01 / apt29_day1 / e_case01），D 关联时按 batch_id 过滤，
-不得跨批次串联。已交付的批次数据见 `data/sample_events/*_eventout.json`。
+`case_id` 用于区分不同攻击案例或实验场景。同一个 APT29 数据集的 Day 1 / Day 2 属于同一个
+`case_id`，因为它们是同一场攻击活动的不同时间阶段。屏幕截图、剪贴板收集、文件收集等并行行为
+通过攻击图表示为同一 case 下的分支，不在输入 Event 中新增 `chain_id`。
+
+D 的 `correlate_events` 会按 `case_id` 分组后分别分析，避免多个 case 的事件被误关联。如果输入事件
+没有 `case_id`，则默认整批事件属于同一个分析范围。为了兼容早期数据，代码也会临时识别
+`detail.case_id` 和 `detail.batch_id`，但正式契约建议使用顶层 `case_id`。
 
 事件特有字段从 `detail` 中读取：
 
@@ -76,6 +86,7 @@ status_code
 ```json
 {
   "step_id": "S001",
+  "case_id": "apt29_case_001",
   "stage": "Lateral Movement",
   "technique_id": "T1021",
   "technique_name": "Remote Services",

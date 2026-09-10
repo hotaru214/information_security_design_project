@@ -115,7 +115,7 @@ def _record_to_event(record) -> dict:
         timestamp=ts,
         host=host,
         source="sysmon",
-        event_id=event_id,
+        source_event_id=event_id,
         event_type=event_type,
         user=user,
         process=image,
@@ -156,7 +156,7 @@ def parse_sysmon_evtx(file_path: str, stats: dict = None) -> list:
                     continue
                 events.append(ev)
                 stats["parsed"] += 1
-                key = str(ev["event_id"])
+                key = str(ev["source_event_id"])
                 stats["by_event_id"][key] = stats["by_event_id"].get(key, 0) + 1
             except Exception as e:
                 stats["failed"] += 1

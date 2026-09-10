@@ -50,6 +50,7 @@ EVENT_TYPE_ENUM = {
     # 服务与计划任务
     "service_created", "service_started", "service_stopped", "service_deleted",
     "scheduled_task_created", "scheduled_task_run", "scheduled_task_deleted",
+    "log_cleared",
 }
 
 # 网络侧告警 -> 冻结 event_type 映射（检测名称一律放 anomaly_flags，不再自造 event_type）
@@ -121,8 +122,50 @@ def _host_side(rec: FlowRecord, cfg: DetectionConfig) -> tuple:
     return rec.src_ip, rec.dst_ip
 
 
+def _firewall_to_event(rec: FlowRecord, host_map: dict, cfg: DetectionConfig) -> dict:
+    """source=firewall 事件（2026-09-09 契约同步）：host=边界设备，
+    防火墙动作/规则号等来源专有字段放 detail。"""
+    dx = dict(getattr(rec, "detail_extra", {}) or {})
+    fw_dir = dx.get("direction", "")
+    peer_ip = rec.src_ip if fw_dir == "in" else rec.dst_ip
+    detail = {
+        "src_port": rec.src_port if rec.src_port else None,
+        "peer_host": host_map.get(peer_ip, peer_ip),
+        "direction": _direction(rec.src_ip, rec.dst_ip, cfg),
+        "fw_direction": fw_dir or None,        # 防火墙视角 in/out（与 direction 网段语义区分）
+        "packets": rec.packets,
+        "flow_key": rec.flow_key,
+        "end_time": _iso8601_cn(rec.end_ts),
+        "dataset_label": getattr(rec, "dataset_label", None),
+    }
+    detail.update({k: v for k, v in dx.items() if k != "direction"})
+    action = dx.get("action") or ""
+    port_part = f":{rec.dst_port}" if rec.dst_port else ""
+    zh = {"pass": "放行", "block": "拦截"}.get(action, action)
+    description = f"防火墙{zh}: {rec.src_ip} -> {rec.dst_ip}{port_part} {rec.protocol}"
+    return {
+        "timestamp": _iso8601_cn(rec.start_ts),
+        "host": "opnsense-firewall",
+        "source": "firewall",
+        "source_event_id": None,
+        "event_type": "network_connection",
+        "user": None, "process": None,
+        "src_ip": rec.src_ip, "dst_ip": rec.dst_ip,
+        "dst_port": rec.dst_port if rec.dst_port else None,
+        "protocol": rec.protocol.lower(),
+        "logon_type": None, "session_id": None, "cmdline": None,
+        "detail": detail,
+        "description": description,
+        "anomaly_flags": [],
+        "severity": 0,
+        "raw_log": rec.raw_log or f"FW {rec.flow_key}",
+    }
+
+
 def flow_to_event(rec: FlowRecord, host_map: dict, cfg: DetectionConfig) -> dict:
-    """普通会话事件（severity=0, anomaly_flags=[]）。"""
+    """普通会话事件（severity=0, anomaly_flags=[]）。source=firewall 走专用分支。"""
+    if rec.source == "firewall":
+        return _firewall_to_event(rec, host_map, cfg)
     host_ip, peer_ip = _host_side(rec, cfg)
     has_ports = rec.protocol in ("TCP", "UDP")
 
@@ -147,6 +190,9 @@ def flow_to_event(rec: FlowRecord, host_map: dict, cfg: DetectionConfig) -> dict
         detail["dns_queries"] = [{"qname": q.qname, "qtype": q.qtype}
                                  for q in rec.dns_queries[:50]]
         detail["dns_query_count"] = len(rec.dns_queries)
+    if rec.http_status_codes:
+        detail["status_code"] = rec.http_status_codes[0]   # D 推荐键名（首个响应状态码）
+        detail["status_code_count"] = len(rec.http_status_codes)
     if rec.http_requests:
         first = rec.http_requests[0]
         detail["method"] = first.method        # D 推荐键名
@@ -263,7 +309,7 @@ _REQUIRED_NON_EMPTY = ("host", "description", "raw_log")
 # 禁止的占位值：契约规定缺失一律 null，不允许 unknown/0/空串制造占位
 _PLACEHOLDERS = ("", "unknown", "Unknown", "UNKNOWN", "-", "N/A", "none")
 _SOURCES = ("windows_evtx", "sysmon", "linux_auth", "linux_audit",
-            "network_pcap", "network_zeek")
+            "network_pcap", "network_zeek", "firewall", "waf")
 
 
 def _is_ip_like(value) -> bool:
@@ -273,7 +319,7 @@ def _is_ip_like(value) -> bool:
 def validate_events(events: list) -> list:
     """Event V2 契约自检（阻断级）：返回问题列表（空列表=全部合规）。
 
-    覆盖：字段集恰好 19、event_type 冻结枚举、source 枚举、severity 0-3、
+    覆盖：19 个基础字段 + 可选 case_id、event_type 冻结枚举、source 枚举、severity 0-3、
     时间 UTC+8 且可解析、必填字段非空、禁止占位值（unknown/空串/0）、
     网络事件 source_event_id 必须 null、detail/anomaly_flags 类型。
     """
@@ -284,10 +330,12 @@ def validate_events(events: list) -> list:
             problems.append(f"事件#{i} 不是对象")
             continue
         keys = set(e.keys())
-        if keys != required:
-            missing, extra = required - keys, keys - required
+        if keys - {"case_id"} != required:
+            missing, extra = required - keys, keys - required - {"case_id"}
             problems.append(f"事件#{i} 字段不符: 缺 {missing or '{}'} 多 {extra or '{}'}")
             continue
+        if e.get("case_id") is not None and (not isinstance(e["case_id"], str) or not e["case_id"]):
+            problems.append(f"事件#{i} case_id 必须为非空字符串或 null")
         if not isinstance(e["detail"], dict):
             problems.append(f"事件#{i} detail 不是对象")
         if not isinstance(e["anomaly_flags"], list):
@@ -347,8 +395,8 @@ def validate_eventout(events: list) -> list:
             problems.append(f"事件#{i} 不是对象")
             continue
         keys = set(e.keys())
-        if keys != required:
-            missing, extra = required - keys, keys - required
+        if keys - {"case_id"} != required:
+            missing, extra = required - keys, keys - required - {"case_id"}
             problems.append(f"EventOut#{i} 字段不符: 缺 {missing or '{}'} 多 {extra or '{}'}")
             continue
         eid = e["id"]
