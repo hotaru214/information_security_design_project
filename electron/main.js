@@ -51,8 +51,14 @@ function startBackend() {
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
   });
-  backendProc.stdout.on("data", d => process.stdout.write("[uvicorn] " + d));
-  backendProc.stderr.on("data", d => process.stderr.write("[uvicorn] " + d));
+  /* 日志转发：管道断开（后端退出瞬间）时的写入必须吞掉，
+   * 否则 EPIPE 会作为主进程未捕获异常弹错误框 */
+  const safePipe = (stream) => {
+    stream.on("error", () => {});                                   // 管道级错误兜底
+    stream.on("data", d => { try { process.stdout.write("[uvicorn] " + d); } catch (e) { /* 断管静默 */ } });
+  };
+  safePipe(backendProc.stdout);
+  safePipe(backendProc.stderr);
   backendProc.on("exit", (code) => {
     console.log(`[后端] 退出 (code=${code})`);
     if (!quitting && mainWindow && !mainWindow.isDestroyed()) {
@@ -61,6 +67,11 @@ function startBackend() {
     }
   });
 }
+
+/* 主进程未捕获异常兜底：EPIPE 等管道噪声不再弹窗中断应用 */
+process.on("uncaughtException", (err) => {
+  console.log("[主进程异常已兜底]", err && err.message ? err.message : err);
+});
 
 // ---------- 健康检查轮询 ----------
 function waitHealth(timeoutMs = 30000) {
