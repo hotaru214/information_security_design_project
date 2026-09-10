@@ -48,6 +48,76 @@ def test_harmless_text_file_is_not_collection():
     assert not any(step["stage"] == "Collection" for step in steps)
 
 
+def test_web_application_code_read_is_not_collection_noise():
+    event = network_event(
+        id=201,
+        host="web-server",
+        source="linux_audit",
+        event_type="file_read",
+        process="nginx",
+        src_ip=None,
+        dst_ip=None,
+        dst_port=None,
+        detail={"file_path": "/var/www/html/dvwa/vulnerabilities/brute/source/high.php"},
+        anomaly_flags=[],
+        severity=0,
+    )
+
+    steps = correlate_events([event])
+
+    assert not any(step["stage"] == "Collection" for step in steps)
+
+
+def test_system_maintenance_file_read_is_not_collection_noise():
+    events = [
+        file_event("/var/lib/dpkg/info/passwd.list"),
+        file_event("/usr/share/man/man1/git-credential.1.gz"),
+    ]
+    events[0].update(id=201, process="dpkg", host="web-server")
+    events[1].update(id=202, process="mandb", host="web-server")
+
+    steps = correlate_events(events)
+
+    assert not any(step["stage"] == "Collection" for step in steps)
+
+
+def test_explicit_collection_marker_overrides_maintenance_noise_filter():
+    event = file_event("/usr/share/man/man1/git-credential.1.gz")
+    event.update(id=201, process="mandb", anomaly_flags=["collection"])
+
+    steps = correlate_events([event])
+
+    assert any(step["stage"] == "Collection" for step in steps)
+
+
+@pytest.mark.parametrize("process,path", [
+    ("sudo", "/etc/shadow"),
+    ("pkexec", "/etc/pam.d/common-password"),
+    ("ssh", "/home/alice/.ssh/known_hosts"),
+    ("tracker-miner-fs-3", "/home/alice/.ssh"),
+])
+def test_low_signal_local_file_read_is_not_collection_noise(process, path):
+    event = file_event(path)
+    event.update(id=201, process=process, severity=0, anomaly_flags=[])
+
+    steps = correlate_events([event])
+
+    assert not any(step["stage"] == "Collection" for step in steps)
+
+
+def test_repeated_sensitive_file_reads_are_semantically_merged():
+    first = file_event("/srv/private/finance_report.txt")
+    second = file_event("/srv/private/finance_report.txt")
+    first.update(id=201, timestamp="2026-09-08T13:00:00+08:00")
+    second.update(id=202, timestamp="2026-09-08T13:00:02+08:00")
+
+    steps = correlate_events([first, second])
+    collection = [step for step in steps if step["stage"] == "Collection"]
+
+    assert len(collection) == 1
+    assert collection[0]["evidence_event_ids"] == [201, 202]
+
+
 def test_internal_http_sensitive_resource_is_collection_edge():
     request = network_event(
         id=201,
@@ -91,6 +161,32 @@ def test_internal_http_sensitive_resource_is_collection_edge():
     assert collection[0]["source_ip"] == "10.10.30.10"
     assert collection[0]["target_ip"] == "10.10.30.20"
     assert collection[0]["evidence_event_ids"] == [201, 202]
+
+
+def test_internal_http_collection_suppresses_duplicate_local_file_step():
+    request = network_event(
+        id=201,
+        timestamp="2026-09-08T13:00:00+08:00",
+        host="core-server",
+        event_type="http_request",
+        src_ip="10.10.30.10",
+        dst_ip="10.10.30.20",
+        dst_port=12345,
+        detail={"method": "GET", "uri": "/private/finance_report.txt", "status_code": 200},
+    )
+    file_read = file_event("/srv/private/finance_report.txt")
+    file_read.update(id=202, host="core-server", timestamp="2026-09-08T13:00:01+08:00")
+
+    steps = correlate_events(
+        [request, file_read],
+        {"10.10.30.10": "win10-jump", "10.10.30.20": "core-server"},
+        FINAL_NETWORKS,
+    )
+
+    collection = [step for step in steps if step["stage"] == "Collection"]
+    assert len(collection) == 1
+    assert collection[0]["source_host"] == "win10-jump"
+    assert collection[0]["target_host"] == "core-server"
 
 
 def test_internal_http_normal_resource_without_context_is_not_collection():
@@ -190,6 +286,42 @@ def test_firewall_boundary_connection_is_initial_access():
         and step["evidence_event_ids"] == [101]
         for step in steps
     )
+
+
+def test_auditctl_setup_is_not_execution_or_privilege_escalation():
+    event = network_event(
+        source="linux_audit",
+        event_type="process_start",
+        src_ip=None,
+        dst_ip=None,
+        dst_port=None,
+        process="sudo",
+        cmdline="sudo auditctl -w /srv/private/finance_report.txt -p r -k demo",
+        severity=0,
+        anomaly_flags=[],
+    )
+
+    steps = correlate_events([event])
+
+    assert not any(step["stage"] in {"Execution", "Privilege Escalation"} for step in steps)
+
+
+def test_benign_vmware_service_creation_is_not_persistence():
+    event = network_event(
+        source="windows_evtx",
+        event_type="service_created",
+        src_ip=None,
+        dst_ip=None,
+        dst_port=None,
+        process="VGAuthService.exe",
+        description="VMware VGAuth service was created",
+        severity=0,
+        anomaly_flags=[],
+    )
+
+    steps = correlate_events([event])
+
+    assert not any(step["stage"] == "Persistence" for step in steps)
 
 
 @pytest.mark.parametrize("event_type", ["network_connection", "http_request"])

@@ -97,6 +97,7 @@ SENSITIVE_FILE_KEYWORDS = [
 STATIC_RESOURCE_SUFFIXES = [
     ".css",
     ".js",
+    ".map",
     ".png",
     ".jpg",
     ".jpeg",
@@ -105,6 +106,123 @@ STATIC_RESOURCE_SUFFIXES = [
     ".svg",
     ".woff",
     ".woff2",
+]
+
+WEB_CODE_RESOURCE_SUFFIXES = [
+    ".asp",
+    ".aspx",
+    ".cgi",
+    ".html",
+    ".htm",
+    ".jsp",
+    ".php",
+]
+
+WEB_CONTENT_PATH_HINTS = [
+    "/var/www/",
+    "/usr/share/nginx/",
+    "/usr/share/apache",
+    "/srv/www/",
+    "/wwwroot/",
+    "\\inetpub\\",
+    "\\wwwroot\\",
+]
+
+SYSTEM_MAINTENANCE_PROCESSES = [
+    "apt",
+    "apt-get",
+    "dpkg",
+    "mandb",
+    "man-db",
+    "updatedb",
+    "locate",
+]
+
+SYSTEM_MAINTENANCE_PATH_HINTS = [
+    "/var/lib/dpkg/info/",
+    "/var/cache/",
+    "/usr/share/man/",
+    "/usr/share/doc/",
+    "/usr/share/locale/",
+    "/usr/lib/",
+    "/usr/lib64/",
+    "/lib/",
+    "/lib64/",
+]
+
+BENIGN_CREDENTIAL_ACCESS_PROCESSES = [
+    "accounts-daemon",
+    "cron",
+    "dpkg",
+    "file",
+    "gdm-session-worker",
+    "gnome-control-center",
+    "id",
+    "ls",
+    "mandb",
+    "networkmanager",
+    "polkit-agent-helper-1",
+    "polkitd",
+    "pkexec",
+    "setpriv",
+    "ssh",
+    "stat",
+    "sudo",
+    "systemd-executor",
+]
+
+BENIGN_CREDENTIAL_ACCESS_PATH_HINTS = [
+    "/etc/pam.d/",
+    "/etc/passwd",
+    "/etc/shadow",
+    "/credentials",
+    "/run/systemd/",
+    "/known_hosts",
+    "/lib/",
+    "/lib64/",
+]
+
+BENIGN_DESKTOP_SCAN_PROCESSES = [
+    "gnome-shell",
+    "gnome-text-editor",
+    "nautilus",
+    "tracker-extract-3",
+    "tracker-miner-fs-3",
+]
+
+LOW_SIGNAL_EXECUTION_KEYWORDS = [
+    "auditctl ",
+    "apt-config shell",
+    "dpkg-deb --fsys-tarfile",
+    "/usr/bin/lesspipe",
+    "/usr/lib/update-notifier/",
+    "ding@rastersoft.com",
+    "gnome-terminal",
+    "packagekit.service",
+    "/var/lib/dpkg/info/",
+    "/usr/share/man",
+]
+
+BENIGN_SERVICE_KEYWORDS = [
+    "vmware",
+    "vmtools",
+    "vgauth",
+    "vmci",
+    "vmhgfs",
+    "vmmouse",
+    "vmmemctl",
+    "vmrawdsk",
+    "vsock",
+    "e1i65x64",
+    "print",
+]
+
+COLLECTION_FLAGS = [
+    "collection",
+    "collection_candidate",
+    "internal_data_access",
+    "sensitive_file_access",
+    "t1005",
 ]
 
 ARCHIVE_COMMAND_KEYWORDS = [
@@ -378,6 +496,8 @@ def detect_execution(
     for event in events:
         if event["_event_type"] != "process_start":
             continue
+        if is_low_signal_execution_noise(event):
+            continue
         if not is_suspicious_execution(event):
             continue
 
@@ -460,6 +580,8 @@ def detect_persistence(
             continue
 
         if event_type == "service_created":
+            if is_benign_service_creation(event):
+                continue
             steps.append(
                 make_step(
                     stage="Persistence",
@@ -522,6 +644,8 @@ def detect_privilege_escalation(
             continue
 
         if event_type == "process_start" and is_sudo_execution(event):
+            if is_low_signal_execution_noise(event):
+                continue
             steps.append(
                 make_step(
                     stage="Privilege Escalation",
@@ -614,28 +738,17 @@ def detect_collection(
 ) -> list[dict[str, Any]]:
     networks = context.get("internal_networks")
     steps = []
+    file_groups: dict[tuple[str | None, str], list[dict[str, Any]]] = defaultdict(list)
+    file_events_used_by_http: set[int] = set()
 
     for event in events:
         event_type = event["_event_type"]
         host = event["_host"] or None
 
         if event_type in {"file_read", "file_write", "file_create"}:
-            file_path = event["_file_path"]
-            if not any(keyword in file_path for keyword in SENSITIVE_FILE_KEYWORDS):
+            if not is_sensitive_file_event(event):
                 continue
-            steps.append(
-                make_step(
-                    stage="Collection",
-                    technique_id="T1005",
-                    timestamp=event["timestamp"],
-                    source_host=host,
-                    target_host=host,
-                    source_ip=None,
-                    target_ip=None,
-                    description=f"Sensitive file access was detected on {host}",
-                    evidence_events=[event],
-                )
-            )
+            file_groups[(host, collection_file_key(event))].append(event)
             continue
 
         if event_type == "process_start":
@@ -684,6 +797,11 @@ def detect_collection(
 
             uri = http_uri(event) or "an internal resource"
             evidence = [event] + target_evidence
+            file_events_used_by_http.update(
+                int_value(get_value(candidate, "id"))
+                for candidate in target_evidence
+                if candidate["_event_type"] in {"file_read", "file_write", "file_create"}
+            )
             steps.append(
                 make_step(
                     stage="Collection",
@@ -697,6 +815,30 @@ def detect_collection(
                     evidence_events=evidence,
                 )
             )
+
+    for (host, _file_key), group in file_groups.items():
+        group = [
+            event
+            for event in group
+            if int_value(get_value(event, "id")) not in file_events_used_by_http
+        ]
+        if not group:
+            continue
+        group.sort(key=lambda event: event["_time"])
+        first = group[0]
+        steps.append(
+            make_step(
+                stage="Collection",
+                technique_id="T1005",
+                timestamp=first["timestamp"],
+                source_host=host,
+                target_host=host,
+                source_ip=None,
+                target_ip=None,
+                description=f"Sensitive file access was detected on {host}",
+                evidence_events=group[:5],
+            )
+        )
 
     return steps
 
@@ -1024,6 +1166,34 @@ def is_suspicious_execution(event: dict[str, Any]) -> bool:
     return has_any_flag(event, ["suspicious_process", "webshell_execution", "command_execution"])
 
 
+def is_low_signal_execution_noise(event: dict[str, Any]) -> bool:
+    if int_value(get_value(event, "severity")) not in (None, 0):
+        return False
+    if event.get("anomaly_flags"):
+        return False
+
+    command_text = f"{event['_process']} {event['_cmdline']}".lower()
+    return any(keyword in command_text for keyword in LOW_SIGNAL_EXECUTION_KEYWORDS)
+
+
+def is_benign_service_creation(event: dict[str, Any]) -> bool:
+    if int_value(get_value(event, "severity")) not in (None, 0):
+        return False
+    if event.get("anomaly_flags"):
+        return False
+
+    detail_text = " ".join(as_text(value) for value in (event.get("_detail") or {}).values())
+    service_text = " ".join(
+        [
+            event["_process"],
+            event["_cmdline"],
+            as_text(get_value(event, "description")),
+            detail_text,
+        ]
+    ).lower()
+    return any(keyword in service_text for keyword in BENIGN_SERVICE_KEYWORDS)
+
+
 def is_sudo_execution(event: dict[str, Any]) -> bool:
     command_text = f"{event['_process']} {event['_cmdline']}"
     detail = event.get("_detail") or {}
@@ -1033,9 +1203,79 @@ def is_sudo_execution(event: dict[str, Any]) -> bool:
 
 
 def is_sensitive_file_event(event: dict[str, Any]) -> bool:
-    return event["_event_type"] in {"file_read", "file_write", "file_create"} and any(
-        keyword in event["_file_path"] for keyword in SENSITIVE_FILE_KEYWORDS
+    if event["_event_type"] not in {"file_read", "file_write", "file_create"}:
+        return False
+    if has_explicit_collection_marker(event):
+        return True
+    if is_low_signal_local_file_noise(event):
+        return False
+    if is_system_maintenance_noise_file(event):
+        return False
+    if is_web_application_noise_file(event):
+        return False
+    return is_sensitive_path(event["_file_path"])
+
+
+def is_sensitive_path(path: str) -> bool:
+    return any(keyword in path for keyword in SENSITIVE_FILE_KEYWORDS)
+
+
+def has_explicit_collection_marker(event: dict[str, Any]) -> bool:
+    attack_stage = as_text(get_detail(event, "attack_stage")).lower()
+    technique = as_text(get_detail(event, "mitre_technique")).lower()
+    if "collection" in attack_stage or technique == "t1005":
+        return True
+    return has_any_flag(event, COLLECTION_FLAGS)
+
+
+def is_web_application_noise_file(event: dict[str, Any]) -> bool:
+    path = event["_file_path"].replace("\\", "/")
+    if not path:
+        return False
+
+    suffix = path_suffix(path)
+    if suffix not in set(STATIC_RESOURCE_SUFFIXES + WEB_CODE_RESOURCE_SUFFIXES):
+        return False
+
+    process_text = f"{event['_process']} {event['_parent_process']}"
+    web_process = is_web_parent(process_text)
+    web_path = any(hint.replace("\\", "/") in path for hint in WEB_CONTENT_PATH_HINTS)
+    return web_process or web_path
+
+
+def is_system_maintenance_noise_file(event: dict[str, Any]) -> bool:
+    path = event["_file_path"].replace("\\", "/")
+    if not path:
+        return False
+
+    process_text = f"{event['_process']} {event['_parent_process']}"
+    maintenance_process = any(
+        process in process_text.split() or process_text.endswith("/" + process)
+        for process in SYSTEM_MAINTENANCE_PROCESSES
     )
+    maintenance_path = any(hint in path for hint in SYSTEM_MAINTENANCE_PATH_HINTS)
+
+    # Package/index maintenance can read files whose names contain words like
+    # passwd, credential, backup or dump without representing attacker collection.
+    return maintenance_process and maintenance_path
+
+
+def is_low_signal_local_file_noise(event: dict[str, Any]) -> bool:
+    if int_value(get_value(event, "severity")) not in (None, 0):
+        return False
+    if event.get("anomaly_flags"):
+        return False
+
+    path = event["_file_path"].replace("\\", "/")
+    process = event["_process"].rsplit("/", 1)[-1]
+    parent = event["_parent_process"].rsplit("/", 1)[-1]
+    process_names = {process, parent}
+
+    if process_names & set(BENIGN_CREDENTIAL_ACCESS_PROCESSES):
+        return any(hint in path for hint in BENIGN_CREDENTIAL_ACCESS_PATH_HINTS)
+    if process_names & set(BENIGN_DESKTOP_SCAN_PROCESSES):
+        return any(hint in path for hint in ["/.ssh", "/etc/passwd", "/var/backups"])
+    return False
 
 
 def is_archive_command(event: dict[str, Any]) -> bool:
@@ -1076,16 +1316,20 @@ def is_sensitive_http_resource(event: dict[str, Any]) -> bool:
 
 
 def is_collection_context_event(event: dict[str, Any]) -> bool:
-    attack_stage = as_text(get_detail(event, "attack_stage")).lower()
-    technique = as_text(get_detail(event, "mitre_technique")).lower()
-    if "collection" in attack_stage or technique == "t1005":
-        return True
-    if has_any_flag(
-        event,
-        ["collection", "collection_candidate", "internal_data_access", "sensitive_file_access", "t1005"],
-    ):
+    if has_explicit_collection_marker(event):
         return True
     return is_sensitive_file_event(event) or is_archive_command(event)
+
+
+def collection_file_key(event: dict[str, Any]) -> str:
+    return event["_file_path"].replace("\\", "/").lower()
+
+
+def path_suffix(path: str) -> str:
+    cleaned = path.split("?", 1)[0].split("#", 1)[0]
+    if "." not in cleaned.rsplit("/", 1)[-1]:
+        return ""
+    return "." + cleaned.rsplit(".", 1)[-1].lower()
 
 
 def http_method(event: dict[str, Any]) -> str:

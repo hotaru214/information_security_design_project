@@ -676,9 +676,35 @@ function buildAttributionProfileHtml(p) {
   /* ---------- ③ C2 与外联基础设施 ---------- */
   const c2Rows = c2.map(item => {
     const ip = safeField(item, "ip") ?? safeField(item, "id") ?? "-";
+    const intel = safeField(item, "intel") || {};
+    const registrationObj = safeField(item, "registration") || intel.registration || {};
+    const registration = {
+      registered_org: registrationObj.registered_org ?? intel.registered_org,
+      registrar: registrationObj.registrar ?? intel.registrar,
+      asn: registrationObj.asn ?? intel.asn,
+      country: registrationObj.country ?? intel.country,
+      source: registrationObj.source ?? intel.source,
+    };
+    const registrationText = [
+      registration.registered_org,
+      registration.registrar,
+      registration.asn,
+      registration.country,
+      registration.source,
+    ].filter(Boolean).join(" · ") || "-";
     const ports = attrList(safeField(item, "ports")).join("、") || "-";
     const protocols = attrList(safeField(item, "protocols")).join("、") || "-";
     const domains = attrList(safeField(item, "domains")).join("、") || "-";
+    const relatedDomains = (
+      attrList(safeField(item, "related_domains")).length
+        ? attrList(safeField(item, "related_domains"))
+        : attrList(intel.related_domains)
+    ).join("、") || "-";
+    const history = (
+      attrList(safeField(item, "history")).length
+        ? attrList(safeField(item, "history"))
+        : attrList(intel.history)
+    ).slice(0, 3).join("；") || "-";
     const hosts = attrList(safeField(item, "source_hosts")).join("、") || "-";
     const srcIps = attrList(safeField(item, "source_ips")).join("、");
     const first = safeField(item, "first_seen");
@@ -687,17 +713,16 @@ function buildAttributionProfileHtml(p) {
       .filter(Boolean).join(" → ") || "-";
     /* intel 来自本地情报参考文件（data/threat_intel/c2_intel.json）；
      * 为空对象就不渲染，绝不编造。 */
-    const intel = safeField(item, "intel") || {};
-    const intelBits = [intel.registered_org, intel.asn, intel.country]
-      .filter(Boolean).join(" · ");
     const tags = Array.isArray(intel.tags) ? intel.tags.join("、") : "";
-    const intelLine = (intelBits || tags)
-      ? `<div class="muted">本地情报库：${App.esc([intelBits, tags].filter(Boolean).join(" · "))}</div>` : "";
+    const intelLine = tags
+      ? `<div class="muted">标签：${App.esc(tags)}</div>` : "";
     return `<tr>
       <td class="mono">${App.esc(String(ip))}${intelLine}</td>
+      <td>${App.esc(registrationText)}</td>
       <td class="mono">${App.esc(String(ports))}</td>
       <td>${App.esc(String(protocols))}</td>
-      <td class="mono">${App.esc(String(domains))}</td>
+      <td class="mono">观测：${App.esc(String(domains))}<div class="muted">关联：${App.esc(String(relatedDomains))}</div></td>
+      <td>${App.esc(String(history))}</td>
       <td class="mono">${App.esc(span)}</td>
       <td>${App.esc(hosts)}${srcIps ? `<div class="muted mono">${App.esc(srcIps)}</div>` : ""}</td>
       <td>${attrEvidenceChips(safeField(item, "evidence_event_ids"), 12)}</td>
@@ -705,11 +730,11 @@ function buildAttributionProfileHtml(p) {
   }).join("");
   const c2Html = `<h4>三、C2 与外联基础设施（本地关联分析）</h4>` + (c2.length
     ? `<table>
-        <tr><th>端点 IP</th><th>端口</th><th>协议</th><th>域名</th><th>出现时间（UTC+8）</th><th>外联主机</th><th>证据事件</th></tr>
+        <tr><th>端点 IP</th><th>注册信息</th><th>端口</th><th>协议</th><th>域名</th><th>历史记录</th><th>出现时间（UTC+8）</th><th>外联主机</th><th>证据事件</th></tr>
         ${c2Rows}
       </table>
       <p class="muted">数据口径：来自当前事件库中 C2 / 数据外传阶段的攻击链步骤与本地威胁情报参考文件
-        （data/threat_intel/c2_intel.json）的关联分析结果，<b>不包含</b>外部 WHOIS / passive DNS / 注册信息查询。</p>`
+        （data/threat_intel/c2_intel.json）的关联分析结果；当前为离线实验情报增强，不是实时外部 WHOIS / passive DNS 查询。</p>`
     : '<p class="muted">（当前事件库中未检出 C2 / 外联基础设施）</p>');
 
   /* ---------- ④ 观察到的 TTP ---------- */

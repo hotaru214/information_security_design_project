@@ -4,6 +4,7 @@ import json
 import math
 import re
 from collections import Counter, defaultdict
+from ipaddress import ip_address
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -23,14 +24,73 @@ SCRIPT_EXTENSIONS = {".ps1", ".bat", ".cmd", ".vbs", ".js", ".jse", ".sh", ".py"
 CONFIG_EXTENSIONS = {".conf", ".config", ".cfg", ".ini", ".json", ".xml", ".yml", ".yaml"}
 ARCHIVE_EXTENSIONS = {".zip", ".rar", ".7z", ".tar", ".gz"}
 NON_DOMAIN_FILE_EXTENSIONS = {
+    ".ani",
+    ".bin",
+    ".cur",
+    ".desktop",
     ".dll",
+    ".deb",
     ".exe",
+    ".gz",
     ".html",
     ".htm",
+    ".lang",
+    ".list",
+    ".lock",
+    ".mca",
+    ".mo",
+    ".monitor",
+    ".pid",
     ".jsp",
     ".php",
+    ".png",
+    ".pyc",
+    ".ref",
+    ".rule",
+    ".scope",
+    ".service",
+    ".slice",
+    ".so",
+    ".sources",
+    ".svg",
+    ".sys",
+    ".txt",
+    ".css",
+    ".log",
+    ".pcap",
+    ".typelib",
     ".aspx",
     ".asp",
+}
+
+LOW_VALUE_DOMAINS = {
+    "schemas.microsoft.com",
+}
+
+LOW_VALUE_ARTIFACT_PATH_HINTS = {
+    "/etc/apt/",
+    "/etc/fonts/",
+    "/etc/php/",
+    "/etc/security/",
+    "/snap/",
+    "/usr/lib/",
+    "/usr/lib64/",
+    "/usr/share/doc/",
+    "/usr/share/fontconfig/",
+    "/usr/share/gnome-shell/extensions/",
+    "/usr/share/gnome-text-editor/",
+    "/usr/share/gtksourceview-",
+    "/usr/share/icons/",
+    "/usr/share/man/",
+    "/usr/share/mime/",
+    "/usr/share/themes/",
+    "/var/lib/dpkg/info/",
+    "__pycache__",
+}
+
+LOW_VALUE_ARTIFACT_NAMES = {
+    "poweroff-vm-default.bat",
+    "poweron-vm-default.bat",
 }
 
 TOOL_KEYWORDS = {
@@ -51,7 +111,9 @@ TOOL_KEYWORDS = {
     "reg",
     "rundll32",
     "scp",
+    "sc",
     "ssh",
+    "sshpass",
     "sudo",
     "tar",
     "wevtutil",
@@ -255,15 +317,22 @@ def extract_fingerprints(
             cmdline = get_value(event, "cmdline")
             if cmdline:
                 append_unique(commands, cmdline)
+        else:
+            continue
 
         process = basename(text(get_value(event, "process")).lower())
-        if relevant and process:
-            append_unique(tools, normalize_tool_name(process))
+        if process:
+            process_tool = normalize_tool_name(process)
+            if is_high_value_tool(process_tool):
+                append_unique(tools, process_tool)
 
         scan_for_tools(f"{event.get('_process')} {event.get('_cmdline')}", tools)
+        domain_context = is_domain_context_event(event)
 
         for source_text in event_text_sources(event):
             for path in extract_paths(source_text):
+                if not is_high_value_artifact(path):
+                    continue
                 suffix = path_suffix(path)
                 if suffix in SCRIPT_EXTENSIONS:
                     append_unique(scripts, path)
@@ -272,11 +341,11 @@ def extract_fingerprints(
                 elif suffix in ARCHIVE_EXTENSIONS:
                     append_unique(archives, path)
 
-            for domain in extract_domains(source_text):
-                append_unique(domains, domain)
+            for domain in extract_domains(source_text, include_tokens=domain_context):
+                append_domain(domains, domain)
 
             for ip in IP_RE.findall(source_text):
-                if is_external_ip(ip, internal_networks):
+                if is_attribution_external_ip(ip, internal_networks):
                     append_unique(external_ips, ip)
 
         registry_key = get_detail(event, "registry_key")
@@ -288,12 +357,12 @@ def extract_fingerprints(
 
         for ip_key in ("src_ip", "dst_ip"):
             ip_value = get_value(event, ip_key)
-            if is_external_ip(ip_value, internal_networks):
+            if is_attribution_external_ip(ip_value, internal_networks):
                 append_unique(external_ips, ip_value)
 
         direct_domain = first_present(detail, ["domain", "query", "hostname", "host", "server_name"])
-        if direct_domain:
-            append_unique(domains, strip_domain(direct_domain))
+        if direct_domain and domain_context:
+            append_domain(domains, strip_domain(direct_domain))
 
     techniques = sorted({step.get("technique_id") for step in attack_steps if step.get("technique_id")})
     technique_names = {
@@ -304,7 +373,7 @@ def extract_fingerprints(
     }
 
     return {
-        "tools": sorted(tools),
+        "tools": compact_tools(tools),
         "scripts": sorted(scripts),
         "config_files": sorted(config_files),
         "archives": sorted(archives),
@@ -328,6 +397,8 @@ def extract_c2_infrastructure(
     internal_networks,
 ) -> list[dict[str, Any]]:
     endpoints: dict[str, dict[str, Any]] = {}
+    event_by_id = {event.get("id"): event for event in events}
+    entry_source_ips = set(extract_entry_points(attack_steps).get("source_ips") or [])
 
     def ensure_endpoint(key: str) -> dict[str, Any]:
         return endpoints.setdefault(
@@ -343,6 +414,9 @@ def extract_c2_infrastructure(
                 "source_hosts": [],
                 "source_ips": [],
                 "evidence_event_ids": [],
+                "registration": {},
+                "history": [],
+                "related_domains": [],
                 "intel": {},
             },
         )
@@ -352,6 +426,8 @@ def extract_c2_infrastructure(
             continue
         endpoint_key = step.get("target_ip") or step.get("target_host")
         if not endpoint_key:
+            continue
+        if endpoint_key in entry_source_ips and not has_strong_c2_step_evidence(step, event_by_id):
             continue
         item = ensure_endpoint(str(endpoint_key))
         update_time_window(item, step.get("timestamp"))
@@ -398,15 +474,17 @@ def extract_c2_infrastructure(
             endpoint_key = dst_ip or first_present(event.get("_detail") or {}, ["domain", "host", "hostname"])
             if not endpoint_key:
                 continue
+            if endpoint_key in entry_source_ips and not flagged_c2 and not suspicious_port:
+                continue
 
         item = ensure_endpoint(str(endpoint_key))
         if looks_like_ip(endpoint_key):
             item["ip"] = str(endpoint_key)
         else:
-            append_unique(item["domains"], strip_domain(endpoint_key))
+            append_domain(item["domains"], strip_domain(endpoint_key))
 
         for domain in extract_domains(" ".join(event_text_sources(event))):
-            append_unique(item["domains"], domain)
+            append_domain(item["domains"], domain)
         append_unique(item["ports"], dst_port)
         append_unique(item["protocols"], get_value(event, "protocol"))
         append_unique(item["source_ips"], src_ip)
@@ -422,6 +500,7 @@ def extract_c2_infrastructure(
         item["source_ips"] = sorted(item["source_ips"])
         item["evidence_event_ids"] = sorted(item["evidence_event_ids"])
         item["intel"] = lookup_intel(item, threat_intel)
+        enrich_c2_item(item)
 
     return sorted(endpoints.values(), key=lambda item: item.get("first_seen") or "")
 
@@ -574,11 +653,24 @@ def infrastructure_tags(items: list[dict[str, Any]]) -> list[str]:
             append_unique(tags, text(tag).lower())
         if item.get("ip"):
             append_unique(tags, "external-ip")
-        if item.get("domains"):
+        if item.get("domains") or item.get("related_domains"):
             append_unique(tags, "domain")
         if any(port in SUSPICIOUS_C2_PORTS for port in item.get("ports", [])):
             append_unique(tags, "non-standard-port")
     return sorted(tags)
+
+
+def has_strong_c2_step_evidence(step: dict[str, Any], event_by_id: dict[Any, dict[str, Any]]) -> bool:
+    for event_id in step.get("evidence_event_ids") or []:
+        event = event_by_id.get(event_id)
+        if not event:
+            continue
+        flags = event.get("_flags") or set()
+        if flags & (C2_FLAGS | EXFIL_FLAGS):
+            return True
+        if int_value(get_value(event, "dst_port")) in SUSPICIOUS_C2_PORTS:
+            return True
+    return False
 
 
 def lookup_intel(endpoint: dict[str, Any], threat_intel: dict[str, Any]) -> dict[str, Any]:
@@ -601,6 +693,42 @@ def lookup_intel(endpoint: dict[str, Any], threat_intel: dict[str, Any]) -> dict
     return merged
 
 
+def enrich_c2_item(item: dict[str, Any]) -> None:
+    intel = item.get("intel") or {}
+    item["registration"] = extract_registration(intel)
+    item["history"] = list_values(intel.get("history"))
+    item["related_domains"] = sorted(
+        {
+            strip_domain(domain)
+            for domain in list_values(intel.get("related_domains"))
+            if is_domain_like(strip_domain(domain))
+        }
+    )
+
+
+def extract_registration(intel: dict[str, Any]) -> dict[str, Any]:
+    registration = intel.get("registration")
+    if isinstance(registration, dict):
+        return {key: value for key, value in registration.items() if value not in (None, "", [])}
+
+    result = {}
+    for key in ("registered_org", "registrar", "asn", "country", "source"):
+        value = intel.get(key)
+        if value not in (None, "", []):
+            result[key] = value
+    return result
+
+
+def list_values(value: Any) -> list[Any]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [item for item in value if item not in (None, "")]
+    if isinstance(value, (tuple, set)):
+        return [item for item in value if item not in (None, "")]
+    return [value] if value != "" else []
+
+
 def event_text_sources(event: dict[str, Any]) -> list[str]:
     detail = event.get("_detail") or {}
     values: list[str] = [
@@ -619,12 +747,35 @@ def extract_paths(value: str) -> list[str]:
     return [clean_artifact(match.group(0)) for match in PATH_RE.finditer(value or "")]
 
 
-def extract_domains(value: str) -> list[str]:
+def is_high_value_artifact(value: str) -> bool:
+    artifact = clean_artifact(value)
+    lowered = artifact.replace("\\", "/").lower()
+    if not lowered:
+        return False
+    if basename(lowered) in LOW_VALUE_ARTIFACT_NAMES:
+        return False
+    if any(hint in lowered for hint in LOW_VALUE_ARTIFACT_PATH_HINTS):
+        return False
+    if lowered.endswith((".pyc", ".list", ".mo", ".png", ".svg", ".cur", ".ani", ".typelib")):
+        return False
+    if "/" not in lowered and "\\" not in artifact and not re.match(r"^[a-z]:", lowered):
+        if path_suffix(lowered) in SCRIPT_EXTENSIONS | CONFIG_EXTENSIONS:
+            return any(
+                marker in lowered
+                for marker in ("beacon", "case", "c2", "jump", "payload", "reverse", "shell", "stage", "updater", "webshell")
+            )
+    return True
+
+
+def extract_domains(value: str, *, include_tokens: bool = True) -> list[str]:
     domains: list[str] = []
     for match in URL_RE.finditer(value or ""):
         parsed = urlparse(match.group(0))
         if parsed.hostname and is_domain_like(parsed.hostname):
             append_unique(domains, parsed.hostname.lower())
+
+    if not include_tokens:
+        return domains
 
     for token in TOKEN_RE.findall(value or ""):
         if not is_domain_like(token):
@@ -633,11 +784,22 @@ def extract_domains(value: str) -> list[str]:
     return domains
 
 
+def is_domain_context_event(event: dict[str, Any]) -> bool:
+    if event.get("_event_type") in {"network_connection", "http_request", "dns_query", "file_transfer"}:
+        return True
+    flags = event.get("_flags") or set()
+    return bool(flags & (C2_FLAGS | EXFIL_FLAGS))
+
+
 def is_domain_like(value: str) -> bool:
     token = strip_domain(value)
     if "." not in token or ":" in token or "/" in token or "\\" in token:
         return False
+    if token in LOW_VALUE_DOMAINS:
+        return False
     if looks_like_ip(token):
+        return False
+    if basename(token) in LOW_VALUE_ARTIFACT_NAMES:
         return False
     if any(
         token.endswith(ext)
@@ -678,8 +840,27 @@ def normalize_tool_name(value: str) -> str:
     if tool.endswith(".exe"):
         return tool
     if tool in TOOL_KEYWORDS and tool not in {"7z"}:
-        return f"{tool}.exe" if tool in {"cmd", "reg", "wevtutil", "wmic", "rundll32", "mshta", "powershell", "certutil", "bitsadmin"} else tool
+        return f"{tool}.exe" if tool in {"cmd", "reg", "wevtutil", "wmic", "rundll32", "mshta", "powershell", "certutil", "bitsadmin", "sc"} else tool
     return tool
+
+
+def compact_tools(values: list[str]) -> list[str]:
+    canonical: dict[str, str] = {}
+    prefer_base = {"curl", "ssh", "scp"}
+    for value in values:
+        tool = normalize_tool_name(value)
+        base = tool.removesuffix(".exe")
+        if base in prefer_base:
+            canonical[base] = base
+        else:
+            canonical.setdefault(base, tool)
+    return sorted(canonical.values())
+
+
+def is_high_value_tool(value: str) -> bool:
+    tool = basename(text(value).lower())
+    base = tool.removesuffix(".exe")
+    return tool in TOOL_KEYWORDS or base in TOOL_KEYWORDS
 
 
 def tools_match(left: str, right: str) -> bool:
@@ -752,6 +933,12 @@ def collect_profile_evidence_ids(
     return sorted(ids)
 
 
+def append_domain(values: list[str], value: Any) -> None:
+    domain = strip_domain(value)
+    if is_domain_like(domain):
+        append_unique(values, domain)
+
+
 def append_unique(values: list[Any], value: Any) -> None:
     if value is None or value == "":
         return
@@ -816,6 +1003,22 @@ def basename(value: str) -> str:
 
 def looks_like_ip(value: Any) -> bool:
     return bool(value and IP_RE.fullmatch(str(value)))
+
+
+def is_attribution_external_ip(value: Any, internal_networks) -> bool:
+    if not is_external_ip(value, internal_networks):
+        return False
+    try:
+        parsed = ip_address(str(value))
+    except ValueError:
+        return False
+    return not (
+        parsed.is_loopback
+        or parsed.is_link_local
+        or parsed.is_multicast
+        or parsed.is_unspecified
+        or str(parsed) == "255.255.255.255"
+    )
 
 
 def int_value(value: Any, default: int | None = None) -> int | None:
