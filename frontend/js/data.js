@@ -1,18 +1,31 @@
 /* ============================================================
  * data.js — 数据管理页（2026-09-10 平台化需求，成员C/F）
- * 2026-09-10晚 修复：①多文件上传 ②已选文件清单可见 ③成功后清空
- * 文件选择（防止再点按钮重复上传）。
+ * 2026-09-10晚 修复：多次拖入的文件**累加**而不是互相覆盖；
+ *   支持逐个移除误选文件；上传成功后清空全部选择。
+ * 设计：页面维护 pickedFiles（File 对象数组）作为唯一事实来源，
+ *   对话框选择=替换，拖拽=累加，上传时从 pickedFiles 构建 FormData。
  * ============================================================ */
+
+const ingestState = { files: [] };   // File 对象累积列表（唯一事实来源）
+
+function formatSize(bytes) {
+  if (bytes >= 1e9) return (bytes / 1e9).toFixed(2) + " GB";
+  if (bytes >= 1e6) return (bytes / 1e6).toFixed(1) + " MB";
+  if (bytes >= 1e3) return (bytes / 1e3).toFixed(1) + " KB";
+  return bytes + " B";
+}
 
 async function initDataManage() {
   await refreshBatchTable();
   document.getElementById("ingest-btn").addEventListener("click", runIngest);
 
-  /* 已选文件清单：选择变化即渲染（名称/大小），让用户看清选了什么 */
   const filesInput = document.getElementById("ingest-files");
-  filesInput.addEventListener("change", renderIngestFileList);
+  filesInput.addEventListener("change", () => {
+    /* 对话框选择：替换当前列表（标准语义），重复文件自动去重 */
+    replaceIngestFiles(filesInput.files);
+  });
 
-  /* 拖拽上传：把一个或多个文件直接拖到"导入新数据"卡片上（比文件对话框直观） */
+  /* 拖拽：拖入的文件**累加**到已选列表（多次拖入不互相覆盖） */
   const zone = document.getElementById("ingest-card");
   if (zone) {
     ["dragenter", "dragover"].forEach(t => zone.addEventListener(t, e => {
@@ -25,36 +38,68 @@ async function initDataManage() {
     }));
     zone.addEventListener("drop", e => {
       if (e.dataTransfer && e.dataTransfer.files.length) {
-        filesInput.files = e.dataTransfer.files;
-        filesInput.dispatchEvent(new Event("change", { bubbles: true }));
+        addIngestFiles(e.dataTransfer.files);
       }
     });
   }
 }
 
-function formatSize(bytes) {
-  if (bytes >= 1e9) return (bytes / 1e9).toFixed(2) + " GB";
-  if (bytes >= 1e6) return (bytes / 1e6).toFixed(1) + " MB";
-  if (bytes >= 1e3) return (bytes / 1e3).toFixed(1) + " KB";
-  return bytes + " B";
+function addIngestFiles(fileList) {
+  let added = 0;
+  for (const f of fileList) {
+    const dup = ingestState.files.some(x => x.name === f.name && x.size === f.size);
+    if (!dup) { ingestState.files.push(f); added += 1; }
+  }
+  syncIngestInput();
+  renderIngestFileList();
+  return added;
 }
 
-function renderIngestFileList() {
-  const input = document.getElementById("ingest-files");
-  const box = document.getElementById("ingest-file-list");
-  if (!input.files.length) {
-    box.textContent = "未选择文件";
-    return;
-  }
-  const names = [...input.files].map(f => `${f.name}（${formatSize(f.size)}）`);
-  const total = [...input.files].reduce((s, f) => s + f.size, 0);
-  box.textContent = `已选 ${input.files.length} 个文件（共 ${formatSize(total)}）：${names.join("、")}`;
+function replaceIngestFiles(fileList) {
+  ingestState.files = [...fileList];
+  syncIngestInput();
+  renderIngestFileList();
+}
+
+function removeIngestFile(index) {
+  ingestState.files.splice(index, 1);
+  syncIngestInput();
+  renderIngestFileList();
 }
 
 function clearIngestFiles() {
+  ingestState.files = [];
   const input = document.getElementById("ingest-files");
-  input.value = "";                       // 清空选择，防止再点按钮重复上传
+  if (input) input.value = "";
   renderIngestFileList();
+}
+
+function syncIngestInput() {
+  /* 把累积列表同步回隐藏的 file input（保持表单语义一致） */
+  const dt = new DataTransfer();
+  ingestState.files.forEach(f => dt.items.add(f));
+  const input = document.getElementById("ingest-files");
+  if (input) input.files = dt.files;
+}
+
+function renderIngestFileList() {
+  const box = document.getElementById("ingest-file-list");
+  if (!box) return;
+  if (ingestState.files.length === 0) {
+    box.textContent = "未选择文件（可多次拖入，自动累加；✕ 可移除误选文件）";
+    return;
+  }
+  const total = ingestState.files.reduce((s, f) => s + f.size, 0);
+  box.innerHTML =
+    `<div>已选 <b>${ingestState.files.length}</b> 个文件（共 ${formatSize(total)}）：</div>` +
+    "<ul class=" + JSON.stringify("ingest-file-items") + ">" +
+    ingestState.files.map((f, i) =>
+      `<li>${App.esc(f.name)}（${formatSize(f.size)}） ` +
+      `<span class="rm-file" data-rm="${i}" title="移除该文件">✕</span></li>`).join("") +
+    "</ul>";
+  box.querySelectorAll(".rm-file").forEach(el => {
+    el.addEventListener("click", () => removeIngestFile(Number(el.dataset.rm)));
+  });
 }
 
 async function refreshBatchTable() {
@@ -83,19 +128,18 @@ async function refreshBatchTable() {
 
 async function runIngest() {
   const caseInput = document.getElementById("ingest-case");
-  const filesInput = document.getElementById("ingest-files");
   const resultBox = document.getElementById("ingest-result");
   const caseId = caseInput.value.trim();
   if (!caseId) { resultBox.innerHTML = '<p style="color:var(--anomaly)">请先填写批次名称（case_id）。</p>'; return; }
-  if (!filesInput.files.length) { resultBox.innerHTML = '<p style="color:var(--anomaly)">请先选择数据文件（当前未选择）。</p>'; return; }
+  if (!ingestState.files.length) { resultBox.innerHTML = '<p style="color:var(--anomaly)">请先选择数据文件（拖入或对话框选择，当前未选择）。</p>'; return; }
 
   const fd = new FormData();
   fd.append("case_id", caseId);
-  for (const f of filesInput.files) fd.append("files", f);
+  ingestState.files.forEach(f => fd.append("files", f));
 
   const btn = document.getElementById("ingest-btn");
   btn.disabled = true;
-  btn.textContent = `上传解析中（${filesInput.files.length} 个文件）…`;
+  btn.textContent = `上传解析中（${ingestState.files.length} 个文件）…`;
   resultBox.innerHTML = '<p class="muted">上传与解析中（大文件需要一点时间）…</p>';
   try {
     const resp = await fetchWithTimeout(`${API_BASE}/api/ingest`, 300000, { method: "POST", body: fd });
@@ -108,8 +152,8 @@ async function runIngest() {
       `<p>批次 <b>${App.esc(body.case_id)}</b> 导入完成：成功 ${body.imported} 条` +
       (body.failed ? `，解析失败 ${body.failed} 条` : "") + "</p>" +
       '<table class="kv"><tr><th>文件</th><th>解析器</th><th>事件数</th><th>说明</th></tr>' + rows + "</table>" +
-      '<p class="muted">文件选择已清空——如需继续上传请重新选择文件（同名批次会追加）。</p>';
-    clearIngestFiles();                    // 修复③：成功后清空，避免再点重复上传
+      '<p class="muted">文件选择已清空——如需继续上传请重新拖入/选择（同名批次会追加）。</p>';
+    clearIngestFiles();                    // 修复③：成功后清空，防止再点重复上传
     await refreshBatchTable();
     await fillCaseSelect();                // 页眉下拉同步
     setCaseId(body.case_id);               // 自动切到新批次视图
@@ -117,8 +161,9 @@ async function runIngest() {
   } catch (err) {
     resultBox.innerHTML = `<p style="color:var(--anomaly)">上传失败：${App.esc(err.message)}（文件选择保留，可直接重试）</p>`;
   } finally {
-    btn.disabled = false;
-    btn.textContent = "上传并解析入库";
+    const btn2 = document.getElementById("ingest-btn");
+    btn2.disabled = false;
+    btn2.textContent = "上传并解析入库";
   }
 }
 
@@ -151,7 +196,8 @@ function selectBatch(caseId) {
   location.reload();              // 切批次后整页刷新，四个页面统一按新 case 过滤
 }
 
-async function deleteBatch(caseId) {
+async function deleteBatch(caseId
+) {
   if (!confirm(`确定删除批次 ${caseId} 的全部事件？此操作不可恢复。`)) return;
   const resp = await fetch(`${API_BASE}/api/ingest/${encodeURIComponent(caseId)}`, { method: "DELETE" });
   if (resp.status === 404) { alert("批次不存在（可能已删除）"); }
