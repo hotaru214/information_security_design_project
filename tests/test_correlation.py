@@ -242,6 +242,41 @@ def test_normal_external_http_is_not_c2():
     assert not any(step["stage"] == "Command and Control" for step in steps)
 
 
+def test_entry_source_callback_is_not_c2_without_strong_c2_evidence():
+    initial = network_event(
+        id=201,
+        timestamp="2026-09-09T10:48:43+08:00",
+        event_type="http_request",
+        src_ip="10.10.10.10",
+        dst_ip="10.10.20.10",
+        dst_port=8088,
+        detail={"uri": "/vulnerabilities/exec/source.php?cmd=whoami"},
+        anomaly_flags=["initial_access"],
+        severity=2,
+    )
+    callbacks = [
+        network_event(
+            id=202 + index,
+            timestamp=f"2026-09-09T10:49:{index:02d}+08:00",
+            src_ip="10.10.20.10",
+            dst_ip="10.10.10.10",
+            dst_port=34382,
+            anomaly_flags=[],
+            severity=0,
+        )
+        for index in range(3)
+    ]
+
+    steps = correlate_events([initial] + callbacks, internal_networks=FINAL_NETWORKS)
+
+    assert any(step["stage"] == "Initial Access" for step in steps)
+    assert not any(
+        step["stage"] == "Command and Control"
+        and step["target_ip"] == "10.10.10.10"
+        for step in steps
+    )
+
+
 def test_waf_http_alert_is_initial_access():
     event = network_event(
         source="waf",

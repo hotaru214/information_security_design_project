@@ -849,6 +849,7 @@ def detect_c2(
     networks = context.get("internal_networks")
     steps = []
     grouped_connections: dict[tuple[str | None, str | None, int | None], list[dict[str, Any]]] = defaultdict(list)
+    entry_source_ips = collect_initial_access_source_ips(events, networks)
 
     for event in events:
         if event["_event_type"] not in {"network_connection", "http_request"}:
@@ -868,6 +869,8 @@ def detect_c2(
         repeated = len(group) >= 3 and minutes_between(group[0], group[-1]) <= 30
         suspicious_port = dst_port in SUSPICIOUS_C2_PORTS
         flagged = any(has_any_flag(event, ["c2", "beacon", "external_connection"]) for event in group)
+        if dst_ip in entry_source_ips and not suspicious_port and not flagged:
+            continue
         if not repeated and not suspicious_port and not flagged:
             continue
 
@@ -917,6 +920,33 @@ def detect_c2(
         )
 
     return steps
+
+
+def collect_initial_access_source_ips(events: list[dict[str, Any]], networks) -> set[str]:
+    sources: set[str] = set()
+    for event in events:
+        if event["_event_type"] not in {"http_request", "network_connection"}:
+            continue
+
+        src_ip = get_value(event, "src_ip")
+        dst_ip = get_value(event, "dst_ip")
+        if not is_external_ip(src_ip, networks):
+            continue
+        if networks is not None and not is_internal_ip(dst_ip, networks):
+            continue
+
+        uri = as_text(get_detail(event, "uri")).lower()
+        attack_type = as_text(get_detail(event, "attack_type")).lower()
+        suspicious_uri = any(keyword in uri for keyword in INITIAL_ACCESS_URI_KEYWORDS)
+        anomalous = has_any_flag(event, INITIAL_ACCESS_FLAGS)
+        waf_alert = event["_source"] == "waf" and (
+            anomalous
+            or any(keyword in attack_type for keyword in INITIAL_ACCESS_ATTACK_TYPES)
+            or int_value(event.get("severity"), 0) >= 2
+        )
+        if suspicious_uri or anomalous or waf_alert or int_value(event.get("severity"), 0) >= 2:
+            sources.add(str(src_ip))
+    return sources
 
 
 def detect_exfiltration(

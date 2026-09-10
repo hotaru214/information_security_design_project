@@ -62,6 +62,24 @@ def test_no_steps_and_asset_enrichment():
     assert view["links"][0]["target_ip"] is None
 
 
+def test_ip_endpoint_uses_host_inventory_mapping():
+    view = module.build_chain_view(
+        [step(stage="Initial Access", source_ip="10.10.10.10", target_host="web-server", target_ip="10.10.20.10")],
+        1,
+        [
+            dict(hostname="attacker", ip="10.10.10.10", role="external"),
+            dict(hostname="web-server", ip="10.10.20.10", role="dmz"),
+        ],
+        ["10.10.20.0/24", "10.10.30.0/24"],
+    )
+
+    assert {node["id"] for node in view["nodes"]} == {"host:attacker", "host:web-server"}
+    attacker = next(node for node in view["nodes"] if node["host"] == "attacker")
+    assert attacker["category"] == "attacker"
+    assert view["links"][0]["source_host"] == "attacker"
+    assert view["links"][0]["source"] == "host:attacker"
+
+
 def test_original_d_sample():
     path = Path(__file__).resolve().parents[1] / "data/sample_events/d_attack_chain_events.json"
     sample = json.loads(path.read_text(encoding="utf-8"))

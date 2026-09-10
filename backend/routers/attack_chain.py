@@ -20,20 +20,39 @@ def build_chain_view(attack_steps, event_count, hosts, internal_networks=None):
     """Adapt domain attack steps without changing their evidence or endpoints."""
     networks = compile_internal_networks(internal_networks)
     assets = {host["hostname"]: host for host in hosts}
+    assets_by_ip = {host["ip"]: host for host in hosts if host.get("ip")}
     nodes = {}
     links = []
+
+    def classify_node(host, ip, asset):
+        text = f"{host or ''} {asset.get('role') or ''}".lower()
+        if "c2" in text:
+            return "c2"
+        if "attacker" in text or "attack" in text:
+            return "attacker"
+        if asset.get("role") == "external":
+            return "external_ip"
+        if host is not None:
+            return "host"
+        if ip:
+            if is_internal_ip(ip, networks):
+                return "host"
+            if is_external_ip(ip, networks):
+                return "external_ip"
+        return None
+
+    def host_for_ip(ip):
+        asset = assets_by_ip.get(str(ip)) if ip is not None else None
+        return asset.get("hostname") if asset else None
 
     def endpoint(host, ip):
         if host is None and ip is None:
             return None
+        if host is None:
+            host = host_for_ip(ip)
         node_id = f"host:{host}" if host is not None else f"ip:{ip}"
-        asset = assets.get(host, {})
-        category = "host" if host is not None else None
-        if category is None and ip:
-            if is_internal_ip(ip, networks):
-                category = "host"
-            elif is_external_ip(ip, networks):
-                category = "external_ip"
+        asset = assets.get(host, {}) or assets_by_ip.get(str(ip), {})
+        category = classify_node(host, ip, asset)
         node = nodes.setdefault(node_id, {
             "id": node_id, "host": host, "ip": ip or asset.get("ip"),
             "role": asset.get("role"), "category": category,
@@ -48,6 +67,8 @@ def build_chain_view(attack_steps, event_count, hosts, internal_networks=None):
             "source_ip", "target_ip", "timestamp", "description",
             "evidence_event_ids",
         )}
+        link["source_host"] = link["source_host"] or host_for_ip(link["source_ip"])
+        link["target_host"] = link["target_host"] or host_for_ip(link["target_ip"])
         link["case_id"] = step.get("case_id")
         link["attack_stage"] = step["stage"]
         link["mitre_technique"] = step["technique_id"]
