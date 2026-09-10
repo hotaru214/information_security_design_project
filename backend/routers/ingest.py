@@ -34,7 +34,14 @@ def _classify(path: Path) -> str:
     """按扩展名+内容把上传文件分派给 C 网络解析 / B 主机解析。"""
     suffix = path.suffix.lower()
     if suffix in _NETWORK_EXTS:
-        return "network"
+        content = path.read_text(encoding="utf-8", errors="replace")[:4096]
+        if '"@stream"' in content:
+            return "network"                   # Zeek 合并 JSON 流（如 APT29 combined_zeek.log）
+        if '"EventTime"' in content or '"EventID"' in content or "Sysmon" in content:
+            return "host_sysmon_json"          # Windows Sysmon/SecurityEvent JSON 行（B 模块解析）
+        return "network"                       # 其余 .json 按网络侧尝试
+    if suffix in _LOG_EXTS and path.read_text(encoding="utf-8", errors="replace")[:0] == "":
+        pass  # 占位（.log 的嗅探在下方按内容处理）
     if suffix == ".evtx":
         return "host_windows"
     if suffix in _LOG_EXTS:
@@ -52,8 +59,18 @@ def _parse_with_b(path: Path, kind_hint: str) -> list:
     """调用 B 模块解析主机日志（扁平导入需注入 b_host_parser 目录到 sys.path）。"""
     if str(B_PARSER_DIR) not in sys.path:
         sys.path.insert(0, str(B_PARSER_DIR))
-    import run_parse  # noqa: E402  （B 模块统一入口：detect_parser_for/parse_file/enrich）
+    if str(B_PARSER_DIR) not in sys.path:
+        sys.path.insert(0, str(B_PARSER_DIR))
 
+    # Sysmon/SecurityEvent JSON（APT29 day1 manual 形态）走 B 的专用解析器
+    if kind_hint == "sysmon_json":
+        import sysmon_json  # noqa: E402
+        stats = {}
+        # 注：B 的 enrich() 返回三元组且服务于其自有管线，
+        # 平台导入路径直接用解析产物（异常标记可由 B 跑 run_parse 补充）
+        return sysmon_json.parse_sysmon_json(str(path), stats)
+
+    import run_parse  # noqa: E402  （B 模块统一入口：detect_parser_for/parse_file/enrich）
     kind = kind_hint or run_parse.detect_parser_for(path) or ""
     events, _stats = run_parse.parse_file(Path(path), kind)
     return run_parse.enrich(events)
@@ -129,6 +146,8 @@ async def ingest(case_id: str = Form(...), files: list[UploadFile] = File(...)):
                 events, _flows, _anoms, _stats = analyze_paths([str(dest)])
             elif kind == "host_windows":
                 events = _parse_with_b(dest, "windows")
+            elif kind == "host_sysmon_json":
+                events = _parse_with_b(dest, "sysmon_json")
             elif kind == "host_linux":
                 events = _parse_with_b(dest, "linux")
             else:
