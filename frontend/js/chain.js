@@ -196,11 +196,12 @@ ${l.mitre_technique ?? ""}`,
         label: { show: false },   // 动作信息在虚线另一头的卡片/tooltip里，这里不挤
       });
     } else {
+      /* 边标签默认隐藏（平行边标签会堆叠），悬停/点击边看 tooltip 与侧栏证据 */
       edges.push({ source: srcId, target: dstId, ...edgeCommon,
-        label: { show: showEdgeLabel, formatter: labelText,
-          fontSize: 10, lineHeight: 14, color: "#334155",
-          backgroundColor: "rgba(255,255,255,0.85)", borderRadius: 3, padding: [2, 4],
-        },
+        label: { show: false },
+        emphasis: { label: { show: true, formatter: labelText, fontSize: 10,
+          color: "#334155", backgroundColor: "rgba(255,255,255,0.9)",
+          borderRadius: 3, padding: [2, 4] } },
       });
     }
   });
