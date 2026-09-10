@@ -159,26 +159,22 @@ async function runAnalysis() {
 }
 
 /**
- * 渲染报告：打字机逐字输出（模拟 LLM 流式返回的观感），
- * 输出完成后再绑定交互（表格行跳转 / 证据 chip / 导出按钮解禁）——
- * 打字期间 HTML 还没写完，提前绑定监听器也会随 innerHTML 覆盖而失效。
+ * 渲染报告（2026-09-10 定案：**一次性渲染**，不再打字机逐字输出）。
+ * 原因：报告含大表格（关键证据/ATT&CK 映射）时，逐字 innerHTML 覆盖
+ * 会触发成千次页面重排——表现为卡顿和滚动位置来回跳。
+ * 现在数据全部就绪后整块插入一次，再绑定交互（表格行跳转 / 证据 chip /
+ * 导出按钮解禁）。
  */
 function renderAnalysisReport() {
   const btn = document.getElementById("btn-analyze");
   const box = document.getElementById("report");
   const html = buildReportHtml(REPORT_RESULT);
 
-  box.innerHTML = "";
-  const target = document.createElement("div");
-  target.className = "report";
-  box.appendChild(target);
-
-  typeWriter(target, html, () => {
-    document.getElementById("btn-copy-report").disabled = false;
-    document.getElementById("btn-export-report").disabled = false;
-    btn.disabled = false;
-    btn.textContent = "重新分析";
-  });
+  box.innerHTML = html;                       // 一次插入，零中间重排
+  document.getElementById("btn-copy-report").disabled = false;
+  document.getElementById("btn-export-report").disabled = false;
+  btn.disabled = false;
+  btn.textContent = "重新分析";
 }
 
 /* ============================================================
@@ -481,27 +477,6 @@ function nowLabel() {
  *   - 递归 setTimeout 而不是 setInterval：上一帧画完才开始计时，
  *     节奏更稳，且可随时停。
  */
-const TYPE_CHUNK = 6;    // 每帧输出的可见字符数
-const TYPE_INTERVAL = 6; // 帧间隔毫秒（6字符/6ms ≈ 1000字符/秒）
-
-function typeWriter(target, html, done) {
-  let i = 0;
-  const caret = '<span class="caret">&nbsp;</span>';
-  (function step() {
-    if (i >= html.length) {
-      target.innerHTML = html;   // 收尾：完整 HTML（去光标）
-      done();
-      return;
-    }
-    if (html[i] === "<") {
-      i = html.indexOf(">", i) + 1;  // 标签整体输出，避免半个标签闪烁
-    } else {
-      i += TYPE_CHUNK;               // 一帧输出多个可见字符，缩短动画时长
-    }
-    target.innerHTML = html.slice(0, i) + caret;
-    setTimeout(step, TYPE_INTERVAL);
-  })();
-}
 
 /* ============================================================
  * 身份溯源（Attribution）渲染区（2026-09-10，E 的最后一个展示层任务）
