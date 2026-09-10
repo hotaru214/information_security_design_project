@@ -98,13 +98,13 @@
 
   <!-- ⑤ 数据管理（上传导入 + 批次列表 + 分析触发） -->
   <section id="page-datamanage" class="page">
-    <div class="card">
+    <div class="card" id="ingest-card">
       <h3 style="margin-top:0">导入新数据（自动嗅探 pcap / Zeek / filterlog / CSV / 主机日志）</h3>
       <div class="ingest-form">
         <label>批次名称（case_id）
           <input type="text" id="ingest-case" placeholder="例如 case03 / incident-20260910">
         </label>
-        <label>选择原始数据文件（可多选）
+        <label>选择原始数据文件（可多选：按住 Ctrl 点选，或直接把文件拖到本卡片上）
           <input type="file" id="ingest-files" multiple>
         </label>
         <div id="ingest-file-list" class="muted" style="margin-top:6px">未选择文件</div>

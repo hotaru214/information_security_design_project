@@ -11,6 +11,25 @@ async function initDataManage() {
   /* 已选文件清单：选择变化即渲染（名称/大小），让用户看清选了什么 */
   const filesInput = document.getElementById("ingest-files");
   filesInput.addEventListener("change", renderIngestFileList);
+
+  /* 拖拽上传：把一个或多个文件直接拖到"导入新数据"卡片上（比文件对话框直观） */
+  const zone = document.getElementById("ingest-card");
+  if (zone) {
+    ["dragenter", "dragover"].forEach(t => zone.addEventListener(t, e => {
+      e.preventDefault();
+      zone.classList.add("dragover");
+    }));
+    ["dragleave", "drop"].forEach(t => zone.addEventListener(t, e => {
+      e.preventDefault();
+      zone.classList.remove("dragover");
+    }));
+    zone.addEventListener("drop", e => {
+      if (e.dataTransfer && e.dataTransfer.files.length) {
+        filesInput.files = e.dataTransfer.files;
+        filesInput.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+  }
 }
 
 function formatSize(bytes) {

@@ -362,3 +362,9 @@ main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
 #ingest-file-list {
   word-break: break-all;
 }
+
+/* 数据管理页：拖拽高亮 */
+#ingest-card.dragover {
+  outline: 2px dashed var(--primary, #2563eb);
+  outline-offset: 4px;
+}
