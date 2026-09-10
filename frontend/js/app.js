@@ -298,11 +298,52 @@ const App = {
     this.bindTabs();
     this.bindModal();
     this.bindDemoToggle();
+    this.bindCaseSelect();          // 批次下拉（2026-09-10 平台化）
+    if (typeof initDataManage === "function") initDataManage(this.DATA);
     // 四个页面模块各渲染各的，互相不依赖
     renderStats(this.DATA);
     renderTimeline(this.DATA);
     renderChain(this.DATA);
     initReport(this.DATA);
+  },
+
+  /* ---------- 批次选择（2026-09-10 平台化：多批共库 + case_id 过滤） ----------
+   * 口径与 api.js 的 resolveCaseId 一致：URL ?case= > localStorage isd-case-id > 全部。
+   * 下拉数据来自 GET /api/batches；切换后写 localStorage 并整页刷新，
+   * 四个页面统一按所选批次过滤（loadEvents/getAttackChain 均带 case_id）。 */
+  async fillCaseSelect() {
+    const sel = document.getElementById("case-select");
+    if (!sel) return;
+    try {
+      const resp = await getBatches();
+      const list = resp.batches || [];
+      const current = resolveCaseId() || "";
+      sel.innerHTML = '<option value="">全部数据</option>' +
+        list.map(b => {
+          const selected = b.case_id === current ? " selected" : "";
+          return `<option value="${this.esc(b.case_id)}"${selected}>${this.esc(b.case_id)}（${b.count} 条）</option>`;
+        }).join("");
+      if (current && !list.some(b => b.case_id === current)) {
+        // 所选批次在库中已不存在（被重置）→ 回退"全部"
+        sel.value = "";
+      }
+    } catch (err) {
+      sel.innerHTML = '<option value="">（后端未连接）</option>';
+    }
+  },
+
+  setCaseIdLocal(cid) {
+    try { localStorage.setItem("isd-case-id", cid || ""); } catch (e) { /* 隐私模式忽略 */ }
+  },
+
+  bindCaseSelect() {
+    const sel = document.getElementById("case-select");
+    if (!sel) return;
+    this.fillCaseSelect();
+    sel.addEventListener("change", () => {
+      this.setCaseIdLocal(sel.value);
+      location.reload();           // 与 demo 开关同一交互模式：切换后整页按新 case 重取
+    });
   },
 
   /* ---------- Demo Mode 开关（封箱：mock 只在显式 Demo 模式使用） ----------
@@ -535,6 +576,10 @@ const App = {
     setTimeout(() => { btn.textContent = old; }, 1500);
   },
 };
+
+/* 批次选择的全局入口（data.js 等经典脚本模块直接调用） */
+window.setCaseId = function (cid) { App.setCaseIdLocal(cid); };
+window.fillCaseSelect = function () { return App.fillCaseSelect(); };
 
 /* .btn-copy（详情组件的"复制 JSON"按钮）document 级委托：
  * 详情面板可能渲染在时间线卡片内、攻击链侧栏等任意容器，

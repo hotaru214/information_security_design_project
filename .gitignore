@@ -16,3 +16,4 @@ Thumbs.db
 .DS_Store
 .idea/
 data/datasets/
+data/ingest/

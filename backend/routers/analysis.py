@@ -21,6 +21,7 @@ router = APIRouter(prefix="/api/analysis")
 class AnalysisRequest(BaseModel):
     """可选过滤条件：不传或全空 = 全库分析（前端默认就是全量）。"""
 
+    case_id: str | None = None   # 仅分析某个批次（events.case_id / detail.batch_id）
     host: str | None = None      # 仅分析某台主机相关的事件
     start: str | None = None     # ISO8601（UTC+8），如 2026-09-07T09:00:00+08:00
     end: str | None = None
@@ -52,7 +53,8 @@ def filter_events(events: list[dict], request: AnalysisRequest | None) -> list[d
 
 @router.post("")
 def analyze(request: AnalysisRequest | None = None):
-    events = filter_events(get_events(), request)
+    events = get_events(case_id=request.case_id) if (request and request.case_id) else get_events()
+    events = filter_events(events, request)
     host_map = {host["ip"]: host["hostname"] for host in get_hosts()}
     attack_steps = correlate_events(
         events, host_map, internal_networks=DEFAULT_INTERNAL_NETWORKS

@@ -27,3 +27,4 @@ python-dotenv>=1.0.0
 
 # Shared test dependencies
 pytest>=7.0
+python-multipart>=0.0.9

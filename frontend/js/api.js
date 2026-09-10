@@ -262,9 +262,13 @@ async function loadEvents() {
   }
 
   try {
+    /* 批次过滤（2026-09-10 平台化）：页眉下拉选中的 case_id 传给后端，
+     * 同一批次隔离语义的"共存版"——多批共库，按 case_id 取视图。 */
+    const cid = resolveCaseId();
+    const caseQs = cid ? `?case_id=${encodeURIComponent(cid)}` : "";
     /* 显式传 EVENTS_TIMEOUT_MS（10s）：Final E 30,963 条实测 2.017s，
      * 通用 2s 会把正常响应掐断（见文件头常量区注释）。 */
-    const resp = await fetchWithTimeout(`${API_BASE}/api/events`, EVENTS_TIMEOUT_MS);
+    const resp = await fetchWithTimeout(`${API_BASE}/api/events${caseQs}`, EVENTS_TIMEOUT_MS);
     if (!resp.ok) {
       return { events: null, mode: "live", state: "error", error: `后端返回 HTTP ${resp.status}` };
     }
@@ -377,10 +381,13 @@ async function getAttackChain() {
   }
 
   try {
+    /* 批次过滤：与 loadEvents 同一 case_id 口径（页眉下拉/URL ?case=）。 */
+    const cid = resolveCaseId();
+    const caseQs = cid ? `?case_id=${encodeURIComponent(cid)}` : "";
     /* 显式传 ATTACK_CHAIN_TIMEOUT_MS（10s）：后端关联引擎实测 ~2.28s，
      * 默认 2s 会提前 abort（2026-09-10 E 实测暴露的联调问题）。
      * 见文件头常量区的注释——按接口语义分超时。 */
-    const resp = await fetchWithTimeout(`${API_BASE}/api/attack-chain`, ATTACK_CHAIN_TIMEOUT_MS);
+    const resp = await fetchWithTimeout(`${API_BASE}/api/attack-chain${caseQs}`, ATTACK_CHAIN_TIMEOUT_MS);
     if (!resp.ok) {
       return { chain: null, mode: "live", state: "error", error: `后端返回 HTTP ${resp.status}` };
     }
@@ -750,4 +757,15 @@ async function getAnalysisReport(scope = { scope: "all" }) {
     return { report: { ...data }, mode: "live", state: "empty" };
   }
   return { report: { ...data }, mode: "live", state: "ok" };
+}
+
+
+/* ============================================================
+ * getBatches() — 批次清单（2026-09-10 平台化：批次下拉/数据管理页用）
+ * 返回 {batches: [{case_id, count, alert_count, sources, first_ts, last_ts}], total}
+ * ============================================================ */
+async function getBatches() {
+  const resp = await fetchWithTimeout(`${API_BASE}/api/batches`, FETCH_TIMEOUT_MS);
+  if (!resp.ok) throw new Error(`后端返回 HTTP ${resp.status}`);
+  return resp.json();
 }

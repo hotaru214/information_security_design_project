@@ -10,6 +10,7 @@ from backend.routers.analysis import router as analysis_router
 from backend.routers.attack_chain import router as attack_chain_router
 from backend.routers.events import router
 from backend.routers.hosts import router as hosts_router
+from backend.routers.ingest import router as ingest_router
 
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
@@ -34,6 +35,7 @@ app.add_middleware(
 )
 app.include_router(router)
 app.include_router(hosts_router)
+app.include_router(ingest_router)
 app.include_router(attack_chain_router)
 app.include_router(analysis_router)
 

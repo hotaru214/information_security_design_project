@@ -16,6 +16,9 @@
       </div>
     </div>
     <span id="mode-badge" class="mode-badge hidden">演示模式（后端未连接）</span>
+    <label class="case-select-wrap">数据批次
+      <select id="case-select" title="选择当前展示的数据批次（case_id）"></select>
+    </label>
   </header>
 
   <nav class="tabs" id="tabs">
@@ -23,6 +26,7 @@
     <button class="tab" data-tab="timeline">攻击时间线</button>
     <button class="tab" data-tab="chain">攻击链</button>
     <button class="tab" data-tab="report">分析报告</button>
+    <button class="tab" data-tab="datamanage">数据管理</button>
   </nav>
 
   <main>
@@ -92,6 +96,31 @@
     </section>
   </main>
 
+  <!-- ⑤ 数据管理（上传导入 + 批次列表 + 分析触发） -->
+  <section id="page-datamanage" class="page">
+    <div class="card">
+      <h3 style="margin-top:0">导入新数据（自动嗅探 pcap / Zeek / filterlog / CSV / 主机日志）</h3>
+      <div class="ingest-form">
+        <label>批次名称（case_id）
+          <input type="text" id="ingest-case" placeholder="例如 case03 / incident-20260910">
+        </label>
+        <label>选择原始数据文件（可多选）
+          <input type="file" id="ingest-files" multiple>
+        </label>
+        <button id="ingest-btn" class="btn-primary">上传并解析入库</button>
+      </div>
+      <div id="ingest-result" class="report"><p class="muted">选择文件后点击上传。解析在后端完成：网络侧走 C 模块（含检测器），主机侧走 B 模块。</p></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">已入库批次</h3>
+      <div id="batch-table" class="report"><p class="muted">加载中…</p></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">批次分析（D 关联引擎）</h3>
+      <div id="analyze-area" class="report"><p class="muted">在上方批次列表点击"开始分析"。</p></div>
+    </div>
+  </section>
+
   <!-- 事件详情弹窗 -->
   <div id="modal" class="modal hidden">
     <div class="modal-box card">
@@ -120,6 +149,7 @@
   <script src="js/timeline.js"></script>
   <script src="js/chain.js"></script>
   <script src="js/report.js"></script>
+  <script src="js/data.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
