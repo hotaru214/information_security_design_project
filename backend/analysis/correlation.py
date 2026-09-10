@@ -456,6 +456,7 @@ def detect_initial_access(
         if event["_event_type"] == "network_connection" and not firewall_boundary_hit:
             continue
 
+        source_host = resolve_host(src_ip, host_map)
         target_host = resolve_host(dst_ip, host_map) or event["_host"] or None
         evidence = [event]
         if target_host:
@@ -476,7 +477,7 @@ def detect_initial_access(
                 stage="Initial Access",
                 technique_id="T1190",
                 timestamp=event["timestamp"],
-                source_host=None,
+                source_host=source_host,
                 target_host=target_host,
                 source_ip=src_ip,
                 target_ip=dst_ip,
@@ -850,6 +851,7 @@ def detect_c2(
     steps = []
     grouped_connections: dict[tuple[str | None, str | None, int | None], list[dict[str, Any]]] = defaultdict(list)
     entry_source_ips = collect_initial_access_source_ips(events, networks)
+    entry_time = earliest_initial_access_time(events, networks)
 
     for event in events:
         if event["_event_type"] not in {"network_connection", "http_request"}:
@@ -866,9 +868,15 @@ def detect_c2(
 
     for (source_host, dst_ip, dst_port), group in grouped_connections.items():
         group.sort(key=lambda event: event["_time"])
+        flagged = any(has_any_flag(event, ["c2", "beacon", "external_connection"]) for event in group)
+        if entry_time is not None and not flagged:
+            post_entry = [event for event in group if event["_time"] >= entry_time]
+            if post_entry:
+                group = post_entry
+            else:
+                continue
         repeated = len(group) >= 3 and minutes_between(group[0], group[-1]) <= 30
         suspicious_port = dst_port in SUSPICIOUS_C2_PORTS
-        flagged = any(has_any_flag(event, ["c2", "beacon", "external_connection"]) for event in group)
         if dst_ip in entry_source_ips and not suspicious_port and not flagged:
             continue
         if not repeated and not suspicious_port and not flagged:
@@ -925,28 +933,37 @@ def detect_c2(
 def collect_initial_access_source_ips(events: list[dict[str, Any]], networks) -> set[str]:
     sources: set[str] = set()
     for event in events:
-        if event["_event_type"] not in {"http_request", "network_connection"}:
-            continue
-
-        src_ip = get_value(event, "src_ip")
-        dst_ip = get_value(event, "dst_ip")
-        if not is_external_ip(src_ip, networks):
-            continue
-        if networks is not None and not is_internal_ip(dst_ip, networks):
-            continue
-
-        uri = as_text(get_detail(event, "uri")).lower()
-        attack_type = as_text(get_detail(event, "attack_type")).lower()
-        suspicious_uri = any(keyword in uri for keyword in INITIAL_ACCESS_URI_KEYWORDS)
-        anomalous = has_any_flag(event, INITIAL_ACCESS_FLAGS)
-        waf_alert = event["_source"] == "waf" and (
-            anomalous
-            or any(keyword in attack_type for keyword in INITIAL_ACCESS_ATTACK_TYPES)
-            or int_value(event.get("severity"), 0) >= 2
-        )
-        if suspicious_uri or anomalous or waf_alert or int_value(event.get("severity"), 0) >= 2:
-            sources.add(str(src_ip))
+        if is_initial_access_source_event(event, networks):
+            sources.add(str(get_value(event, "src_ip")))
     return sources
+
+
+def earliest_initial_access_time(events: list[dict[str, Any]], networks):
+    times = [event["_time"] for event in events if is_initial_access_source_event(event, networks)]
+    return min(times) if times else None
+
+
+def is_initial_access_source_event(event: dict[str, Any], networks) -> bool:
+    if event["_event_type"] not in {"http_request", "network_connection"}:
+        return False
+
+    src_ip = get_value(event, "src_ip")
+    dst_ip = get_value(event, "dst_ip")
+    if not is_external_ip(src_ip, networks):
+        return False
+    if networks is not None and not is_internal_ip(dst_ip, networks):
+        return False
+
+    uri = as_text(get_detail(event, "uri")).lower()
+    attack_type = as_text(get_detail(event, "attack_type")).lower()
+    suspicious_uri = any(keyword in uri for keyword in INITIAL_ACCESS_URI_KEYWORDS)
+    anomalous = has_any_flag(event, INITIAL_ACCESS_FLAGS)
+    waf_alert = event["_source"] == "waf" and (
+        anomalous
+        or any(keyword in attack_type for keyword in INITIAL_ACCESS_ATTACK_TYPES)
+        or int_value(event.get("severity"), 0) >= 2
+    )
+    return suspicious_uri or anomalous or waf_alert or int_value(event.get("severity"), 0) >= 2
 
 
 def detect_exfiltration(

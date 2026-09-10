@@ -23,6 +23,7 @@ from fastapi.testclient import TestClient
 
 from backend import llm_analysis
 from backend.llm_analysis import (
+    build_attack_path,
     extract_json,
     generate_report,
     validate_report,
@@ -125,6 +126,51 @@ def test_fallback_without_api_key(monkeypatch):
     pairs = {(m["stage"], m["technique"]) for m in report["mitre_mapping"]}
     assert ("Initial Access", "T1190") in pairs
     assert ("Lateral Movement", "T1021") in pairs
+
+
+def test_attack_path_keeps_internal_collection_branch_before_c2():
+    steps = [
+        {
+            "stage": "Command and Control",
+            "timestamp": "2026-09-08T16:55:27+08:00",
+            "source_host": "win10-jump",
+            "target_host": "c2-server",
+            "source_ip": "10.10.30.10",
+            "target_ip": "10.10.10.20",
+        },
+        {
+            "stage": "Initial Access",
+            "timestamp": "2026-09-09T10:48:43+08:00",
+            "source_host": "attacker",
+            "target_host": "web-server",
+            "source_ip": "10.10.10.10",
+            "target_ip": "10.10.20.10",
+        },
+        {
+            "stage": "Lateral Movement",
+            "timestamp": "2026-09-09T10:58:57+08:00",
+            "source_host": "web-server",
+            "target_host": "win10-jump",
+            "source_ip": "10.10.20.10",
+            "target_ip": "10.10.30.10",
+        },
+        {
+            "stage": "Collection",
+            "timestamp": "2026-09-09T12:10:54+08:00",
+            "source_host": "win10-jump",
+            "target_host": "core-server",
+            "source_ip": "10.10.30.10",
+            "target_ip": "10.10.30.20",
+        },
+    ]
+
+    assert build_attack_path(steps) == [
+        "attacker",
+        "web-server",
+        "win10-jump",
+        "core-server",
+        "c2-server",
+    ]
 
 
 # ---------------------------------------------------------------------------

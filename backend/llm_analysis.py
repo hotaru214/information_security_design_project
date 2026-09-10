@@ -130,17 +130,57 @@ def build_attack_path(attack_steps: list[dict[str, Any]],
                       internal_networks: list[str] | None = None) -> list[str]:
     """从 D 的 attack_steps 推导路径节点序列。
 
-    find_attack_paths 内部基于 build_attack_graph 建图后做 BFS，
-    返回按长度降序的路径列表——取最长一条作为主攻击路径；
-    拿不到路径（图断裂等极端情况）退化为图的节点序列。
+    攻击图里常见分支：同一跳板主机可能一边访问内网核心资产，一边回连
+    C2。单纯取 BFS 的第一条最长路径会在等长分支里丢掉另一条关键边。
+    因此报告用生命周期叙事路径：入口 -> 横向移动 -> 数据访问目标 ->
+    C2/外传目标；拿不到叙事路径时再退回图路径。
     """
     from backend.analysis.correlation import build_attack_graph, find_attack_paths
+
+    narrative = build_narrative_attack_path(attack_steps)
+    if len(narrative) > 1:
+        return narrative
 
     paths = find_attack_paths(attack_steps, internal_networks=internal_networks)
     if paths:
         return paths[0]
     graph = build_attack_graph(attack_steps, internal_networks)
     return [node["id"] for node in graph["nodes"]]
+
+
+def build_narrative_attack_path(attack_steps: list[dict[str, Any]]) -> list[str]:
+    ordered = sorted(attack_steps, key=lambda step: str(step.get("timestamp") or ""))
+    path: list[str] = []
+
+    def endpoint(step: dict[str, Any], side: str) -> str | None:
+        value = step.get(f"{side}_host") or step.get(f"{side}_ip")
+        return str(value) if value not in (None, "") else None
+
+    def append_node(value: str | None) -> None:
+        if value is None:
+            return
+        if value not in path:
+            path.append(value)
+
+    def append_edges(stage_names: set[str], *, include_source: bool = False) -> None:
+        for step in ordered:
+            if step.get("stage") not in stage_names:
+                continue
+            source = endpoint(step, "source")
+            target = endpoint(step, "target")
+            if source and target and source == target:
+                append_node(source)
+                continue
+            if include_source:
+                append_node(source)
+            append_node(target)
+
+    append_edges({"Initial Access"}, include_source=True)
+    append_edges({"Lateral Movement"}, include_source=not path)
+    append_edges({"Collection"}, include_source=not path)
+    append_edges({"Exfiltration", "Command and Control"}, include_source=not path)
+
+    return path
 
 
 # ---------------------------------------------------------------------------
@@ -401,7 +441,7 @@ def generate_fallback_report(attack_steps: list[dict[str, Any]],
 
 
 def _build_summary(attack_steps: list[dict[str, Any]], attack_path: list[str]) -> str:
-    """按时间顺序把每个阶段拼成一句模板话，节点用 host ?? ip。"""
+    """按攻击生命周期顺序把每个阶段拼成一句模板话，节点用 host ?? ip。"""
     if not attack_steps:
         return "当前事件库中未关联出攻击行为。"
 
@@ -410,13 +450,28 @@ def _build_summary(attack_steps: list[dict[str, Any]], attack_path: list[str]) -
         ip = step.get(f"{side}_ip")
         return str(host or ip or "?")
 
-    stage_phrases: list[str] = []
-    seen: set[str] = set()
-    for step in attack_steps:
+    lifecycle_order = [
+        "Initial Access",
+        "Execution",
+        "Persistence",
+        "Privilege Escalation",
+        "Lateral Movement",
+        "Collection",
+        "Command and Control",
+        "Exfiltration",
+        "Defense Evasion",
+    ]
+    first_by_stage = {}
+    for step in sorted(attack_steps, key=lambda item: str(item.get("timestamp") or "")):
         stage = step.get("stage") or ""
-        if stage in seen:
+        if stage and stage not in first_by_stage:
+            first_by_stage[stage] = step
+
+    stage_phrases: list[str] = []
+    for stage in lifecycle_order:
+        step = first_by_stage.get(stage)
+        if not step:
             continue
-        seen.add(stage)
         phrase = {
             "Initial Access": f"经 {node_text(step, 'source')} 入侵 {node_text(step, 'target')}",
             "Execution": f"在 {node_text(step, 'source')} 执行异常进程",
