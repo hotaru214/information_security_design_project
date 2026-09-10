@@ -4,19 +4,21 @@
 大文件采用流式读取（PcapReader），不会整体载入内存。
 """
 import logging
+import re
 
 from scapy.all import PcapReader
 from scapy.layers.inet import IP, TCP, UDP, ICMP
 from scapy.layers.dns import DNS
 from scapy.packet import Raw
 
-from .config import DetectionConfig, HTTP_PORTS
+from .config import DetectionConfig
 from .models import DnsQuery, FlowRecord, HttpRequest
 
 logger = logging.getLogger(__name__)
 
 DNS_QTYPES = {1: "A", 2: "NS", 5: "CNAME", 12: "PTR", 15: "MX", 16: "TXT", 28: "AAAA", 33: "SRV", 255: "ANY"}
-HTTP_METHODS = (b"GET ", b"POST ", b"PUT ", b"DELETE ", b"HEAD ", b"OPTIONS ", b"PATCH ")
+HTTP_REQUEST_LINE = re.compile(rb"(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH) [^\s]+ HTTP/1\.[01]\r\n")
+HTTP_STATUS_LINE = re.compile(rb"HTTP/1\.[01] [1-5][0-9]{2}(?: [^\r\n]*)?\r\n")
 
 
 class FlowTable:
@@ -80,16 +82,16 @@ def _update_flow(rec: FlowRecord, ts: float, size: int, direction: str,
                 ))
 
     # HTTP 响应状态码提取（对端方向首行，content-two 完整性字段）
-    if rec.protocol == "TCP" and rec.dst_port in HTTP_PORTS and direction == "dst" and payload.startswith(b"HTTP/"):
+    if rec.protocol == "TCP" and direction == "dst" and HTTP_STATUS_LINE.match(payload):
         first_line = payload.split(bytes((13, 10)), 1)[0].decode("utf-8", "replace")
         pieces = first_line.split(" ")
         if len(pieces) >= 2 and pieces[1].isdigit() and len(rec.http_status_codes) < 500:
             rec.http_status_codes.append(int(pieces[1]))
 
-    # HTTP 请求提取（明文端口上的请求行启发式）
-    elif rec.protocol == "TCP" and rec.dst_port in HTTP_PORTS and payload:
+    # 按完整 HTTP/1.x 请求行识别明文协议，不依赖服务端口。
+    elif rec.protocol == "TCP" and payload:
         head = payload[:4096]
-        if head.startswith(HTTP_METHODS):
+        if HTTP_REQUEST_LINE.match(head):
             try:
                 text = head.decode("utf-8", "replace")
             except Exception:
