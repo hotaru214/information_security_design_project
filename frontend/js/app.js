@@ -276,6 +276,23 @@ const App = {
       return;
     }
 
+    /* 自愈（2026-09-10）：所选批次在库中已不存在或为空（被删除/该批文件
+     * 全部解析失败）导致整页空数据 -> 自动清除批次过滤并**就地重新初始化**
+     * （sessionStorage 防循环），页面落到"全部数据"；徽章明确说明原因。 */
+    const activeCase = resolveCaseId() || "";
+    if (this.DATA.evState === "empty" && this.DATA.chState === "empty" && activeCase) {
+      if (!sessionStorage.getItem("isd-case-autoclear")) {
+        sessionStorage.setItem("isd-case-autoclear", "1");
+        this.setCaseIdLocal("");
+        const healBadge = document.getElementById("mode-badge");
+        healBadge.textContent = `所选批次「${activeCase}」已不存在或无数据，已自动切换回全部数据`;
+        healBadge.classList.remove("hidden");
+        await this.init();
+        return;
+      }
+    }
+    sessionStorage.removeItem("isd-case-autoclear");
+
     /* 状态徽章（封箱）：Demo → 常驻演示徽章；Live → 按真实状态显示
      * 错误/空态提示，正常时隐藏。绝不在 Live 下显示演示徽章。 */
     const badge = document.getElementById("mode-badge");
@@ -323,10 +340,8 @@ const App = {
           const selected = b.case_id === current ? " selected" : "";
           return `<option value="${this.esc(b.case_id)}"${selected}>${this.esc(b.case_id)}（${b.count} 条）</option>`;
         }).join("");
-      if (current && !list.some(b => b.case_id === current)) {
-        // 所选批次在库中已不存在（被重置）→ 回退"全部"
-        sel.value = "";
-      }
+      sel.value = current;                 // 与实际生效的过滤口径同步
+      if (sel.value !== current) sel.value = "";
     } catch (err) {
       sel.innerHTML = '<option value="">（后端未连接）</option>';
     }

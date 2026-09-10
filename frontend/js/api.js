@@ -106,7 +106,12 @@ async function fetchWithTimeout(url, ms = FETCH_TIMEOUT_MS, options = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
-    return await fetch(url, { signal: controller.signal, ...options });
+    /* GET 请求统一加缓存穿透参数：曾出现浏览器缓存了"空库时期"的
+     * /api/events 响应，导致页面反复显示 0 事件（服务端实际有数据）。
+     * 带请求体的 POST 不受影响，不动。 */
+    const isGet = !options.method || options.method === "GET";
+    const finalUrl = isGet ? `${url}${url.includes("?") ? "&" : "?"}_cb=${Date.now()}` : url;
+    return await fetch(finalUrl, { signal: controller.signal, ...options });
   } finally {
     clearTimeout(timer);
   }
