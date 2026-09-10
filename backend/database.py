@@ -160,6 +160,22 @@ def get_hosts():
         return [dict(row) for row in rows]
 
 
+def delete_case_events(case_id: str) -> int:
+    """删除某批次的全部事件（批次管理用）。
+
+    同时按 case_id 列与 detail 里的 batch_id 匹配删除，
+    兼容列缺失时代由 detail.batch_id 打标的旧数据。
+    """
+    with closing(get_connection()) as connection:
+        with connection:
+            cursor = connection.execute(
+                "DELETE FROM events WHERE case_id = ? "
+                "OR detail LIKE ?",
+                (case_id, f'%"batch_id":"{case_id}"%'),
+            )
+            return cursor.rowcount
+
+
 def get_host_by_ip(ip: str):
     with closing(get_connection()) as connection:
         row = connection.execute("SELECT * FROM hosts WHERE ip = ?", (ip,)).fetchone()

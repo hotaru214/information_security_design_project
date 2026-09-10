@@ -17,7 +17,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from backend.analysis.correlation import get_case_id
-from backend.database import get_events, insert_events
+from backend.database import delete_case_events, get_events, insert_events
 from backend.parsers.network import analyze_paths
 from backend.schemas.event import EventCreate
 
@@ -35,8 +35,8 @@ def _classify(path: Path) -> str:
     suffix = path.suffix.lower()
     if suffix in _NETWORK_EXTS:
         content = path.read_text(encoding="utf-8", errors="replace")[:4096]
-        if '"@stream"' in content:
-            return "network"                   # Zeek 合并 JSON 流（如 APT29 combined_zeek.log）
+        if '"@stream"' in content or content.lstrip().startswith('{"'):
+            return "network"                   # Zeek 合并 JSON 流 / Zeek JSON 行（C 模块解析）
         if '"EventTime"' in content or '"EventID"' in content or "Sysmon" in content:
             return "host_sysmon_json"          # Windows Sysmon/SecurityEvent JSON 行（B 模块解析）
         return "network"                       # 其余 .json 按网络侧尝试
@@ -48,6 +48,8 @@ def _classify(path: Path) -> str:
         content = path.read_text(encoding="utf-8", errors="replace")[:4096]
         if "filterlog" in content:
             return "network"           # filterlog 也是 C 的输入
+        if '"@stream"' in content or content.lstrip().startswith('{"'):
+            return "network"           # Zeek 合并 JSON 流（如 APT29 combined_zeek.log）
         host_markers = ("audit(", "type=SYSCALL", "sshd", "sudo")
         if any(m in content for m in host_markers):
             return "host_linux"
@@ -118,6 +120,15 @@ def list_batches():
             "last_ts": ts_list[-1] if ts_list else None,
         })
     return {"batches": out, "total": len(events)}
+
+
+@router.delete("/ingest/{case_id}")
+def delete_batch(case_id: str):
+    """删除整个批次的事件（批次管理：纠正误导入/重导前清理）。"""
+    deleted = delete_case_events(case_id)
+    if deleted == 0:
+        raise HTTPException(status_code=404, detail=f"批次 {case_id} 不存在或已为空")
+    return {"case_id": case_id, "deleted": deleted}
 
 
 @router.post("/ingest")

@@ -17,6 +17,7 @@ C 主机日志数据获取说明（apt29_day1 / ctu13_s2）
 - 主机侧只能引用官方 README 对 Neris 的行为描述做对照，网络侧已完成。
 
 【处理与交付】
-- 解析出的事件按批次隔离流程交付 D:
-  python scripts/reset_import_export.py --name <批次名> --events <事件JSON>
-- 批次命名建议: apt29_day1_host（CTU-13 无主机批次）
+- 主机日志解析出的事件与网络侧事件**用同一个 case_id 入库**（如 apt29_day1），
+  构成完整案例供 D 跨源关联。最简单方式：数据管理页一次上传
+  combined_zeek.log + 主机 JSON，后端自动分发 C/B 解析器并统一打标。
+- 命令行方式: python scripts/reset_import_export.py --name apt29_day1 --events <事件JSON>

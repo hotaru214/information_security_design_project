@@ -99,7 +99,7 @@ C2 心跳、DNS 隧道、数据外传、ICMP 隧道。详见 [backend/parsers/ne
 所有 19 个输入字段均必填；可空字段需显式传 `null`。`host`、`source`、`event_type`、`description`、`raw_log` 非空；端口非空时为 1～65535，severity 为 0～3。
 
 **字段名定案（2026-09-09，按 Event V2 FINAL）**：公共字段正式名称为 `source_event_id`，API 输出亦用此名（输入端保留 `event_id` 作为兼容别名）。数据库列名 `event_id` 为内部实现细节，不对外。
-批次隔离：多批数据不得混库，每批独立入库（id 每批从 1 起），事件 `detail.batch_id` 标记批次；流程见 `scripts/reset_import_export.py`，已交付 D 的五份 EventOut（data/sample_events/）均含批次标签。
+批次约定（2026-09-10 定案）：**一次攻击事件 = 一个 case_id = 全部证据**（主机日志+网络流量+防火墙同批入库，B/C 解析、D 跨源关联）。数据管理页可上传新数据并按 case_id 分析；多批共存于库中，前端按 `detail.batch_id`/case_id 过滤展示。
 
 ### 当前后端 API
 

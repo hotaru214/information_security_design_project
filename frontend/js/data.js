@@ -30,7 +30,8 @@ async function refreshBatchTable() {
         `<td>${App.esc((b.first_ts || "").slice(0, 19))} 起</td>` +
         `<td>${App.esc(Object.keys(b.sources || {}).join(", "))}</td>` +
         `<td><button class="btn-ghost" onclick="analyzeBatch('${App.esc(b.case_id)}')">开始分析</button> ` +
-        `<button class="btn-ghost" onclick="selectBatch('${App.esc(b.case_id)}')">切换显示</button></td></tr>`
+        `<button class="btn-ghost" onclick="selectBatch('${App.esc(b.case_id)}')">切换显示</button> ` +
+        `<button class="btn-ghost" onclick="deleteBatch('${App.esc(b.case_id)}')">删除</button></td></tr>`
       ).join("") + "</table>";
   } catch (err) {
     box.innerHTML = `<p style="color:var(--anomaly)">批次清单加载失败：${App.esc(err.message)}（后端未启动？）</p>`;
@@ -98,6 +99,16 @@ async function analyzeBatch(caseId) {
   } catch (err) {
     box.innerHTML = `<p style="color:var(--anomaly)">分析失败：${App.esc(err.message)}</p>`;
   }
+}
+
+async function deleteBatch(caseId) {
+  if (!confirm(`确定删除批次 ${caseId} 的全部事件？此操作不可恢复。`)) return;
+  const resp = await fetch(`${API_BASE}/api/ingest/${encodeURIComponent(caseId)}`, { method: "DELETE" });
+  if (resp.status === 404) { alert("批次不存在（可能已删除）"); }
+  else if (!resp.ok) { alert(`删除失败：HTTP ${resp.status}`); }
+  await refreshBatchTable();
+  await fillCaseSelect();
+  location.reload();              // 当前展示批次被删时，整页回退"全部数据"
 }
 
 function selectBatch(caseId) {
