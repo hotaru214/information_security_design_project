@@ -709,9 +709,14 @@ async function getAttribution(caseId = resolveCaseId()) {
  * 契约体是白捡的稳健性：万一 A 将来开了 forbid_extra，前端零改动。）
  */
 function toAnalysisPayload(scope) {
-  if (!scope || scope.scope === "all") return {};
-  if (scope.scope === "host") return { host: scope.host };
-  return scope;   // 已经是 {host,start,end} 形态的直接透传
+  /* 批次过滤（2026-09-10 平台化）：页眉下拉选中的 case_id 一并传给后端，
+   * 报告按所选批次分析而非全库——切换批次后报告内容随之变化。 */
+  const payload = {};
+  const cid = resolveCaseId();
+  if (cid) payload.case_id = cid;
+  if (!scope || scope.scope === "all") return payload;
+  if (scope.scope === "host") { payload.host = scope.host; return payload; }
+  return Object.assign(payload, scope);
 }
 
 /**

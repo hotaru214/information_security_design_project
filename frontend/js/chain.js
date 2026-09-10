@@ -82,15 +82,48 @@ function renderChain(data) {
     }
   });
 
-  /* ---------- 节点初始坐标（force 布局的起点） ----------
-   * 力导向会自动松弛，但初始位置决定大体走向：给 attack chain 一个
-   * "左→右讲故事"的起点，力导只做局部微调，整条链一屏可读。
-   * live 推导节点自带 x（api.js normalizeChain 布置），优先用它。 */
-  const LAYOUT_X = {
-    "attacker": 80, "web-server": 320, "office-pc-01": 560,
-    "core-server": 800, "c2-server": 1000,
+  /* ---------- 节点布局（2026-09-10 修复重叠）----------
+   * 原力导向布局的初始坐标表是给 mock 主机名写死的（LAYOUT_X 只认
+   * attacker/web-server 等五个名字），真实批次的主机名全落不进表 -> 所有
+   * 节点从同一位置起步，力导跑不完就定格重叠。
+   * 现改为**按攻入阶段分列**的确定性布局（攻击链经典画法）：
+   *   列 = 节点的攻入阶段（按 ATT&CK 顺序，攻击源列在最左）；
+   *   行 = 同列内序号（垂直居中）；
+   * layout:"none" + roam —— 位置完全确定零重叠，大图可缩放平移，
+   * 点击节点/边的交互全部保留。 */
+  const COLUMN_STAGES = [
+    "Initial Access", "Execution", "Persistence", "Privilege Escalation",
+    "Defense Evasion", "Lateral Movement", "Collection",
+    "Command and Control", "Exfiltration",
+  ];
+  const stageColumn = s => {
+    const i = COLUMN_STAGES.findIndex(x => String(x).toLowerCase() === String(s || "").toLowerCase());
+    return i >= 0 ? i + 1 : COLUMN_STAGES.length + 1;   // 第 0 列留给攻击源/无入边节点
   };
-  const LAYOUT_Y = { "attacker": 150, "web-server": 150, "office-pc-01": 310, "core-server": 150, "c2-server": 150 };
+
+  const nodeColumn = {};   // id -> 列号
+  const columnNodes = {};  // 列号 -> [节点 id]（按首次出现顺序）
+  chain.nodes.forEach(n => {
+    const incoming = safeField(incomingStage, n.id);
+    const col = incoming == null ? 0 : stageColumn(incoming);
+    (columnNodes[col] = columnNodes[col] || []).push(n.id);
+    nodeColumn[n.id] = col;
+  });
+
+  const maxColCount = Math.max(1, ...Object.values(columnNodes).map(a => a.length));
+  const COL_GAP = 320;
+  const ROW_GAP = Math.max(150, maxColCount * 26);   // 列内节点多时自动拉开，防标签挤压
+  const X0 = 120, Y_CENTER = 280;
+  const pos = {};          // id -> {x, y}
+  Object.keys(columnNodes).map(Number).sort((a, b) => a - b).forEach(col => {
+    const ids = columnNodes[col];
+    ids.forEach((id, row) => {
+      pos[id] = {
+        x: X0 + col * COL_GAP,
+        y: Y_CENTER + (row - (ids.length - 1) / 2) * ROW_GAP,
+      };
+    });
+  });
 
   const nodes = chain.nodes.map((n, i) => {
     const hasHostName = !!n.host;   // 契约：映射不到主机名的节点只有 IP
@@ -98,12 +131,12 @@ function renderChain(data) {
     const fill = stage ? App.stageColor(stage)
                : n.category === "attacker" ? "#dc2626"
                : "#2563eb";
+    const p = pos[n.id] || { x: X0 + (i % 6) * 260, y: Y_CENTER };
     return {
       id: n.id,                     // ECharts 内部连线引用
       name: hasHostName ? n.host : n.ip,   // 契约回退：target_host ?? target_ip
       value: n,                     // 原始节点数据，tooltip/点击时取用
-      x: n.x ?? LAYOUT_X[n.id] ?? 400 + (i % 5) * 180,   // force 初始位置
-      y: n.y ?? LAYOUT_Y[n.id] ?? 180,
+      x: p.x, y: p.y,               // 分列布局的确定位置（零重叠）
       symbolSize: n.category === "attacker" ? 54 : n.category === "c2" ? 48 : 44,
       itemStyle: {
         color: fill,
@@ -124,28 +157,37 @@ function renderChain(data) {
    * 生成边：箭头 + 阶段色 + label（动作名+时间+T-ID）
    * ================================================================ */
   const edges = [];
+  const pairSeen = {};   // 同源同目的的并行边计数 -> 曲率错开，多条不重合
   chain.links.forEach((l, i) => {
     const color = App.stageColor(l.attack_stage);   // 容错查找（大小写/变体也命中）
     const srcId = resolveEndpoint(l, "source", i);
     const dstId = resolveEndpoint(l, "target", i);
+    const pairKey = srcId + "=>" + dstId;
+    const parallelIdx = pairSeen[pairKey] = (pairSeen[pairKey] || 0);
     // 边 label 三要素（需求①）：动作名=阶段、时间、ATT&CK 技术编号。
     // ECharts 的 label 是 zrender 纯文本渲染，无 XSS 风险，不用 esc。
-    const labelText = `[${i + 1}] ${l.attack_stage ?? "?"} · ${l.mitre_technique ?? "?"}\n${App.fmtTime(l.timestamp)}`;
+    const showEdgeLabel = chain.links.length <= 150;   // 大图隐藏边标签（tooltip 仍可看），防视觉重叠
+    const labelText = `[${i + 1}] ${l.attack_stage ?? "?"} · ${l.mitre_technique ?? "?"}
+${App.fmtTime(l.timestamp)}`;
+    pairSeen[pairKey] = parallelIdx + 1;
     const edgeCommon = {
       value: i,     // 记住这是第几条 link：点击/tooltip 回 chain.links 取详情
-      lineStyle: { color, width: 2.5, curveness: 0.12 },
+      lineStyle: { color, width: 2.5, curveness: 0.1 + parallelIdx * 0.14 },
     };
 
     if (srcId === dstId) {
       /* "web-server → web-server 执行异常进程"：自环边画不出来，
        * 挂一个 roundRect 小节点表达"主机内部发生的事"。
-       * force 布局下不固定位置——它只连这一条边，会被牵引着贴在主机旁。 */
+       * 分列布局下固定在主机右侧同一行，不参与分列计算。 */
       const execNodeId = `__exec_${i}`;
+      const hp = pos[srcId] || { x: 400, y: Y_CENTER };
       nodes.push({
         id: execNodeId,
-        name: `本机执行\n${l.mitre_technique ?? ""}`,
+        name: `本机执行
+${l.mitre_technique ?? ""}`,
         value: { virtual: true, linkIndex: i },
-        symbol: "roundRect", symbolSize: [96, 34],   // 数组 = [宽, 高]
+        x: hp.x + 150, y: hp.y + ((i % 2) ? 80 : -80),
+        symbol: "roundRect", symbolSize: [96, 34],
         itemStyle: { color, borderColor: "#ffffff", borderWidth: 1 },
         label: { show: true, position: "inside", color: "#fff", fontSize: 10 },
       });
@@ -154,23 +196,22 @@ function renderChain(data) {
         label: { show: false },   // 动作信息在虚线另一头的卡片/tooltip里，这里不挤
       });
     } else {
+      /* 边标签默认隐藏（平行边标签会堆叠），悬停/点击边看 tooltip 与侧栏证据 */
       edges.push({ source: srcId, target: dstId, ...edgeCommon,
-        label: {
-          show: true, formatter: labelText,
-          fontSize: 10, lineHeight: 14, color: "#334155",
-          backgroundColor: "rgba(255,255,255,0.85)", borderRadius: 3, padding: [2, 4],
-        },
+        label: { show: false },
+        emphasis: { label: { show: true, formatter: labelText, fontSize: 10,
+          color: "#334155", backgroundColor: "rgba(255,255,255,0.9)",
+          borderRadius: 3, padding: [2, 4] } },
       });
     }
   });
 
   /* ================================================================
-   * 左侧：ECharts 力导向关系图
+   * 攻击链关系图（分列布局：零重叠 + 缩放平移）
    * ================================================================ */
   const chart = chartOrResize("chain-graph", dom => echarts.init(dom));
   /* notMerge: true —— setOption 默认是合并模式，renderChain 被再次调用时
-   * （live 刷新/外部联动重渲染）旧链的节点边会残留在图上（虚拟执行节点
-   * 按 id 合并、数组按索引合并，链长变化时必然错位）。整图替换才安全。 */
+   * （live 刷新/外部联动重渲染）旧链的节点边会残留在图上。整图替换才安全。 */
   chart.setOption({
     tooltip: {
       // formatter 支持函数：按数据类型（node/edge）返回不同 HTML（先过 esc）
@@ -196,14 +237,8 @@ function renderChain(data) {
     },
     series: [{
       type: "graph",
-      layout: "force",                 // 需求：力导向图（初始坐标决定大体走向）
-      roam: true,                      // 拖拽/滚轮缩放，答辩时可以拉近看
-      force: {
-        repulsion: 900,                // 节点间斥力：适中，避免节点挤成一团也不至于撒满屏
-        edgeLength: [110, 190],        // 边的理想长度区间：短一些保证整链一屏读完
-        gravity: 0.28,                 // 向心引力：偏大，把链条收在画布中央
-        layoutAnimation: true,         // 松弛过程动画，演示时有"链条长出来"的效果
-      },
+      layout: "none",                  // 2026-09-10 修复重叠：分列确定性布局替代力导向
+      roam: true,                      // 滚轮缩放/平移，大图也能看清
       edgeSymbol: ["none", "arrow"],   // 有向图：起点无、终点箭头
       edgeSymbolSize: 14,
       data: nodes,
