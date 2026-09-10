@@ -1,0 +1,15 @@
+{
+  "name": "attack-trace-platform",
+  "productName": "恶意攻击行为溯源分析系统",
+  "version": "1.0.0",
+  "description": "基于主机日志、主机行为、网络流量的恶意攻击行为溯源分析系统（桌面版）",
+  "main": "main.js",
+  "author": "网络空间安全课程设计 题3 小组",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.2.0"
+  }
+}
