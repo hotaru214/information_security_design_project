@@ -9,6 +9,7 @@
 from .config import DetectionConfig
 from .models import Anomaly, FlowRecord
 from .normalize import build_events, load_host_map, save_events
+from .firewall_parser import parse_firewall_log
 from .pcap_parser import parse_pcap
 from .zeek_parser import parse_connection_csv, parse_zeek_logs
 from .cli import analyze_paths, main
@@ -22,6 +23,7 @@ __all__ = [
     "load_host_map",
     "main",
     "parse_connection_csv",
+    "parse_firewall_log",
     "parse_pcap",
     "parse_zeek_logs",
     "save_events",

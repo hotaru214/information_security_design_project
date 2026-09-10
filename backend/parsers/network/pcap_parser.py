@@ -79,6 +79,13 @@ def _update_flow(rec: FlowRecord, ts: float, size: int, direction: str,
                     qtype=DNS_QTYPES.get(int(dns.qd.qtype), str(int(dns.qd.qtype))),
                 ))
 
+    # HTTP 响应状态码提取（对端方向首行，content-two 完整性字段）
+    if rec.protocol == "TCP" and rec.dst_port in HTTP_PORTS and direction == "dst" and payload.startswith(b"HTTP/"):
+        first_line = payload.split(bytes((13, 10)), 1)[0].decode("utf-8", "replace")
+        pieces = first_line.split(" ")
+        if len(pieces) >= 2 and pieces[1].isdigit() and len(rec.http_status_codes) < 500:
+            rec.http_status_codes.append(int(pieces[1]))
+
     # HTTP 请求提取（明文端口上的请求行启发式）
     elif rec.protocol == "TCP" and rec.dst_port in HTTP_PORTS and payload:
         head = payload[:4096]

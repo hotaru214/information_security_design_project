@@ -122,8 +122,50 @@ def _host_side(rec: FlowRecord, cfg: DetectionConfig) -> tuple:
     return rec.src_ip, rec.dst_ip
 
 
+def _firewall_to_event(rec: FlowRecord, host_map: dict, cfg: DetectionConfig) -> dict:
+    """source=firewall 事件（2026-09-09 契约同步）：host=边界设备，
+    防火墙动作/规则号等来源专有字段放 detail。"""
+    dx = dict(getattr(rec, "detail_extra", {}) or {})
+    fw_dir = dx.get("direction", "")
+    peer_ip = rec.src_ip if fw_dir == "in" else rec.dst_ip
+    detail = {
+        "src_port": rec.src_port if rec.src_port else None,
+        "peer_host": host_map.get(peer_ip, peer_ip),
+        "direction": _direction(rec.src_ip, rec.dst_ip, cfg),
+        "fw_direction": fw_dir or None,        # 防火墙视角 in/out（与 direction 网段语义区分）
+        "packets": rec.packets,
+        "flow_key": rec.flow_key,
+        "end_time": _iso8601_cn(rec.end_ts),
+        "dataset_label": getattr(rec, "dataset_label", None),
+    }
+    detail.update({k: v for k, v in dx.items() if k != "direction"})
+    action = dx.get("action") or ""
+    port_part = f":{rec.dst_port}" if rec.dst_port else ""
+    zh = {"pass": "放行", "block": "拦截"}.get(action, action)
+    description = f"防火墙{zh}: {rec.src_ip} -> {rec.dst_ip}{port_part} {rec.protocol}"
+    return {
+        "timestamp": _iso8601_cn(rec.start_ts),
+        "host": "opnsense-firewall",
+        "source": "firewall",
+        "source_event_id": None,
+        "event_type": "network_connection",
+        "user": None, "process": None,
+        "src_ip": rec.src_ip, "dst_ip": rec.dst_ip,
+        "dst_port": rec.dst_port if rec.dst_port else None,
+        "protocol": rec.protocol.lower(),
+        "logon_type": None, "session_id": None, "cmdline": None,
+        "detail": detail,
+        "description": description,
+        "anomaly_flags": [],
+        "severity": 0,
+        "raw_log": rec.raw_log or f"FW {rec.flow_key}",
+    }
+
+
 def flow_to_event(rec: FlowRecord, host_map: dict, cfg: DetectionConfig) -> dict:
-    """普通会话事件（severity=0, anomaly_flags=[]）。"""
+    """普通会话事件（severity=0, anomaly_flags=[]）。source=firewall 走专用分支。"""
+    if rec.source == "firewall":
+        return _firewall_to_event(rec, host_map, cfg)
     host_ip, peer_ip = _host_side(rec, cfg)
     has_ports = rec.protocol in ("TCP", "UDP")
 
@@ -148,6 +190,9 @@ def flow_to_event(rec: FlowRecord, host_map: dict, cfg: DetectionConfig) -> dict
         detail["dns_queries"] = [{"qname": q.qname, "qtype": q.qtype}
                                  for q in rec.dns_queries[:50]]
         detail["dns_query_count"] = len(rec.dns_queries)
+    if rec.http_status_codes:
+        detail["status_code"] = rec.http_status_codes[0]   # D 推荐键名（首个响应状态码）
+        detail["status_code_count"] = len(rec.http_status_codes)
     if rec.http_requests:
         first = rec.http_requests[0]
         detail["method"] = first.method        # D 推荐键名

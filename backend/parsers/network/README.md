@@ -48,6 +48,7 @@ CLI 运行时会做 **Event V2 契约自检**（19 字段、event_type 枚举、
 | PCAP / PCAPNG | `network_pcap` | scapy 流式读取，五元组聚合会话；提取 DNS 查询、明文 HTTP 请求、ICMP 载荷 |
 | Zeek 日志目录 | `network_zeek` | `conn.log`（必需）+ `dns.log` / `http.log`（可选），TSV/JSON 均支持，支持 `.gz`；**原始日志行进 `raw_log`（含 uid，可回溯原始记录）** |
 | CSV 连接日志 | `network_zeek` | 列：`timestamp,src_ip,src_port,dst_ip,dst_port,protocol[,bytes,duration,packets]`（E 靶场没有 Zeek 时的兜底格式） |
+| OPNsense/pfSense filterlog | `firewall` | 防火墙/边界设备日志（2026-09-09 契约新增 source）：action/rule_id/interface/fw_direction 进 detail，自动嗅探 `.log` 内的 filterlog 行 |
 | 防火墙/边界访问日志 | `firewall` | 放行/拦截连接记录，行为类型仍按 `network_connection` / `http_request` 输出 |
 | WAF / Web 攻击告警 | `waf` | Web 攻击检测结果，行为类型通常为 `http_request`，攻击类型、规则号等放入 `detail` |
 

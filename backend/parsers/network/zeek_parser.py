@@ -139,6 +139,9 @@ def _parse_combined_zeek(builder: _ConnBuilder, path: str, stats: dict):
                 user_agent=str(row.get("user_agent") or "")[:200],
                 raw_line=f"{method} {uri}",
             ))
+            sc = str(row.get("status_code") or "").strip()
+            if sc.isdigit() and len(rec.http_status_codes) < 500:
+                rec.http_status_codes.append(int(sc))   # 响应状态码（content-two 完整性）
             stats["http"] += 1
 
 
@@ -246,6 +249,9 @@ def parse_zeek_logs(path: str):
                 user_agent=str(row.get("user_agent") or "")[:200],
                 raw_line=f"{method} {uri}",
             ))
+            sc = str(row.get("status_code") or "").strip()
+            if sc.isdigit() and len(rec.http_status_codes) < 500:
+                rec.http_status_codes.append(int(sc))   # 响应状态码（content-two 完整性）
             stats["http"] += 1
 
     stats["flows"] = len(builder.flows)
