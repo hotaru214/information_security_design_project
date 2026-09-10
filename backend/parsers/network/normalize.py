@@ -50,6 +50,7 @@ EVENT_TYPE_ENUM = {
     # 服务与计划任务
     "service_created", "service_started", "service_stopped", "service_deleted",
     "scheduled_task_created", "scheduled_task_run", "scheduled_task_deleted",
+    "log_cleared",
 }
 
 # 网络侧告警 -> 冻结 event_type 映射（检测名称一律放 anomaly_flags，不再自造 event_type）
@@ -61,6 +62,7 @@ ANOMALY_EVENT_TYPE = {
     "icmp_tunnel": "network_connection",
     "lateral_movement": "network_connection",
     "brute_force_evidence": "network_connection",
+    "cc_rotation": "network_connection",
     "http_attack": "http_request",
     "dns_tunnel": "dns_query",
 }
@@ -120,8 +122,50 @@ def _host_side(rec: FlowRecord, cfg: DetectionConfig) -> tuple:
     return rec.src_ip, rec.dst_ip
 
 
+def _firewall_to_event(rec: FlowRecord, host_map: dict, cfg: DetectionConfig) -> dict:
+    """source=firewall 事件（2026-09-09 契约同步）：host=边界设备，
+    防火墙动作/规则号等来源专有字段放 detail。"""
+    dx = dict(getattr(rec, "detail_extra", {}) or {})
+    fw_dir = dx.get("direction", "")
+    peer_ip = rec.src_ip if fw_dir == "in" else rec.dst_ip
+    detail = {
+        "src_port": rec.src_port if rec.src_port else None,
+        "peer_host": host_map.get(peer_ip, peer_ip),
+        "direction": _direction(rec.src_ip, rec.dst_ip, cfg),
+        "fw_direction": fw_dir or None,        # 防火墙视角 in/out（与 direction 网段语义区分）
+        "packets": rec.packets,
+        "flow_key": rec.flow_key,
+        "end_time": _iso8601_cn(rec.end_ts),
+        "dataset_label": getattr(rec, "dataset_label", None),
+    }
+    detail.update({k: v for k, v in dx.items() if k != "direction"})
+    action = dx.get("action") or ""
+    port_part = f":{rec.dst_port}" if rec.dst_port else ""
+    zh = {"pass": "放行", "block": "拦截"}.get(action, action)
+    description = f"防火墙{zh}: {rec.src_ip} -> {rec.dst_ip}{port_part} {rec.protocol}"
+    return {
+        "timestamp": _iso8601_cn(rec.start_ts),
+        "host": "opnsense-firewall",
+        "source": "firewall",
+        "source_event_id": None,
+        "event_type": "network_connection",
+        "user": None, "process": None,
+        "src_ip": rec.src_ip, "dst_ip": rec.dst_ip,
+        "dst_port": rec.dst_port if rec.dst_port else None,
+        "protocol": rec.protocol.lower(),
+        "logon_type": None, "session_id": None, "cmdline": None,
+        "detail": detail,
+        "description": description,
+        "anomaly_flags": [],
+        "severity": 0,
+        "raw_log": rec.raw_log or f"FW {rec.flow_key}",
+    }
+
+
 def flow_to_event(rec: FlowRecord, host_map: dict, cfg: DetectionConfig) -> dict:
-    """普通会话事件（severity=0, anomaly_flags=[]）。"""
+    """普通会话事件（severity=0, anomaly_flags=[]）。source=firewall 走专用分支。"""
+    if rec.source == "firewall":
+        return _firewall_to_event(rec, host_map, cfg)
     host_ip, peer_ip = _host_side(rec, cfg)
     has_ports = rec.protocol in ("TCP", "UDP")
 
@@ -146,6 +190,9 @@ def flow_to_event(rec: FlowRecord, host_map: dict, cfg: DetectionConfig) -> dict
         detail["dns_queries"] = [{"qname": q.qname, "qtype": q.qtype}
                                  for q in rec.dns_queries[:50]]
         detail["dns_query_count"] = len(rec.dns_queries)
+    if rec.http_status_codes:
+        detail["status_code"] = rec.http_status_codes[0]   # D 推荐键名（首个响应状态码）
+        detail["status_code_count"] = len(rec.http_status_codes)
     if rec.http_requests:
         first = rec.http_requests[0]
         detail["method"] = first.method        # D 推荐键名
@@ -160,6 +207,8 @@ def flow_to_event(rec: FlowRecord, host_map: dict, cfg: DetectionConfig) -> dict
     if rec.protocol == "ICMP":
         detail["icmp_count"] = rec.icmp_count
         detail["icmp_max_payload_bytes"] = rec.icmp_max_payload
+    if getattr(rec, "dataset_label", None):
+        detail["dataset_label"] = rec.dataset_label   # 公开数据集标签（评估用）
 
     port_part = f":{rec.dst_port}" if has_ports and rec.dst_port else ""
     description = (f"{rec.src_ip} → {rec.dst_ip}{port_part} {rec.protocol} 会话，"
@@ -255,32 +304,109 @@ def build_events(flows: list, anomalies: list, host_map: dict = None,
     return events
 
 
+# 后端入库必填的非空字段（对应 A 的 EventCreate: min_length=1 / 必填）
+_REQUIRED_NON_EMPTY = ("host", "description", "raw_log")
+# 禁止的占位值：契约规定缺失一律 null，不允许 unknown/0/空串制造占位
+_PLACEHOLDERS = ("", "unknown", "Unknown", "UNKNOWN", "-", "N/A", "none")
+_SOURCES = ("windows_evtx", "sysmon", "linux_auth", "linux_audit",
+            "network_pcap", "network_zeek", "firewall", "waf")
+
+
+def _is_ip_like(value) -> bool:
+    return isinstance(value, str) and value.replace(".", "").isdigit() and value.count(".") == 3
+
+
 def validate_events(events: list) -> list:
-    """契约自检：返回问题列表（空列表=全部合规）。供测试与后端导入前校验。"""
+    """Event V2 契约自检（阻断级）：返回问题列表（空列表=全部合规）。
+
+    覆盖：19 个基础字段 + 可选 case_id、event_type 冻结枚举、source 枚举、severity 0-3、
+    时间 UTC+8 且可解析、必填字段非空、禁止占位值（unknown/空串/0）、
+    网络事件 source_event_id 必须 null、detail/anomaly_flags 类型。
+    """
     problems = []
     required = set(EVENT_V2_FIELDS)
     for i, e in enumerate(events):
+        if not isinstance(e, dict):
+            problems.append(f"事件#{i} 不是对象")
+            continue
         keys = set(e.keys())
-        if keys != required:
-            missing, extra = required - keys, keys - required
+        if keys - {"case_id"} != required:
+            missing, extra = required - keys, keys - required - {"case_id"}
             problems.append(f"事件#{i} 字段不符: 缺 {missing or '{}'} 多 {extra or '{}'}")
             continue
+        if e.get("case_id") is not None and (not isinstance(e["case_id"], str) or not e["case_id"]):
+            problems.append(f"事件#{i} case_id 必须为非空字符串或 null")
         if not isinstance(e["detail"], dict):
             problems.append(f"事件#{i} detail 不是对象")
         if not isinstance(e["anomaly_flags"], list):
             problems.append(f"事件#{i} anomaly_flags 不是数组")
+        elif not all(isinstance(f, str) for f in e["anomaly_flags"]):
+            problems.append(f"事件#{i} anomaly_flags 含非字符串元素")
         if e["severity"] not in (0, 1, 2, 3):
             problems.append(f"事件#{i} severity 非法: {e['severity']!r}")
         if e["event_type"] not in EVENT_TYPE_ENUM:
             problems.append(f"事件#{i} event_type 不在冻结枚举: {e['event_type']!r}")
-        if not isinstance(e["timestamp"], str) or not e["timestamp"].endswith("+08:00"):
-            problems.append(f"事件#{i} 时间戳非 UTC+8 ISO8601: {e['timestamp']!r}")
-        if e["source"] not in ("windows_evtx", "sysmon", "linux_auth", "linux_audit",
-                               "network_pcap", "network_zeek"):
+        if e["source"] not in _SOURCES:
             problems.append(f"事件#{i} source 非法: {e['source']!r}")
-        if not e["raw_log"]:
-            problems.append(f"事件#{i} raw_log 为空")
+        if e["source"] in ("network_pcap", "network_zeek") and e["source_event_id"] is not None:
+            problems.append(f"事件#{i} 网络事件 source_event_id 应为 null: {e['source_event_id']!r}")
+        # 时间：字符串形态 + 可解析
+        ts = e["timestamp"]
+        if not isinstance(ts, str) or not ts.endswith("+08:00"):
+            problems.append(f"事件#{i} 时间戳非 UTC+8 ISO8601: {ts!r}")
+        else:
+            try:
+                datetime.fromisoformat(ts)
+            except ValueError:
+                problems.append(f"事件#{i} 时间戳无法解析: {ts!r}")
+        # 必填非空 + 占位值扫描（公共字段层面；detail 内自由字段不做深度扫描）
+        for field in _REQUIRED_NON_EMPTY:
+            v = e.get(field)
+            if v is None or (isinstance(v, str) and (not v.strip() or v.strip() in _PLACEHOLDERS)):
+                problems.append(f"事件#{i} 必填字段 {field} 为空/占位: {v!r}")
+        if e.get("dst_port") is not None:
+            dp = e["dst_port"]
+            if not isinstance(dp, int) or not (1 <= dp <= 65535):
+                problems.append(f"事件#{i} dst_port 非法（缺失应为 null 而非 0/越界）: {dp!r}")
     return problems
+
+
+def collect_warnings(events: list) -> list:
+    """非阻断性契约警告。当前唯一已知项：host 为 IP 字符串
+    （数据集未建映射或后端 host 未放宽为可空前的兜底），待 A 放宽后归零。"""
+    problems = []
+    for i, e in enumerate(events):
+        if _is_ip_like(e.get("host")):
+            problems.append(f"事件#{i} host 为 IP 字符串({e['host']})——待后端 host 放宽为可空后应改 null")
+    return problems
+
+
+def validate_eventout(events: list) -> list:
+    """D 的输入（后端 EventOut = 19 字段 + 数据库 id）契约校验（阻断级）。
+
+    在 validate_events 之上增加：id 必须为正整数且全局唯一；多余/缺失 id 字段报错。
+    """
+    problems = []
+    required = set(EVENT_V2_FIELDS) | {"id"}
+    seen_ids = set()
+    bodies = []
+    for i, e in enumerate(events):
+        if not isinstance(e, dict):
+            problems.append(f"事件#{i} 不是对象")
+            continue
+        keys = set(e.keys())
+        if keys - {"case_id"} != required:
+            missing, extra = required - keys, keys - required - {"case_id"}
+            problems.append(f"EventOut#{i} 字段不符: 缺 {missing or '{}'} 多 {extra or '{}'}")
+            continue
+        eid = e["id"]
+        if not isinstance(eid, int) or isinstance(eid, bool) or eid <= 0:
+            problems.append(f"EventOut#{i} id 非法（应为正整数）: {eid!r}")
+        elif eid in seen_ids:
+            problems.append(f"EventOut#{i} id 重复: {eid}")
+        seen_ids.add(eid)
+        bodies.append({k: v for k, v in e.items() if k != "id"})
+    return problems + validate_events(bodies)
 
 
 def build_summary(events: list) -> dict:

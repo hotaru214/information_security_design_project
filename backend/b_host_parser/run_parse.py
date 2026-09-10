@@ -19,6 +19,10 @@ B模块命令行入口：一条命令跑完"解析 → 标准事件 → 会话�
 
   5) 只解析前N条（快速冒烟测试）:
      python run_parse.py <文件.evtx> --limit 20
+
+  6) JSON行格式的Windows主机日志（APT29 day1 manual 数据集，NXLog导出的扁平JSON）:
+     python run_parse.py "..\\..\\data\\datasets\\apt29\\day1\\apt29_evals_day1_manual_2020-05-01225525.json"
+     由 sysmon_json.py 处理（.evtx走不了python-evtx的替代输入格式）
 """
 import argparse
 import json
@@ -30,6 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from windows_evtx import parse_windows_evtx, NS   # noqa: E402
 from sysmon import parse_sysmon_evtx              # noqa: E402
+from sysmon_json import parse_sysmon_json         # noqa: E402
 from linux_log import parse_linux_auth, parse_linux_audit, detect_linux_parser  # noqa: E402
 from sessions import rebuild_sessions, print_session_summary  # noqa: E402
 from anomaly import apply_anomaly_rules                       # noqa: E402
@@ -39,10 +44,11 @@ from import_client import save_jsonl, post_to_backend         # noqa: E402
 PARSE_FNS = {
     "windows": parse_windows_evtx,
     "sysmon": parse_sysmon_evtx,
+    "sysmon_json": parse_sysmon_json,   # JSON行格式的Windows事件（APT29 manual数据集）
     "linux_auth": parse_linux_auth,
     "linux_audit": parse_linux_audit,
 }
-LOG_SUFFIXES = (".evtx", ".log", ".out", ".txt")
+LOG_SUFFIXES = (".evtx", ".log", ".out", ".txt", ".json")
 
 # 项目根目录 = backend/b_host_parser 的上两级（2026-09-08起本模块移入backend/下，
 # 所有默认路径都相对仓库根，避免写死盘符）
@@ -90,12 +96,32 @@ def dedupe_linux_audit(events: list):
     return out, removed
 
 
+def _is_windows_json_lines(path) -> bool:
+    """看首行是否像 NXLog 导出的 Windows 事件 JSON 行（有 EventID/Channel 顶层键）。
+
+    .json 也可能是一般的JSON数组/别的数据，不能只看扩展名就硬认。"""
+    import json as _json
+    try:
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                first = _json.loads(line)
+                return isinstance(first, dict) and "EventID" in first and "Channel" in first
+    except Exception:
+        return False
+    return False
+
+
 def detect_parser_for(path) -> str:
     """统一格式探测：.evtx按Provider识别（windows/sysmon）；
-    文本日志（.log等）按首行内容识别Linux类型（linux_auth/linux_audit）。
-    认不出返回None（调用方跳过并提示，不硬猜）。"""
+    .json行文件按首行键识别（sysmon_json）；文本日志（.log等）按首行内容
+    识别Linux类型（linux_auth/linux_audit）。认不出返回None（调用方跳过并提示，不硬猜）。"""
     if path.suffix.lower() == ".evtx":
         return detect_parser(path)
+    if path.suffix.lower() == ".json":
+        return "sysmon_json" if _is_windows_json_lines(path) else None
     if path.suffix.lower() in LOG_SUFFIXES:
         return detect_linux_parser(path)
     return None

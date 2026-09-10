@@ -1,0 +1,6 @@
+ip,hostname,role
+147.32.84.165,saruman-infected,victim-botnet
+147.32.84.170,stribrek-pc,normal-host
+147.32.84.164,grill-pc,normal-host
+147.32.84.229,ctu-lab-gateway,infrastructure
+147.32.80.9,ctu-dns-server,infrastructure

@@ -1,0 +1,97 @@
+{
+  "profiles": [
+    {
+      "group_id": "G0016",
+      "name": "APT29 emulation profile",
+      "aliases": ["APT29", "Cozy Bear", "The Dukes", "NOBELIUM", "Midnight Blizzard"],
+      "description": "Local course profile for the selected APT29-style emulation case. It combines the project scenario with public ATT&CK references and is used for TTP similarity matching, not hard attribution.",
+      "techniques": ["T1190", "T1059", "T1547.001", "T1548.003", "T1021", "T1005", "T1071", "T1041", "T1070.002"],
+      "technique_names": [
+        "Exploit Public-Facing Application",
+        "Command and Scripting Interpreter",
+        "Registry Run Keys / Startup Folder",
+        "Sudo and Sudo Caching",
+        "Remote Services",
+        "Data from Local System",
+        "Application Layer Protocol",
+        "Exfiltration Over C2 Channel",
+        "Clear Windows Event Logs"
+      ],
+      "tools": ["powershell", "cmd", "bash", "curl", "reg", "wevtutil", "sudo"],
+      "behavior_sequence": [
+        "Initial Access",
+        "Execution",
+        "Lateral Movement",
+        "Persistence",
+        "Privilege Escalation",
+        "Lateral Movement",
+        "Collection",
+        "Command and Control",
+        "Exfiltration",
+        "Defense Evasion"
+      ],
+      "infrastructure_tags": ["external-ip", "domain", "cloud-vps", "non-standard-port"],
+      "source_refs": [
+        "https://attack.mitre.org/groups/G0016/",
+        "https://github.com/mitre/cti"
+      ]
+    },
+    {
+      "group_id": "G0007",
+      "name": "APT28 public profile subset",
+      "aliases": ["APT28", "Fancy Bear", "Sofacy", "STRONTIUM", "Forest Blizzard"],
+      "description": "Public ATT&CK-inspired comparison profile focused on scanning, PowerShell, remote services, credential access, and web-protocol C2.",
+      "techniques": ["T1595.002", "T1059.001", "T1021.001", "T1021.002", "T1071.001", "T1005", "T1567"],
+      "technique_names": [
+        "Active Scanning: Vulnerability Scanning",
+        "Command and Scripting Interpreter: PowerShell",
+        "Remote Services: Remote Desktop Protocol",
+        "Remote Services: SMB/Windows Admin Shares",
+        "Application Layer Protocol: Web Protocols",
+        "Data from Local System",
+        "Exfiltration Over Web Service"
+      ],
+      "tools": ["powershell", "cmd", "rdp", "smb"],
+      "behavior_sequence": [
+        "Reconnaissance",
+        "Execution",
+        "Lateral Movement",
+        "Collection",
+        "Command and Control",
+        "Exfiltration"
+      ],
+      "infrastructure_tags": ["external-ip", "domain", "web-protocol"],
+      "source_refs": ["https://attack.mitre.org/groups/G0007/"]
+    },
+    {
+      "group_id": "G0046",
+      "name": "FIN7 public profile subset",
+      "aliases": ["FIN7", "Carbon Spider", "ELBRUS", "Sangria Tempest"],
+      "description": "Public ATT&CK-inspired comparison profile with registry persistence, command execution, remote services, and staged tooling.",
+      "techniques": ["T1190", "T1059", "T1547.001", "T1543.003", "T1021.001", "T1021.004", "T1005", "T1071.004", "T1571"],
+      "technique_names": [
+        "Exploit Public-Facing Application",
+        "Command and Scripting Interpreter",
+        "Registry Run Keys / Startup Folder",
+        "Create or Modify System Process: Windows Service",
+        "Remote Services: Remote Desktop Protocol",
+        "Remote Services: SSH",
+        "Data from Local System",
+        "Application Layer Protocol: DNS",
+        "Non-Standard Port"
+      ],
+      "tools": ["powershell", "cmd", "7z", "openssh", "vnc"],
+      "behavior_sequence": [
+        "Initial Access",
+        "Execution",
+        "Persistence",
+        "Lateral Movement",
+        "Collection",
+        "Command and Control",
+        "Exfiltration"
+      ],
+      "infrastructure_tags": ["external-ip", "domain", "non-standard-port", "cloud-storage"],
+      "source_refs": ["https://attack.mitre.org/groups/G0046/"]
+    }
+  ]
+}

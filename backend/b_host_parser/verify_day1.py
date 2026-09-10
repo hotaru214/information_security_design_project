@@ -39,9 +39,9 @@ def t1():
     ev = make_event(timestamp="t", host="h")
     assert list(ev.keys()) == STANDARD_FIELDS, "make_event的键和STANDARD_FIELDS不一致"
     assert len(STANDARD_FIELDS) == 19, f"契约字段应为19个, 实际{len(STANDARD_FIELDS)}"
-    # Event V2: source枚举6值
+    # Event V2: source枚举8值（2026-09-09 D通知新增firewall/waf，C侧网络日志用）
     for s in ("windows_evtx", "sysmon", "linux_auth", "linux_audit",
-              "network_pcap", "network_zeek"):
+              "network_pcap", "network_zeek", "firewall", "waf"):
         assert s in SOURCES, f"V2要求source枚举缺 {s}"
     try:
         make_event(不存在的字段=1)
@@ -50,7 +50,7 @@ def t1():
         pass  # 预期行为：报KeyError
 
 
-check("任务1", "Event V2: 19字段齐全, source枚举6值, 未知字段会被拒绝", t1)
+check("任务1", "Event V2: 19字段齐全, source枚举8值, 未知字段会被拒绝", t1)
 
 # ---------- 任务2：环境 + 样例数据 ----------
 def t2():
@@ -71,7 +71,7 @@ def t3():
     evs = parse_windows_evtx(str(PROJECT / "data" / "sample_logs" / "sample_4624_4625.evtx"), st)
     assert st["parsed"] == 4 and st["failed"] == 0, f"期望4条0失败, 实际: {st}"
 
-    f4625 = next(e for e in evs if e["event_id"] == 4625)
+    f4625 = next(e for e in evs if e["source_event_id"] == 4625)
     # Event V2: ISO8601 T分隔
     assert "T" in f4625["timestamp"] and f4625["timestamp"].endswith("+08:00"), \
         f"时间应为ISO8601 T分隔UTC+8, 实际: {f4625['timestamp']}"
@@ -81,11 +81,11 @@ def t3():
     st2 = {}
     evs2 = parse_windows_evtx(str(PROJECT / "data" / "sample_logs" / "sample_wmi_4624.evtx"), st2)
     assert st2["parsed"] == 8 and st2["by_event_id"].get("4688") == 2, f"4688应解析出来: {st2}"
-    p = next(e for e in evs2 if e["event_id"] == 4688)
+    p = next(e for e in evs2 if e["source_event_id"] == 4688)
     assert p["event_type"] == "process_start" and p["process"] == "WmiPrvSE.exe"
     assert p["cmdline"] is None, "4688未开命令行审核时cmdline必须是null(不许造假)"
     assert p["detail"]["new_process_id"], "new_process_id应取自NewProcessId"
-    assert any(e["event_id"] == 4624 and e["src_ip"] == "10.0.2.17" for e in evs2), \
+    assert any(e["source_event_id"] == 4624 and e["src_ip"] == "10.0.2.17" for e in evs2), \
         "应有src_ip=10.0.2.17的远程登录(样例里第一条带IP的是IPv6)"
 
 
@@ -115,7 +115,7 @@ def t3b():
 
     str2 = {}
     evs2 = parse_sysmon_evtx(str(PROJECT / "data" / "sample_logs" / "sample_sysmon_12_13.evtx"), str2)
-    reg = next(e for e in evs2 if e["event_id"] == 13)
+    reg = next(e for e in evs2 if e["source_event_id"] == 13)
     assert reg["detail"]["registry_key"], "Sysmon13必须有注册表键"
     # Event V2 detail键名
     assert "registry_value_data" in reg["detail"], "应使用V2键名registry_value_data"

@@ -3,6 +3,7 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
+from backend.analysis.correlation import get_case_id
 from backend.schemas.event import EventCreate
 from backend.schemas.host import HostCreate
 
@@ -11,11 +12,11 @@ DB_PATH = Path(__file__).resolve().parent.parent / "data" / "attack_trace.db"
 
 INSERT_EVENT_SQL = """
     INSERT INTO events (
-        timestamp, host, source, event_id, event_type, user, process,
+        case_id, timestamp, host, source, event_id, event_type, user, process,
         src_ip, dst_ip, dst_port, protocol, logon_type, session_id, cmdline,
         detail, description, anomaly_flags, severity, raw_log
     ) VALUES (
-        :timestamp, :host, :source, :event_id, :event_type, :user, :process,
+        :case_id, :timestamp, :host, :source, :event_id, :event_type, :user, :process,
         :src_ip, :dst_ip, :dst_port, :protocol, :logon_type, :session_id, :cmdline,
         :detail, :description, :anomaly_flags, :severity, :raw_log
     )
@@ -35,9 +36,11 @@ def init_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with closing(get_connection()) as connection:
         with connection:
+            connection.execute("BEGIN IMMEDIATE")
             connection.execute("""
                 CREATE TABLE IF NOT EXISTS events (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    case_id TEXT,
                     timestamp TEXT NOT NULL,
                     host TEXT NOT NULL,
                     source TEXT NOT NULL,
@@ -59,6 +62,10 @@ def init_db():
                     raw_log TEXT NOT NULL
                 );
             """)
+            columns = {row["name"] for row in connection.execute("PRAGMA table_info(events)")}
+            if "case_id" not in columns:
+                connection.execute("ALTER TABLE events ADD COLUMN case_id TEXT")
+            connection.execute("CREATE INDEX IF NOT EXISTS idx_events_case_id ON events(case_id)")
             connection.execute("""
                 CREATE TABLE IF NOT EXISTS hosts (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,6 +81,8 @@ def _event_data(event: EventCreate):
     data["timestamp"] = event.timestamp.isoformat()
     data["detail"] = json.dumps(event.detail, ensure_ascii=False)
     data["anomaly_flags"] = json.dumps(event.anomaly_flags, ensure_ascii=False)
+    # 契约字段名是 source_event_id，DB 列名保留 event_id（内部实现细节）
+    data["event_id"] = data.pop("source_event_id", None)
     return data
 
 
@@ -81,6 +90,9 @@ def _event_from_row(row):
     data = dict(row)
     data["detail"] = json.loads(data["detail"])
     data["anomaly_flags"] = json.loads(data["anomaly_flags"])
+    # DB 列 event_id -> 契约字段 source_event_id（EventOut 输出用契约名）
+    if "event_id" in data:
+        data["source_event_id"] = data.pop("event_id")
     return data
 
 
@@ -103,10 +115,18 @@ def insert_events(events: list[EventCreate]):
     return len(events)
 
 
-def get_events():
+def get_events(case_id: str | None = None):
     with closing(get_connection()) as connection:
-        rows = connection.execute("SELECT * FROM events ORDER BY id ASC").fetchall()
-        return [_event_from_row(row) for row in rows]
+        if case_id is None:
+            rows = connection.execute("SELECT * FROM events ORDER BY id ASC").fetchall()
+        else:
+            # Preserve legacy NULL rows; compatibility metadata is read, not backfilled.
+            rows = connection.execute(
+                "SELECT * FROM events WHERE case_id = ? OR case_id IS NULL ORDER BY id ASC",
+                (case_id,),
+            ).fetchall()
+        events = [_event_from_row(row) for row in rows]
+        return events if case_id is None else [e for e in events if get_case_id(e) == case_id]
 
 
 def get_event_by_id(event_db_id: int):

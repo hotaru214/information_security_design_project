@@ -17,8 +17,7 @@ REMOTE_SERVICE_PORTS = {22, 23, 139, 445, 3389, 5985, 5986}
 SERVICE_NAMES = {22: "SSH", 23: "Telnet", 139: "NetBIOS", 445: "SMB",
                  3389: "RDP", 5985: "WinRM", 5986: "WinRM-HTTPS"}
 
-HTTP_PORTS = {80, 8080, 8000}   # 明文 HTTP 才能做请求行启发式，HTTPS(443) 不在其中
-DNS_PORTS = {53}
+HTTP_PORTS = {80, 8080, 8000, 8088}   # 明文 HTTP 请求行启发式端口（8088=E靶场 DVWA/Nginx 实际端口）
 
 # HTTP 请求中的攻击载荷特征（正则, 说明）
 HTTP_ATTACK_PATTERNS = [
@@ -27,11 +26,30 @@ HTTP_ATTACK_PATTERNS = [
     (r"('|%27)\s*--", "SQL注入特征(注释符--)"),
     (r"\.\./\.\./", "路径穿越特征(../../)"),
     (r"/etc/(passwd|shadow)", "敏感文件访问特征(/etc/passwd)"),
-    (r"(cmd|exec|command)=", "命令执行参数特征"),
+    (r"(?<![a-z])(cmd|exec|command)=", "命令执行参数特征"),   # 负向断言排除 utmcmd= 等统计参数误报
     (r"eval\s*\(", "代码执行特征(eval)"),
+    (r"(&&|\|\||;)\s*/?[\w./\-]+\.(sh|py|php|bat|ps1)\b", "命令注入特征(链接执行脚本)"),
     (r"base64_decode", "Webshell特征(base64_decode)"),
     (r"<script", "XSS特征(<script)"),
 ]
+
+
+# 各数据批次的标准网络分段预设（封箱定案，2026-09-09）。
+# 用途：CLI --profile <name>，使操作员无需手工记忆 --internal/--hosts 参数。
+# 网段定案：E case01 靶场三段式中 10.10.10.*(WAN: Attack/C2)=external、
+#           10.10.20.*(DMZ) 与 10.10.30.*(LAN)=internal；case01 数据集 10.0.0.0/24=internal。
+PROFILES = {
+    "case01": {"internal_networks": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"],
+               "hosts": "data/hosts.csv"},
+    "case02": {"internal_networks": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"],
+               "hosts": ""},
+    "apt29_day1": {"internal_networks": ["10.0.0.0/16"],
+                   "hosts": "data/hosts_apt29.csv"},
+    "ctu13_s2": {"internal_networks": ["147.32.0.0/16"],
+                 "hosts": "data/hosts_ctu13.csv"},
+    "e_case01": {"internal_networks": ["10.10.20.0/24", "10.10.30.0/24"],
+                 "hosts": "data/hosts_e_case01.csv"},
+}
 
 
 @dataclass
@@ -52,7 +70,6 @@ class DetectionConfig:
     dns_entropy_threshold: float = 3.5  # 标签香农熵下限（随机编码串通常 >4）
     dns_min_label_for_entropy: int = 20 # 熵检测要求的最短标签（避免短词误报）
     dns_txt_volume: int = 6             # 同源对同域名的 TXT 查询次数阈值
-    dns_txt_window_sec: float = 600.0
 
     # 数据外传
     exfil_bytes: int = 1_000_000            # 内->外单会话字节数阈值
@@ -69,25 +86,46 @@ class DetectionConfig:
     brute_force_window_sec: float = 300.0
     brute_force_incomplete_ratio: float = 0.5   # 未完成连接（RST/无响应）占比下限
 
+    # CC 列表轮询（真实僵尸网络行为）：同源对同端口在窗口内轮询大量不同外部主机。
+    # 排除正常浏览/下载会大量"多目的"的端口：标准 Web 端口、基础服务端口、P2P 临时高端口
+    cc_rotation_distinct_dst: int = 5
+    cc_rotation_window_sec: float = 1800.0
+    cc_rotation_ignored_ports: set = field(default_factory=lambda: {3, 53, 123, 80, 443, 8080, 8000, 3478, 6881, 6882, 6883})
+    cc_rotation_max_port: int = 10000          # 高于此端口视为 P2P/临时端口，不参与判定
+
     http_attack_patterns: list = field(default_factory=lambda: list(HTTP_ATTACK_PATTERNS))
     suspicious_ports: set = field(default_factory=lambda: set(SUSPICIOUS_PORTS))
     remote_service_ports: set = field(default_factory=lambda: set(REMOTE_SERVICE_PORTS))
 
     def __post_init__(self):
         self._nets = [ipaddress.ip_network(n) for n in self.internal_networks]
-        self._cache = {}
+        self._cache_internal = {}    # is_internal 结果缓存（与 is_broadcast 缓存分离，避免相互污染）
+        self._cache_broadcast = {}   # is_broadcast 结果缓存
+
+    def is_broadcast(self, ip: str) -> bool:
+        """广播（x.y.z.255 / x.y.255.255 等）或多播地址，规则检测时应排除。"""
+        if ip in self._cache_broadcast:
+            return self._cache_broadcast[ip]
+        result = False
+        try:
+            addr = ipaddress.ip_address(ip)
+            result = addr.is_multicast or str(addr).endswith(".255")
+        except ValueError:
+            pass
+        self._cache_broadcast[ip] = result
+        return result
 
     def is_internal(self, ip: str) -> bool:
         """判断 IP 是否属于内网网段。"""
-        if ip in self._cache:
-            return self._cache[ip]
+        if ip in self._cache_internal:
+            return self._cache_internal[ip]
         result = False
         try:
             addr = ipaddress.ip_address(ip)
             result = any(addr in net for net in self._nets)
         except ValueError:
             pass
-        self._cache[ip] = result
+        self._cache_internal[ip] = result
         return result
 
     @classmethod

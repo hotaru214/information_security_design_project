@@ -1,0 +1,22 @@
+C 主机日志数据获取说明（apt29_day1 / ctu13_s2）
+================================================
+
+【apt29_day1 主机日志】
+- 原始包已清理，需先重新下载:
+  python -c "import sys; sys.path.insert(0,'scripts'); from fetch_dataset import fetch; open('data/datasets/apt29/day1/apt29_evals_day1_manual.zip','wb').write(fetch('https://raw.githubusercontent.com/OTRF/detection-hackathon-apt29/master/datasets/day1/apt29_evals_day1_manual.zip', timeout=300))"
+  （或直接浏览器下载: https://github.com/OTRF/detection-hackathon-apt29 -> datasets/day1/apt29_evals_day1_manual.zip）
+- 来源: https://github.com/OTRF/detection-hackathon-apt29
+  路径 datasets/day1/apt29_evals_day1_manual.zip
+- 解压后为单个 JSON 文件:
+  apt29_evals_day1_manual_2020-05-01225525.json
+  内容为 Windows Sysmon / SecurityEvent 主机日志（JSON 行格式）
+
+【ctu13_s2 主机日志】
+- 无公开主机日志。CTU-13 只发布网络侧数据（bro 日志 / binetflow / pcap）
+  和恶意样本行为说明（场景目录下的 README.md / botnet-capture-*.json）。
+- 主机侧只能引用官方 README 对 Neris 的行为描述做对照，网络侧已完成。
+
+【处理与交付】
+- 解析出的事件按批次隔离流程交付 D:
+  python scripts/reset_import_export.py --name <批次名> --events <事件JSON>
+- 批次命名建议: apt29_day1_host（CTU-13 无主机批次）

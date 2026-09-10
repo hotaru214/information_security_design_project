@@ -48,6 +48,9 @@ CLI 运行时会做 **Event V2 契约自检**（19 字段、event_type 枚举、
 | PCAP / PCAPNG | `network_pcap` | scapy 流式读取，五元组聚合会话；提取 DNS 查询、明文 HTTP 请求、ICMP 载荷 |
 | Zeek 日志目录 | `network_zeek` | `conn.log`（必需）+ `dns.log` / `http.log`（可选），TSV/JSON 均支持，支持 `.gz`；**原始日志行进 `raw_log`（含 uid，可回溯原始记录）** |
 | CSV 连接日志 | `network_zeek` | 列：`timestamp,src_ip,src_port,dst_ip,dst_port,protocol[,bytes,duration,packets]`（E 靶场没有 Zeek 时的兜底格式） |
+| OPNsense/pfSense filterlog | `firewall` | 防火墙/边界设备日志（2026-09-09 契约新增 source）：action/rule_id/interface/fw_direction 进 detail，自动嗅探 `.log` 内的 filterlog 行 |
+| 防火墙/边界访问日志 | `firewall` | 放行/拦截连接记录，行为类型仍按 `network_connection` / `http_request` 输出 |
+| WAF / Web 攻击告警 | `waf` | Web 攻击检测结果，行为类型通常为 `http_request`，攻击类型、规则号等放入 `detail` |
 
 ## 3. 检测规则（阈值见 `config.py`，均可用 `--config` 覆盖）
 
@@ -62,6 +65,7 @@ CLI 运行时会做 **Event V2 契约自检**（19 字段、event_type 枚举、
 | 数据外传 | `exfiltration` | 内→外单会话 ≥1MB；或时长 ≥300s 且 ≥200KB | T1048（数据外传） |
 | ICMP 隐蔽信道 | `icmp_tunnel` | 单包载荷 ≥256B；或同会话 ≥20 包 | T1095（命令与控制） |
 | 登录爆破（网络侧） | `brute_force_evidence` | 同源对同端口 300s 内 ≥15 连接且 ≥50% 未完成 | T1110（凭证访问） |
+| CC 列表轮询 | `cc_rotation` | 同源对同端口 1800s 内 ≥5 个不同外部主机（排除 Web/基础服务/P2P 端口） | T1071（命令与控制） |
 
 **event_type 映射（对齐全组冻结枚举）**：告警不再自造 event_type——
 端口扫描/可疑端口/C2心跳/横向移动/数据外传/ICMP隧道 一律映射为 `network_connection`，
@@ -124,8 +128,15 @@ ATT&CK 阶段/技术号在 `detail.attack_stage` / `detail.mitre_technique`。
   （`FLOW <五元组> start=... pkts=... bytes=...`）；检测告警为 `DETECT[规则] 描述`。
 - **缺失即 null**：ICMP 无端口 → `dst_port: null`（不是 0）；主机侧字段（user/process/
   cmdline/logon_type/session_id）网络事件恒为 `null`。
-- 契约校验函数：`normalize.validate_events(events)` 返回问题列表（空=合规），
-  已内置 **event_type 冻结枚举校验**，可在后端导入前调用。
+- 契约校验函数（**三层守卫，任何数据出入口都会执行**）：
+  - `validate_events(events)`：解析器输出（19 字段）阻断级校验——字段集、event_type 冻结枚举、
+    source 枚举、severity 0-3、UTC+8 且可解析、必填非空、**禁止占位值**（unknown/空串/dst_port=0）、
+    网络事件 source_event_id 必须 null；
+  - `validate_eventout(events)`：D 的输入（19 字段 + 数据库 id）阻断级校验——id 唯一正整数；
+  - `collect_warnings(events)`：非阻断警告（当前仅 host 为 IP 字符串一项，待后端放宽 host 可空后归零）。
+  - 接入点：CLI 运行时自检（本模块）、`scripts/post_events.py`（导入前阻断 + 回拉后校验）、
+    `scripts/export_for_d.py`（落盘前阻断）；`tests/test_contract_guard.py` 含文件级守卫，
+    `data/sample_events/` 下任何新放的 `*_eventout.json` 都会被自动检查。
 
 ## 5. 与其他成员的对接
 
@@ -145,6 +156,10 @@ assert validate_events(events) == []   # 导入前契约自检
 ```
 
 - `include_flows=False` 可只产出告警事件。数据库内部 `id` 由后端生成，本模块不关心。
+- **批次隔离（重要）**：多批数据**不得**混在一个库里（否则 D 关联会跨批次串链）。
+  标准流程：`python scripts/reset_import_export.py --name <批次名> --events <事件JSON> [--hosts <映射CSV>]`
+  ——自动重置数据库 → 启动后端 → 导入（事件 detail.batch_id 打批次标签）→ 导出
+  `data/sample_events/<批次名>_eventout.json`。D 消费时按 detail.batch_id 过滤。
 - **联调冒烟**：`python scripts/post_events.py out/network_events.json --sync-hosts data/hosts.csv`
   ——本地契约自检 → hosts.csv 同步到 `/api/hosts`（逐条、容忍 409）→ 批量 `/api/events/import`
   （422 时打印 Pydantic 错误明细）→ GET 回拉做 **round-trip 逐字段比对**。
@@ -178,7 +193,7 @@ assert validate_events(events) == []   # 导入前契约自检
 python -m pytest tests -q
 ```
 
-覆盖：熵计算、内网判定、8 个检测器（正/负用例）、PCAP 端到端、Zeek TSV（uid/raw_log/方向字节）、
+覆盖：熵计算、内网判定、10 个检测器（正/负用例）、PCAP 端到端、Zeek TSV（uid/raw_log/方向字节）、
 CSV、Event V2 契约（19 字段、event_type 冻结枚举、null 语义、severity 数字、anomaly_flags、UTC+8）。
 
 ## 7. 边界与说明
@@ -188,3 +203,6 @@ CSV、Event V2 契约（19 字段、event_type 冻结枚举、null 语义、seve
 - C2 心跳规则只看外联方向，内网 DNS 等周期性正常流量零误报。
 - 大 PCAP 流式读取，内存占用与会话数成正比，与总包数无关。
 - 契约变更需全组同步：Event V2 与 event_type 枚举冻结后，本模块不再单方面修改。
+- **数据留存约定（全组）**：外部获取的数据集（APT29/CTU-13 及日后任何下载的数据）
+  只保留在本地（data/datasets/ 已 gitignore，**绝不提交仓库**），仓库里只留
+  分析结果（评估 JSON、EventOut、报告）。原始数据随时可用 scripts/fetch_dataset.py 重新下载。

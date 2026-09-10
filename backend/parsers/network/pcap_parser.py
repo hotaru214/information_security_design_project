@@ -10,12 +10,11 @@ from scapy.layers.inet import IP, TCP, UDP, ICMP
 from scapy.layers.dns import DNS
 from scapy.packet import Raw
 
-from .config import DetectionConfig, DNS_PORTS, HTTP_PORTS
+from .config import DetectionConfig, HTTP_PORTS
 from .models import DnsQuery, FlowRecord, HttpRequest
 
 logger = logging.getLogger(__name__)
 
-ICMP_TYPES = {0: "Echo-Reply", 3: "Dest-Unreachable", 8: "Echo-Request", 11: "Time-Exceeded"}
 DNS_QTYPES = {1: "A", 2: "NS", 5: "CNAME", 12: "PTR", 15: "MX", 16: "TXT", 28: "AAAA", 33: "SRV", 255: "ANY"}
 HTTP_METHODS = (b"GET ", b"POST ", b"PUT ", b"DELETE ", b"HEAD ", b"OPTIONS ", b"PATCH ")
 
@@ -79,6 +78,13 @@ def _update_flow(rec: FlowRecord, ts: float, size: int, direction: str,
                     qname=qname,
                     qtype=DNS_QTYPES.get(int(dns.qd.qtype), str(int(dns.qd.qtype))),
                 ))
+
+    # HTTP 响应状态码提取（对端方向首行，content-two 完整性字段）
+    if rec.protocol == "TCP" and rec.dst_port in HTTP_PORTS and direction == "dst" and payload.startswith(b"HTTP/"):
+        first_line = payload.split(bytes((13, 10)), 1)[0].decode("utf-8", "replace")
+        pieces = first_line.split(" ")
+        if len(pieces) >= 2 and pieces[1].isdigit() and len(rec.http_status_codes) < 500:
+            rec.http_status_codes.append(int(pieces[1]))
 
     # HTTP 请求提取（明文端口上的请求行启发式）
     elif rec.protocol == "TCP" and rec.dst_port in HTTP_PORTS and payload:

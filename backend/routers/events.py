@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Path, status
+from fastapi import APIRouter, HTTPException, Path, Query, status
 
 from backend.database import get_event_by_id, get_events, insert_event, insert_events
 from backend.schemas.event import EventCreate, EventOut
@@ -18,13 +18,18 @@ def create_events(events: list[EventCreate]):
 
 
 @router.post("/import", status_code=status.HTTP_201_CREATED)
-def import_events(events: list[EventCreate]):
+def import_events(events: list[EventCreate], case_id: str | None = Query(default=None, min_length=1)):
+    # Explicit import scope is independent of detail.batch_id.
+    if case_id is not None:
+        if any(event.case_id not in (None, case_id) for event in events):
+            raise HTTPException(status_code=422, detail="Event case_id conflicts with import case_id")
+        events = [event.model_copy(update={"case_id": case_id}) for event in events]
     return {"imported": insert_events(events), "failed": 0}
 
 
 @router.get("", response_model=list[EventOut])
-def list_events():
-    return get_events()
+def list_events(case_id: str | None = Query(default=None, min_length=1)):
+    return get_events(case_id=case_id)
 
 
 @router.get("/{event_id}", response_model=EventOut)

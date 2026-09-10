@@ -8,8 +8,10 @@
 parse_linux_auth  —— SSH登录（sshd）
     "Accepted password for alice from 10.0.2.17 port 51234 ssh2" → login_success
     "Failed password for invalid user admin from 1.2.3.4 ..."    → login_failed
-    ⚠️ auth.log 的时间没有年份（"Jan 12 02:55:01"），用文件mtime的年份补全；
+    ⚠️ 传统auth.log的时间没有年份（"Jan 12 02:55:01"），用文件mtime的年份补全；
     ⚠️ auth.log 是靶机本地时间——靶场按全组约定统一UTC+8，直接打时区标记。
+    （E最终数据 core-auth.log 是 rsyslog 的ISO 8601形态"2026-09-07T23:48:31.575069+08:00"，
+    年月日/时区直接取自行内，任意时区偏移一律换算成UTC+8——2026-09-09 按A集成要求补）
 
 parse_linux_audit —— auditd（2026-09-08按E真实数据适配，支持两种形态）
     E实际交付了两种格式，都要吃：
@@ -22,7 +24,8 @@ parse_linux_audit —— auditd（2026-09-08按E真实数据适配，支持两�
     事件映射（按E的case01审计规则对齐D的需求）：
       type=USER_CMD（sudo提权，cmd是HEX编码）      → process_start（D决议，sudo信息放detail）
       SYSCALL execve + EXECVE（argv配对）          → process_start（进程+完整命令行，D的核心需求）
-      SYSCALL open/openat + PATH（敏感文件访问）    → file_read（相对路径会和CWD拼成绝对路径）
+      SYSCALL open/openat + PATH（敏感文件访问）    → file_read/file_write（按open flags
+                                                     区分读写，相对路径会和CWD拼成绝对路径）
       SYSCALL connect/accept + SOCKADDR（仅inet）   → network_connection（本地unix socket是噪音，跳过）
       SERVICE_START / SERVICE_STOP                 → service_started / service_stopped
       其余（CONFIG_CHANGE/BPF/USER_AUTH/...）       → skipped_other 计数
@@ -39,7 +42,7 @@ by_event_id 用记录类型作键（USER_CMD/execve/file_open/connect_inet/...�
 """
 import ipaddress
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from schema import make_event
@@ -53,6 +56,11 @@ MONTHS = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
 # auth.log行头： "Jan 12 02:55:01 host prog[pid]: message"
 _AUTH_HEAD = re.compile(
     r"^([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})\s+(\S+)\s+([^\[\s]+)(?:\[\d+\])?:\s(.*)$")
+# auth.log行头（ISO 8601形态，Ubuntu 24.04 rsyslog 默认，E最终数据core-auth.log实测）：
+# "2026-09-07T23:48:31.575069+08:00 host prog[pid]: message"——带年份/微秒/时区
+_AUTH_HEAD_ISO = re.compile(
+    r"^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?"
+    r"(Z|[+-]\d{2}:?\d{2})\s+(\S+)\s+([^\[\s]+)(?:\[\d+\])?:\s(.*)$")
 # sshd的登录成功/失败消息（"invalid user"前缀=用户不存在，Linux版的用户名枚举指纹）
 _SSHD_MSG = re.compile(
     r"^(Accepted|Failed)\s+(\S+)\s+for\s+(?:invalid user\s+)?(\S+)\s+from\s+(\S+)\s+port\s+(\d+)")
@@ -102,6 +110,22 @@ def _audit_ts_interp(y, mo, d, h, mi, s, ms) -> str:
     micro = int(ms) * 10 ** (6 - len(ms)) if ms else 0
     dt = datetime(int(y), int(mo), int(d), int(h), int(mi), int(s), micro, tzinfo=UTC8)
     return dt.isoformat()
+
+
+def _iso_ts_to_utc8(y, mo, d, hh, mm, ss, frac, tzs) -> str:
+    """ISO 8601行内时间戳 → 统一UTC+8字符串。
+
+    年月日和时区都取自行内（rsyslog新格式自带，不再依赖mtime补年份）；
+    任意偏移（Z / ±HH:MM / ±HHMM）都换算成UTC+8——靶机时区配错日志也能对齐。
+    """
+    micro = int(frac.ljust(6, "0")[:6]) if frac else 0
+    if tzs == "Z":
+        tz = timezone.utc
+    else:
+        sign = 1 if tzs[0] == "+" else -1
+        tz = timezone(sign * timedelta(hours=int(tzs[1:3]), minutes=int(tzs[-2:])))
+    dt = datetime(int(y), int(mo), int(d), int(hh), int(mm), int(ss), micro, tzinfo=tz)
+    return to_utc8(dt)
 
 
 def _parse_head(line: str):
@@ -182,7 +206,7 @@ def _parse_sockaddr(rest: str):
 def _new_event(ts, host, source, event_type, user, process, src_ip,
                detail, description, raw_line, cmdline=None):
     return make_event(
-        timestamp=ts, host=host, source=source, event_id=None,
+        timestamp=ts, host=host, source=source, source_event_id=None,
         event_type=event_type, user=user, process=process, src_ip=src_ip,
         dst_ip=None, dst_port=None, protocol=None, logon_type=None,
         session_id=None, cmdline=cmdline, detail=detail,
@@ -205,22 +229,27 @@ def parse_linux_auth(file_path: str, stats: dict = None, host: str = None) -> li
 
     with open(file_path, "r", encoding="utf-8", errors="replace") as f:
         for line in f:
-            line = line.rstrip("\n")
+            line = line.rstrip("\r\n")  # E的文件是CRLF——只strip\n会残留\r污染raw_log
             if not line.strip():
                 continue
             try:
-                head = _AUTH_HEAD.match(line)
-                if head is None:
+                head = _AUTH_HEAD.match(line)     # 传统格式："Sep  8 13:05:02"（无年份）
+                iso = None if head else _AUTH_HEAD_ISO.match(line)  # ISO格式（E最终数据）
+                if head is not None:
+                    mon, day, hh, mm, ss, line_host, prog, msg = head.groups()
+                    ts = to_utc8(datetime(year, MONTHS[mon], int(day), int(hh), int(mm),
+                                          int(ss), tzinfo=_AUTH_TZ))
+                elif iso is not None:
+                    y, mo, d, hh, mm, ss, frac, tzs, line_host, prog, msg = iso.groups()
+                    ts = _iso_ts_to_utc8(y, mo, d, hh, mm, ss, frac, tzs)
+                else:
                     stats["skipped_other"] += 1
                     continue
-                mon, day, hh, mm, ss, line_host, prog, msg = head.groups()
                 m = _SSHD_MSG.match(msg)
                 if m is None or prog != "sshd":
                     stats["skipped_other"] += 1
                     continue
                 result, method, user, src_ip, src_port = m.groups()
-                ts = to_utc8(datetime(year, MONTHS[mon], int(day), int(hh), int(mm), int(ss),
-                                      tzinfo=_AUTH_TZ))
                 invalid_user = "invalid user" in msg
                 port = int(src_port) if src_port.isdigit() else None
                 if result == "Accepted":
@@ -266,7 +295,7 @@ def parse_linux_audit(file_path: str, stats: dict = None, host: str = None) -> l
     # ---- 第一遍：按行归类（SYSCALL/EXECVE/PATH/CWD/SOCKADDR要按序号配对，必须整文件看完）----
     with open(file_path, "r", encoding="utf-8", errors="replace") as f:
         for line in f:
-            line = line.rstrip("\n")
+            line = line.rstrip("\r\n")  # E的文件是CRLF——只strip\n会残留\r污染raw_log
             if not line.strip() or line.strip() == "----":  # ausearch输出的分隔行
                 continue
             try:
@@ -336,7 +365,7 @@ def parse_linux_audit(file_path: str, stats: dict = None, host: str = None) -> l
         events.append(_new_event(
             ts=ts, host=host, source="linux_audit", event_type="process_start",
             user=_resolve_user(pub), process=_basename(first_tok),
-            src_ip=None, detail=detail,
+            src_ip=None, detail=detail, cmdline=cmd,
             description=f"sudo提权执行: {cmd or '命令未解码'}",
             raw_line=line))
         stats["by_event_id"]["USER_CMD"] = stats["by_event_id"].get("USER_CMD", 0) + 1
@@ -357,21 +386,37 @@ def parse_linux_audit(file_path: str, stats: dict = None, host: str = None) -> l
                        "uid": sk.get("uid"), "auid": sk.get("auid"),
                        "tty": sk.get("tty") or None}
 
-        if name in FILE_OPEN_SYSCALLS:  # 敏感文件访问 → file_read
+        if name in FILE_OPEN_SYSCALLS:  # 敏感文件访问 → file_read / file_write
             paths = sorted(g.get("paths", []), key=lambda p: p[0])
             fname = paths[-1][1] if paths else None  # item最大的那条才是目标文件
             if fname and not fname.startswith("/") and g.get("cwd"):
                 fname = g["cwd"].rstrip("/") + "/" + fname  # 相对路径拼CWD成绝对路径
             exe = sk.get("exe")
             process = _basename(exe) or _basename(sk.get("comm"))
+            # 读写区分（D靠它匹配外传/落盘行为）：openat 的 flags 在 a2、open 在 a1。
+            # ausearch -i 是符号形态（O_RDONLY|O_CLOEXEC），原始格式是十六进制数字，两种都接：
+            # 命中 O_WRONLY/O_RDWR（或 hex 低2位≠0）→ file_write；没有 flags 就不猜，维持 file_read。
+            raw_flags = sk.get("a2" if name == "openat" else "a1")
+            is_write = False
+            if raw_flags:
+                if "O_WRONLY" in raw_flags or "O_RDWR" in raw_flags:
+                    is_write = True
+                else:
+                    try:
+                        is_write = int(raw_flags, 16) & 0b11 != 0
+                    except ValueError:
+                        is_write = False
+            event_type = "file_write" if is_write else "file_read"
             events.append(_new_event(
-                ts=g["ts"], host=host, source="linux_audit", event_type="file_read",
+                ts=g["ts"], host=host, source="linux_audit", event_type=event_type,
                 user=user, process=process, src_ip=None,
                 detail={**base_detail, "file_path": fname, "syscall": name,
-                        "comm": sk.get("comm") or None, "exe": exe},
-                description=f"敏感文件访问: {fname or '路径未记录'}（进程: {process or '未知'}）",
+                        "comm": sk.get("comm") or None, "exe": exe,
+                        "open_flags": raw_flags},
+                description=f"敏感文件{'写入' if is_write else '访问'}: "
+                            f"{fname or '路径未记录'}（进程: {process or '未知'}）",
                 raw_line="\n".join(g["raw"])))
-            stats["by_event_id"]["file_open"] = stats["by_event_id"].get("file_open", 0) + 1
+            stats["by_event_id"][event_type] = stats["by_event_id"].get(event_type, 0) + 1
 
         elif name in EXEC_SYSCALLS:  # 进程执行 → process_start（EXECVE带完整argv）
             args = []
@@ -411,7 +456,8 @@ def parse_linux_audit(file_path: str, stats: dict = None, host: str = None) -> l
                                 f"{':' + str(port) if port else ''}",
                     raw_line="\n".join(g["raw"])))
                 ev = events[-1]
-                ev["dst_ip"], ev["dst_port"] = ip, port
+                # 契约：dst_port缺失传null不传0（E数据里确实有port=0的connect记录）
+                ev["dst_ip"], ev["dst_port"] = ip, (port or None)
             else:  # accept：对端=来源（谁连进来了——横向移动的关键证据）
                 events.append(_new_event(
                     ts=g["ts"], host=host, source="linux_audit",
@@ -434,7 +480,8 @@ def parse_linux_audit(file_path: str, stats: dict = None, host: str = None) -> l
 
 
 def detect_linux_parser(file_path) -> str:
-    """按内容判断Linux日志类型：type=开头→audit，月名开头→auth。跳过ausearch的----分隔行。"""
+    """按内容判断Linux日志类型：type=开头→audit；月名或ISO时间戳开头→auth。
+    跳过ausearch的----分隔行。"""
     with open(file_path, "r", encoding="utf-8", errors="replace") as f:
         for line in f:
             line = line.strip()
@@ -444,5 +491,7 @@ def detect_linux_parser(file_path) -> str:
                 return "linux_audit"
             if re.match(r"^[A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s", line):
                 return "linux_auth"
+            if re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", line):
+                return "linux_auth"  # rsyslog ISO形态（E最终数据core-auth.log）
             return None  # 第一条有效行认不出来就不硬猜
     return None

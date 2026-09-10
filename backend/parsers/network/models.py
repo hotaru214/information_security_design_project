@@ -43,11 +43,14 @@ class FlowRecord:
     http_requests: list = field(default_factory=list)  # list[HttpRequest]
     icmp_count: int = 0
     icmp_max_payload: int = 0
-    source_file: str = ""
+    source_file: str = ""              # 溯源调试字段：记录来源文件（多文件合并排障用），输出层不消费
     # Event V2 契约相关
     source: str = "network_pcap"       # network_pcap / network_zeek（CSV 兜底也归 network_zeek）
     source_event_id: str | None = None  # Event V2 FINAL：网络事件恒为 null，原始编号(如 Zeek uid)保留在 raw_log
     raw_log: str = ""                  # 原始日志行（Zeek/CSV 可保留，PCAP 留空由输出层合成摘要）
+    dataset_label: str | None = None   # 公开数据集自带标签（如 CTU-13 的 flow=From-Botnet），进 detail 供评估
+    http_status_codes: list = field(default_factory=list)  # HTTP 响应状态码（content-two 完整性）
+    detail_extra: dict = field(default_factory=dict)       # 来源专有字段（firewall 等非流式来源）
 
     @property
     def duration(self) -> float:
@@ -56,10 +59,6 @@ class FlowRecord:
     @property
     def flow_key(self) -> str:
         return f"{self.src_ip}:{self.src_port}->{self.dst_ip}:{self.dst_port}/{self.protocol}"
-
-    @property
-    def tuple_key(self) -> tuple:
-        return (self.src_ip, self.src_port, self.dst_ip, self.dst_port, self.protocol)
 
 
 @dataclass
