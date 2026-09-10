@@ -24,7 +24,13 @@ detail, description, anomaly_flags, severity, raw_log
 
 ## 3. source 枚举
 
-`windows_evtx` / `sysmon` / `linux_auth` / `linux_audit` / `network_pcap` / `network_zeek`
+`windows_evtx` / `sysmon` / `linux_auth` / `linux_audit` / `network_pcap` / `network_zeek` /
+`firewall`（防火墙/网关/边界设备访问日志）/ `waf`（WAF/Web 攻击告警）
+
+> 2026-09-09 补充（B/C 口径同步）：source 表示**证据来源**，event_type 仍表示行为类型
+> （如 WAF 的 Web 攻击请求 = source=waf + event_type=http_request；防火墙连接记录 =
+> source=firewall + event_type=network_connection）。来源专有字段（attack_type/rule_id/
+> action/rule_name）放 detail。D 与 A 校验均已支持。
 
 ## 4. null 规则
 

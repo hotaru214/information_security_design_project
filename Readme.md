@@ -93,7 +93,8 @@ C2 心跳、DNS 隧道、数据外传、ICMP 隧道。详见 [backend/parsers/ne
 - **source_event_id 与数据库 id 区分**：`source_event_id` 是原始日志自带编号（Windows 4624 /
   Sysmon 1 等），网络事件（PCAP/Zeek）传 `null`；后端 SQLite 另生成内部主键 `id`，
   D 的 `evidence_event_ids` 只用这个 `id`。数据库列名 `event_id` 仅为内部实现细节。
-- **source 枚举**：`windows_evtx` / `sysmon` / `linux_auth` / `linux_audit` / `network_pcap` / `network_zeek`。
+- **source 枚举**：`windows_evtx` / `sysmon` / `linux_auth` / `linux_audit` / `network_pcap` / `network_zeek` /
+  `firewall`（边界设备）/ `waf`（2026-09-09 扩充，source=证据来源、event_type=行为类型）。
 
 所有 19 个输入字段均必填；可空字段需显式传 `null`。`host`、`source`、`event_type`、`description`、`raw_log` 非空；端口非空时为 1～65535，severity 为 0～3。
 

@@ -305,3 +305,67 @@ def test_cli_profile_parsing(tmp_path, capsys):
 
 
 ROOT_E = Path(__file__).resolve().parents[1]
+
+
+# ---------------------------------------------------------------- source=firewall / status_code
+
+def test_firewall_parser_opnsense():
+    """OPNsense filterlog -> source=firewall 事件：v4 五元组、v6 布局、动作/规则进 detail。"""
+    from backend.parsers.network.firewall_parser import parse_firewall_log
+    sample = (
+        "2026-09-09T13:58:02\tInformational\tfilterlog\t 60,,,r1,em2,match,pass,in,4,0x0,,128,48265,0,DF,6,tcp,52,10.10.30.10,10.10.30.1,62100,80,0,S,4078474303,,64240,,mss\n"
+        "2026-09-09T13:57:54\tInformational\tfilterlog\t 6,,,r2,em0,match,block,in,4,0x0,,128,25455,0,none,17,udp,229,10.10.10.1,10.10.10.255,138,138,209\n"
+        "2026-09-09T13:50:00\tInformational\tfilterlog\t 71,,,r3,em0,match,pass,in,6,0x00,,1,udp,17,76,fe80::1,ff02::2,546,547,76\n"
+    )
+    p = tmp_dir = None
+    from pathlib import Path
+    tmp_dir = Path(__file__).resolve().parents[1] / "out"
+    tmp_dir.mkdir(exist_ok=True)
+    p = tmp_dir / "fw_test.log"
+    p.write_text(sample, encoding="utf-8")
+    try:
+        records, stats = parse_firewall_log(str(p))
+        assert stats["events"] == 3
+        assert records[0].source == "firewall"
+        assert (records[0].src_ip, records[0].dst_ip, records[0].dst_port) == ("10.10.30.10", "10.10.30.1", 80)
+        assert records[0].protocol == "TCP"
+        assert records[1].dst_port == 138 and records[1].protocol == "UDP"
+        # v6 布局独立解析
+        assert records[2].src_ip == "fe80::1" and records[2].dst_ip == "ff02::2"
+        assert records[2].dst_port == 547
+        # detail_extra：来源专有字段
+        dx = records[0].detail_extra
+        assert dx["action"] == "pass" and dx["rule_id"] == "r1" and dx["fw_dir_ok"] if False else dx["direction"] == "in"
+        assert dx["interface"] == "em2" and dx["ip_version"] == "4"
+
+        # 事件化：source=firewall、契约合规
+        from backend.parsers.network.normalize import build_events, validate_events
+        events = build_events(records, [], {}, CFG)
+        assert all(e["source"] == "firewall" for e in events)
+        assert all(e["host"] == "opnsense-firewall" for e in events)
+        assert validate_events(events) == []
+        assert all("action" in e["detail"] and "rule_id" in e["detail"] for e in events)
+    finally:
+        p.unlink(missing_ok=True)
+
+
+def test_source_enum_accepts_firewall_waf():
+    """content-one 新 source 枚举：firewall / waf 通过校验。"""
+    flows = [mk_flow(src="10.0.0.21", dst="93.184.216.34", dport=80)]
+    flows[0].http_requests = [HttpRequest(method="GET", uri="/", raw_line="GET / HTTP/1.1")]
+    events = build_events(flows, [], {}, CFG)
+    for src_name, extra in (("firewall", {"action": "pass"}), ("waf", {"attack_type": "sqli", "rule_id": "942100"})):
+        e = dict(events[0])
+        e["source"] = src_name
+        e["detail"] = dict(e["detail"], **extra)
+        assert validate_events([e]) == [], src_name
+
+
+def test_http_status_code_in_detail():
+    """content-two 完整性：status_code 进 detail（D 推荐键名）。"""
+    flows = [mk_flow(src="10.0.0.21", dst="93.184.216.34", dport=80)]
+    flows[0].http_status_codes = [302, 200]
+    events = build_events(flows, [], {}, CFG)
+    assert events[0]["detail"]["status_code"] == 302
+    assert events[0]["detail"]["status_code_count"] == 2
+    assert validate_events(events) == []

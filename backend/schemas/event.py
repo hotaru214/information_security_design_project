@@ -9,7 +9,7 @@ class EventCreate(BaseModel):
     host: str = Field(min_length=1)
     source: Literal[
         "windows_evtx", "sysmon", "linux_auth", "linux_audit",
-        "network_pcap", "network_zeek",
+        "network_pcap", "network_zeek", "firewall", "waf",
     ]
     # 统一数据契约(Event V2 FINAL)：对外字段名是 source_event_id；
     # 输入兼容旧名 event_id，输出统一序列化为 source_event_id
