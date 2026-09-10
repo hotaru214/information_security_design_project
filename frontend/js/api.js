@@ -20,10 +20,13 @@
  *     原始日志自带的编号（4624、Sysmon 1 等），可重复、网络事件恒 null。
  * ============================================================ */
 
-/* 后端地址集中成一个常量。
- * 注意：不要写成 "localhost"——如果页面将来部署到别的机器，
- * localhost 会指向用户自己的电脑而不是后端。 */
-const API_BASE = "http://127.0.0.1:8000";
+/* 后端地址：同源优先。
+ * 页面由后端 StaticFiles 托管时（8000=主库 / 8001=批次演示库），
+ * 直接用同源地址——多批次演示换端口无需改代码；
+ * 前端独立部署（http.server 8030 等）时回落到固定后端地址。
+ * 注意：不要写 "localhost"——部署到别的机器时它会指向观众自己的电脑。 */
+const SAME_ORIGIN_BACKEND = ["8000", "8001"].includes(location.port);
+const API_BASE = SAME_ORIGIN_BACKEND ? location.origin : "http://127.0.0.1:8000";
 
 /* 超时 2 秒：后端没启动时，浏览器 fetch 默认会等很久（几十秒的
  * TCP 超时），页面会白屏转圈。必须主动掐断，快速失败。 */
@@ -33,6 +36,14 @@ const FETCH_TIMEOUT_MS = 2000;
  * 30s 超时 + 网络余量）。沿用 2s 会在后端正常工作时把请求掐死——
  * 这是"前端 2 秒 vs 后端长 LLM"冲突的解法：按接口语义分超时。 */
 const ANALYSIS_TIMEOUT_MS = 60000;
+
+/* 攻击链专用超时：后端 /api/attack-chain 要跑 D 的关联引擎（9 阶段
+ * 检测器 + 建图 + BFS），E 实测 2026-09-10 约 2.28s（优化前 3.22s），
+ * 已超通用 2s 上限——前端会先 abort，Live 攻击链必然报"连接超时"。
+ * 取 10s：约 4 倍余量，既容忍机器负载波动，又不至于白屏等太久。
+ * 通用 FETCH_TIMEOUT_MS 保持 2s 不动：/api/events、/api/hosts/map
+ * 是轻量查询，快速失败语义对它们仍然正确。 */
+const ATTACK_CHAIN_TIMEOUT_MS = 10000;
 
 /* ============================================================
  * Live / Demo 模式开关（封箱规则，2026-09-09）
@@ -281,7 +292,10 @@ async function getAttackChain() {
   }
 
   try {
-    const resp = await fetchWithTimeout(`${API_BASE}/api/attack-chain`);
+    /* 显式传 ATTACK_CHAIN_TIMEOUT_MS（10s）：后端关联引擎实测 ~2.28s，
+     * 默认 2s 会提前 abort（2026-09-10 E 实测暴露的联调问题）。
+     * 见文件头常量区的注释——按接口语义分超时。 */
+    const resp = await fetchWithTimeout(`${API_BASE}/api/attack-chain`, ATTACK_CHAIN_TIMEOUT_MS);
     if (!resp.ok) {
       return { chain: null, mode: "live", state: "error", error: `后端返回 HTTP ${resp.status}` };
     }
@@ -299,7 +313,7 @@ async function getAttackChain() {
     return { chain: normalizeChain(data), mode: "live", state: "ok" };
   } catch (e) {
     return { chain: null, mode: "live", state: "error",
-             error: e.name === "AbortError" ? "连接超时（2s）" : "后端未连接" };
+             error: e.name === "AbortError" ? "连接超时（10s）" : "后端未连接" };
   }
 }
 
