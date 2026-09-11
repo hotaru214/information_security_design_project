@@ -616,6 +616,21 @@ const MOCK_ANALYSIS_REPORT = {
     "全域重置凭据并审计 4624/4625 登录记录，确认横向移动是否触及更多主机",
     "评估 core-server 上传数据内容与范围，确认泄露等级并按预案上报",
   ],
+  /* 多智能体协调轨迹：Demo 模式与 Live 同构，报告页区块照常渲染 */
+  agent_trace: [
+    { agent: "HostAnalysisAgent",
+      responsibility: "主机日志与行为分析：异常登录、可疑进程、敏感文件访问、持久化痕迹",
+      input_events: 32, status: "ok", elapsed_ms: 3800,
+      key_findings: ["web-server 出现 cmd.exe 编码执行并派生 rundll32 远程下载", "office-pc-01 发现可疑计划任务持久化项"] },
+    { agent: "NetworkAnalysisAgent",
+      responsibility: "网络流量分析：异常连接、可疑外联、DNS/HTTP 隐蔽信道、数据外传",
+      input_events: 18, status: "ok", elapsed_ms: 4100,
+      key_findings: ["core-server 以 60s 固定间隔外联 C2（c2_beacon）", "core-server 存在 DNS 隐蔽信道查询（c2bad-dns.com）"] },
+    { agent: "CorrelationAgent",
+      responsibility: "溯源协调：归并两位领域智能体的发现与关联引擎结果，还原攻击路径并生成最终报告",
+      input_events: 5, status: "ok", elapsed_ms: 5200,
+      key_findings: ["T1190", "T1059", "T1021", "T1071", "T1041"] },
+  ],
 };
 
 /* ============================================================
