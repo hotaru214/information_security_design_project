@@ -291,49 +291,107 @@ def page_modules():
     ], size=13.5, mark="✓ ", gap=0.78)
 
 
-# ---------------------------------------------------------------- 7 D 模块
-def page_module_d():
+# ---------------------------------------------------------------- 7 D 模块①攻击链构建
+def page_module_d_build():
     s = new_slide()
-    header(s, 5, "核心模块实现 · D 关联分析",
-           "把 B/C 的离散事件，串成可回查证据的完整攻击链")
-    card(s, Inches(0.45), Inches(1.5), Inches(5.9), Inches(2.6))
-    text(s, Inches(0.7), Inches(1.65), Inches(5.4), Inches(0.5),
-         "AttackStep —— 12 字段结构化攻击步骤", size=16, color=CYAN, bold=True)
-    text(s, Inches(0.7), Inches(2.2), Inches(5.4), Inches(0.9),
-         "stage · technique · src/dst 主机与 IP\n时间戳 · 描述 · evidence_event_ids",
-         size=13, color=MUTED, mono=True)
-    text(s, Inches(0.7), Inches(3.35), Inches(5.4), Inches(0.6),
-         "证据穿透：点击步骤直达原始事件", size=14, color=ORANGE, bold=True)
-    card(s, Inches(0.45), Inches(4.3), Inches(5.9), Inches(2.5))
-    text(s, Inches(0.7), Inches(4.45), Inches(5.4), Inches(0.4),
-         "攻击图 + 归因画像", size=16, color=CYAN, bold=True)
-    bullets(s, Inches(0.7), Inches(4.95), Inches(5.5), [
-        "攻击图：节点=主机/攻击者/C2，边=动作",
-        "攻击路径：BFS 提取主要链路",
-        "归因：攻击者画像 / C2 基础设施 / TTP",
-    ], size=13, mark="▸ ", gap=0.55)
-    card(s, Inches(6.65), Inches(1.5), Inches(6.2), Inches(5.3))
-    text(s, Inches(6.9), Inches(1.65), Inches(5.7), Inches(0.5),
-         "关联输出实测", size=16, color=CYAN, bold=True)
-    text(s, Inches(6.9), Inches(2.3), Inches(5.7), Inches(0.45),
-         "① e_case01 靶场（纯网络 720 条）", size=14.5, color=FG, bold=True)
-    text(s, Inches(7.15), Inches(2.8), Inches(5.4), Inches(0.8),
-         "→ 47 步攻击链\n横向 T1021×26 · 初始访问 T1190×20 · C2×1",
-         size=13, color=MUTED)
-    text(s, Inches(6.9), Inches(4.0), Inches(5.7), Inches(0.45),
-         "② apt29 批次（主机侧 23,993 条）", size=14.5, color=FG, bold=True)
-    text(s, Inches(7.15), Inches(4.5), Inches(5.4), Inches(0.8),
-         "→ 1,129 步\n提权 T1078 · 执行 T1059 · 收集 · 持久化",
-         size=13, color=MUTED)
-    text(s, Inches(6.9), Inches(5.75), Inches(5.7), Inches(0.9),
-         "多源证据越全，链条越完整 ——\n引擎 9 阶段 12 技术全量支撑",
-         size=13.5, color=ORANGE, bold=True)
+    header(s, 5, "核心模块实现 · D 关联分析 ① 攻击链构建",
+           "从离散事件到带证据编号的攻击链，全流程自动化")
+    boxes = [
+        ("多源事件输入", "Event V2 统一契约\n按 case_id 分组\n按时间排序",
+         Inches(0.45), CYAN),
+        ("实体归一", "hosts 表 IP 与主机名互查\n内网 / 外部网段判定",
+         Inches(2.98), CYAN),
+        ("9 阶段检测器", "初始访问→执行→持久化\n提权→横向→收集\nC2→外传→防御逃逸",
+         Inches(5.51), RED),
+        ("AttackStep 序列", "12 技术映射表命中\n去重 · 时间排序\n编号 S001…",
+         Inches(8.04), ORANGE),
+        ("攻击图 + 路径", "build_attack_graph\nfind_attack_paths\n提取主攻击链路",
+         Inches(10.57), RGBColor(0x7C, 0x3A, 0xED)),
+    ]
+    for t, d, x, c in boxes:
+        card(s, x, Inches(1.75), Inches(2.31), Inches(2.0))
+        text(s, x + Inches(0.15), Inches(1.92), Inches(2.05), Inches(0.5), t,
+             size=15, color=c, bold=True)
+        text(s, x + Inches(0.15), Inches(2.45), Inches(2.05), Inches(1.2), d,
+             size=11.5, color=MUTED)
+    for x in (Inches(2.80), Inches(5.33), Inches(7.86), Inches(10.39)):
+        a = s.shapes.add_shape(1, x, Inches(2.6), Inches(0.14), Pt(3))
+        a.fill.solid(); a.fill.fore_color.rgb = CYAN; a.line.fill.background()
+        a.shadow.inherit = False
+    text(s, Inches(0.45), Inches(4.0), Inches(12.3), Inches(0.45),
+         "实测链还原（e_case01 靶场，720 条事件 → 47 步）", size=16,
+         color=FG, bold=True)
+    nodes = [
+        ("攻击机", "10.10.10.10", RED),
+        ("web-server", "入侵点", RED),
+        ("win10-jump", "10.10.30.10", CYAN),
+        ("core-server", "10.10.30.20", CYAN),
+        ("c2-server", "10.10.10.20", RED),
+    ]
+    edges = ["T1190\n命令注入 ×20", "T1021\nSSH 跳板 ×26", "T1005\n取敏感文件", "T1071\nC2 beacon"]
+    nx, nw, gap = 0.55, 1.9, 0.65
+    for i, (t, ip, c) in enumerate(nodes):
+        x = Inches(nx + i * (nw + gap))
+        card(s, x, Inches(4.6), Inches(nw), Inches(1.0))
+        text(s, x, Inches(4.72), Inches(nw), Inches(0.4), t, size=13.5,
+             color=c, bold=True, align=PP_ALIGN.CENTER)
+        text(s, x, Inches(5.14), Inches(nw), Inches(0.35), ip, size=10,
+             color=MUTED, align=PP_ALIGN.CENTER, mono=True)
+    for i, lbl in enumerate(edges):
+        x = Inches(nx + nw + i * (nw + gap) - 0.06)
+        a = s.shapes.add_shape(1, x, Inches(5.05), Inches(gap + 0.12), Pt(3))
+        a.fill.solid(); a.fill.fore_color.rgb = RED; a.line.fill.background()
+        a.shadow.inherit = False
+        text(s, Inches(nx + nw + i * (nw + gap) - 0.28), Inches(4.42),
+             Inches(gap + 0.56), Inches(0.55), lbl, size=10, color=RED,
+             bold=True, align=PP_ALIGN.CENTER)
+    text(s, Inches(0.45), Inches(5.85), Inches(12.3), Inches(0.45),
+         "入侵点（首个被攻破的内网主机）自动标记；每一步都挂 evidence_event_ids",
+         size=13.5, color=FG, bold=True)
+    text(s, Inches(0.45), Inches(6.4), Inches(12.3), Inches(0.5),
+         "检测器特征举例：登录爆破 · 命令注入 payload · 远程服务端口（22/445/3389/5985）· 敏感文件路径 · C2 信标周期性",
+         size=12, color=MUTED)
+
+
+# ---------------------------------------------------------------- 8 D 模块②行为回溯
+def page_module_d_trace():
+    s = new_slide()
+    header(s, 6, "核心模块实现 · D 关联分析 ② 攻击者行为回溯",
+           "每一步可点开原始证据，每个攻击者都有画像")
+    card(s, Inches(0.45), Inches(1.5), Inches(6.0), Inches(3.4))
+    text(s, Inches(0.7), Inches(1.65), Inches(5.5), Inches(0.4),
+         "四种回溯手段", size=16, color=CYAN, bold=True)
+    bullets(s, Inches(0.7), Inches(2.2), Inches(5.6), [
+        "证据穿透：步骤 → evidence_event_ids → 原始事件原文",
+        "时间窗回溯：展开步骤前后事件窗口，还原现场",
+        "路径反演：find_attack_paths 从任一节点回推入口",
+        "跨批次隔离：按 case_id 回溯，多批互不串扰",
+    ], size=13, mark="▸ ", gap=0.62)
+    card(s, Inches(6.85), Inches(1.5), Inches(6.0), Inches(3.4))
+    text(s, Inches(7.1), Inches(1.65), Inches(5.5), Inches(0.4),
+         "归因画像（attribution.py）", size=16, color=CYAN, bold=True)
+    bullets(s, Inches(7.1), Inches(2.2), Inches(5.6), [
+        "入侵点提取：首个被攻破的内网主机",
+        "攻击者指纹：源 IP / 手法 / 目标偏好",
+        "C2 基础设施：域名 / IP / 端口 / 路径",
+        "TTP 相似度：与内置 APT 画像 + 威胁情报比对",
+    ], size=13, mark="▸ ", gap=0.62)
+    text(s, Inches(0.45), Inches(5.15), Inches(12.3), Inches(0.45),
+         "实测回溯案例", size=16, color=FG, bold=True)
+    card(s, Inches(0.45), Inches(5.65), Inches(6.0), Inches(1.3))
+    text(s, Inches(0.7), Inches(5.78), Inches(5.5), Inches(1.05),
+         "CTU-13：CC 轮询告警 → 回溯锁定感染主机\nSARUMAN，与 ground truth 一致",
+         size=13, color=FG)
+    card(s, Inches(6.85), Inches(5.65), Inches(6.0), Inches(1.3))
+    text(s, Inches(7.1), Inches(5.78), Inches(5.5), Inches(1.05),
+         "APT29：C2 心跳事件 → 回溯出 GT 之外真实\n域名 footprintdns.com",
+         size=13, color=FG)
 
 
 # ---------------------------------------------------------------- 8 靶场
 def page_range():
     s = new_slide()
-    header(s, 6, "E 靶场构建 · 9 节点三段式",
+    header(s, 7, "E 靶场构建 · 9 节点三段式",
            "VMware 隔离 · OPNsense 三接口分段 · 完整入侵链由攻击机一手触发")
     text(s, Inches(0.45), Inches(1.48), Inches(12.3), Inches(0.4),
          "WAN 10.10.10.0/24（攻击机·C2）  →  DMZ 10.10.20.0/24（Web·Email）  →  LAN 10.10.30.0/24（Win10·Core）",
@@ -387,7 +445,7 @@ def page_range():
 # ---------------------------------------------------------------- 9 靶场实测
 def page_range_result():
     s = new_slide()
-    header(s, 7, "靶场实测 · 剧本 vs 检出对照",
+    header(s, 8, "靶场实测 · 剧本 vs 检出对照",
            "6 段剧本全部事件化，入侵点自动标记")
     card(s, Inches(0.45), Inches(1.5), Inches(6.2), Inches(5.3))
     text(s, Inches(0.7), Inches(1.65), Inches(5.7), Inches(0.5),
@@ -418,7 +476,7 @@ def page_range_result():
 # ---------------------------------------------------------------- 10 CTU-13
 def page_ctu13():
     s = new_slide()
-    header(s, 8, "公开数据集实验 ① CTU-13 僵尸网络",
+    header(s, 10, "公开数据集实验 ① CTU-13 僵尸网络",
            "任务书测试要求(1)：与 ground truth 对照")
     card(s, Inches(0.45), Inches(1.5), Inches(6.1), Inches(4.0))
     text(s, Inches(0.7), Inches(1.65), Inches(5.6), Inches(0.4),
@@ -446,7 +504,7 @@ def page_ctu13():
 # ---------------------------------------------------------------- 11 APT29
 def page_apt29():
     s = new_slide()
-    header(s, 9, "公开数据集实验 ② APT29 Evaluations Day1",
+    header(s, 10, "公开数据集实验 ② APT29 Evaluations Day1",
            "企业内网 APT 数据集 + ATT&CK ground truth 对照")
     card(s, Inches(0.45), Inches(1.5), Inches(6.0), Inches(5.3))
     text(s, Inches(0.7), Inches(1.7), Inches(5.5), Inches(0.4),
@@ -483,7 +541,7 @@ def page_apt29():
 # ---------------------------------------------------------------- 12 前端+LLM
 def page_frontend():
     s = new_slide()
-    header(s, 10, "F 前端与 LLM 分析报告",
+    header(s, 11, "F 前端与 LLM 分析报告",
            "5 页面 · LLM 优先 + 规则降级（永远 200）")
     picture(s, "shot_report.png", Inches(0.45), Inches(1.6), w=Inches(7.6))
     text(s, Inches(0.45), Inches(5.95), Inches(7.6), Inches(0.5),
@@ -510,7 +568,7 @@ def page_frontend():
 # ---------------------------------------------------------------- 13 成果总览
 def page_overview():
     s = new_slide()
-    header(s, 11, "平台成果总览 · 硬数字", "全部为实测值，可复现")
+    header(s, 12, "平台成果总览 · 硬数字", "全部为实测值，可复现")
     stats = [
         ("203", "自动化测试"),
         ("10", "网络检测器→ATT&CK"),
@@ -542,7 +600,7 @@ def page_overview():
 # ---------------------------------------------------------------- 14 开源对比
 def page_oss_compare():
     s = new_slide()
-    header(s, 12, "开源对比与创新性",
+    header(s, 13, "开源对比与创新性",
            "8 个同类项目对比 · 详见 docs/开源项目对比与自研系统创新性分析.md")
     card(s, Inches(0.45), Inches(1.5), Inches(7.3), Inches(5.3))
     text(s, Inches(0.7), Inches(1.65), Inches(6.8), Inches(0.4),
@@ -581,7 +639,7 @@ def page_oss_compare():
 # ---------------------------------------------------------------- 15 总结
 def page_summary():
     s = new_slide()
-    header(s, 13, "总结与展望", "对照任务书逐项交付")
+    header(s, 14, "总结与展望", "对照任务书逐项交付")
     card(s, Inches(0.45), Inches(1.5), Inches(6.0), Inches(4.4))
     text(s, Inches(0.7), Inches(1.65), Inches(5.5), Inches(0.4),
          "已完成", size=16, color=CYAN, bold=True)
@@ -631,7 +689,8 @@ def main():
     page_arch()
     page_contract()
     page_modules()
-    page_module_d()
+    page_module_d_build()
+    page_module_d_trace()
     page_range()
     page_range_result()
     page_ctu13()
