@@ -264,37 +264,121 @@ def page_contract():
          "实测：47,055 条主机事件一次入库全过校验", size=13, color=ORANGE, bold=True)
 
 
-# ---------------------------------------------------------------- 6 B/C 模块
+# ---------------------------------------------------------------- 6 B 模块
 def page_modules():
     s = new_slide()
-    header(s, 4, "核心模块实现 · 采集与解析（B / C）",
-           "主机侧 31 种事件类型 · 网络侧 10 检测器 → ATT&CK")
+    header(s, 4, "核心模块实现 · B 主机日志解析",
+           "5 类异构输入，归一成 31 种标准事件类型")
     card(s, Inches(0.45), Inches(1.5), Inches(6.0), Inches(5.3))
     text(s, Inches(0.7), Inches(1.7), Inches(5.5), Inches(0.5),
-         "B · 主机日志解析", size=18, color=CYAN, bold=True)
+         "能力清单", size=18, color=CYAN, bold=True)
     bullets(s, Inches(0.7), Inches(2.35), Inches(5.5), [
         "5 类输入：EVTX / Sysmon EVTX+JSON / auth / auditd",
         "31 种标准事件类型，时间统一 UTC+8",
         "登录会话重建：4624/4634/4647 配对",
         "异常预标记 9 规则（爆破/编码执行/持久化…）",
-        "实测：47,055 条事件一次通过契约校验",
+        "filterlog 防火墙事件：action/rule_id 进 detail",
     ], size=13.5, mark="✓ ", gap=0.78)
     card(s, Inches(6.85), Inches(1.5), Inches(6.0), Inches(5.3))
     text(s, Inches(7.1), Inches(1.7), Inches(5.5), Inches(0.5),
-         "C · 网络流量解析", size=18, color=CYAN, bold=True)
-    bullets(s, Inches(7.1), Inches(2.35), Inches(5.5), [
-        "4 类输入：PCAP · Zeek · filterlog · CSV",
-        "10 检测器 → ATT&CK（扫描/C2/DNS隧道/外传/横向…）",
-        "实战新增 CC 轮询检测（CTU-13 零误报）",
+         "解析管线与实测", size=18, color=CYAN, bold=True)
+    text(s, Inches(7.1), Inches(2.35), Inches(5.6), Inches(1.6),
+         "原始日志 → 类型识别 → 字段归一\n→ 会话重建 / 异常预标记 → Event V2",
+         size=14, color=FG, mono=True)
+    text(s, Inches(7.1), Inches(4.0), Inches(5.5), Inches(0.4),
+         "实测", size=15, color=CYAN, bold=True)
+    bullets(s, Inches(7.1), Inches(4.5), Inches(5.6), [
+        "E 靶场 47,055 条一次通过契约校验",
+        "apt29 批次 23,993 条驱动 D 输出 1,129 步",
+    ], size=13.5, mark="✓ ", gap=0.62)
+
+
+# ---------------------------------------------------------------- 7 C 模块①解析与检测
+def page_modules_c_build():
+    s = new_slide()
+    header(s, 5, "核心模块实现 · C 网络流量解析 ① 解析与检测",
+           "4 种格式进，同一条 Event V2 出，全程自动嗅探")
+    boxes = [
+        ("多格式输入", "PCAP / PCAPNG\nZeek TSV/JSON/合并流\nfilterlog · CSV",
+         Inches(0.45), CYAN),
+        ("会话重组", "五元组聚流\nDNS 查询/域名提取\nHTTP 方法/URI/状态码",
+         Inches(2.98), CYAN),
+        ("时间与实体归一", "时间统一 UTC+8\nIP/端口/域名归一\n缺失即 null",
+         Inches(5.51), RGBColor(0x05, 0x96, 0x69)),
+        ("10 检测器", "阈值 + 特征 + 周期性\n三重判据告警",
+         Inches(8.04), RED),
+        ("Event V2 输出", "anomaly_flags / severity\n三层契约校验阻断",
+         Inches(10.57), ORANGE),
+    ]
+    for t, d, x, c in boxes:
+        card(s, x, Inches(1.75), Inches(2.31), Inches(2.0))
+        text(s, x + Inches(0.15), Inches(1.92), Inches(2.05), Inches(0.5), t,
+             size=15, color=c, bold=True)
+        text(s, x + Inches(0.15), Inches(2.5), Inches(2.05), Inches(1.2), d,
+             size=11.5, color=MUTED)
+    for x in (Inches(2.80), Inches(5.33), Inches(7.86), Inches(10.39)):
+        a = s.shapes.add_shape(1, x, Inches(2.6), Inches(0.14), Pt(3))
+        a.fill.solid(); a.fill.fore_color.rgb = CYAN; a.line.fill.background()
+        a.shadow.inherit = False
+    text(s, Inches(0.45), Inches(4.1), Inches(12.3), Inches(0.45),
+         "实测：三类数据源全部合规入库", size=16, color=FG, bold=True)
+    results = [
+        ("靶场 e_case01", "pcap + filterlog 720 条"),
+        ("CTU-13", "139,195 会话全合规"),
+        ("APT29 链路佐证", "48 条内网横向检出"),
+    ]
+    for i, (t, d) in enumerate(results):
+        x = Inches(0.45 + i * 4.25)
+        card(s, x, Inches(4.65), Inches(3.95), Inches(1.15))
+        text(s, x + Inches(0.2), Inches(4.78), Inches(3.6), Inches(0.4), t,
+             size=14, color=CYAN, bold=True)
+        text(s, x + Inches(0.2), Inches(5.2), Inches(3.6), Inches(0.4), d,
+             size=12.5, color=MUTED)
+    text(s, Inches(0.45), Inches(6.15), Inches(12.3), Inches(0.5),
+         "防错设计：格式自动嗅探 + 未知文件名兜底分类；广播/内网判定缓存分离，杜绝交叉污染误判",
+         size=12.5, color=MUTED)
+
+
+# ---------------------------------------------------------------- 8 C 模块②检测器与实战
+def page_modules_c_hit():
+    s = new_slide()
+    header(s, 6, "核心模块实现 · C 网络流量解析 ② 十检测器与实战",
+           "检测即证据：每条告警都供 D 关联、可穿透回查")
+    card(s, Inches(0.45), Inches(1.5), Inches(6.0), Inches(5.3))
+    text(s, Inches(0.7), Inches(1.65), Inches(5.5), Inches(0.4),
+         "检测器 → ATT&CK 技术", size=16, color=CYAN, bold=True)
+    dets = [
+        "端口扫描 → T1046", "C2 心跳 → T1071",
+        "可疑端口 → T1571", "DNS 隧道 → T1071.004",
+        "数据外传 → T1048", "ICMP 隧道 → T1095",
+        "横向移动 → T1021", "Web 攻击 → T1190",
+        "口令爆破 → T1110", "CC 轮询 → T1071（实战新增）",
+    ]
+    yy = 2.2
+    for d in dets:
+        text(s, Inches(0.7), Inches(yy), Inches(5.6), Inches(0.35),
+             "▸ " + d, size=12.5, color=FG)
+        yy += 0.45
+    card(s, Inches(6.85), Inches(1.5), Inches(6.0), Inches(5.3))
+    text(s, Inches(7.1), Inches(1.65), Inches(5.5), Inches(0.4),
+         "实战战绩", size=16, color=CYAN, bold=True)
+    bullets(s, Inches(7.1), Inches(2.2), Inches(5.6), [
+        "e_case01：命令注入 + SSH 跳板全检出",
+        "CTU-13：感染主机 SARUMAN 精确命中",
+        "suspicious_port 检出 IRC C2，8/10 精确",
+        "CC 轮询新规则：1 告警 0 误报",
         "误报修复实录：utmcmd 1354→16 条",
-        "filterlog：action/rule_id 进 detail",
-    ], size=13.5, mark="✓ ", gap=0.78)
+        "靶场 filterlog 588 条全量事件化",
+    ], size=13, mark="✓ ", gap=0.68)
+    text(s, Inches(7.1), Inches(6.15), Inches(5.6), Inches(0.5),
+         "阈值如实在档：nmap 6 端口低于阈值 10 → 不告警，只记录",
+         size=12, color=ORANGE, bold=True)
 
 
 # ---------------------------------------------------------------- 7 D 模块①攻击链构建
 def page_module_d_build():
     s = new_slide()
-    header(s, 5, "核心模块实现 · D 关联分析 ① 攻击链构建",
+    header(s, 7, "核心模块实现 · D 关联分析 ① 攻击链构建",
            "从离散事件到带证据编号的攻击链，全流程自动化")
     boxes = [
         ("多源事件输入", "Event V2 统一契约\n按 case_id 分组\n按时间排序",
@@ -356,7 +440,7 @@ def page_module_d_build():
 # ---------------------------------------------------------------- 8 D 模块②行为回溯
 def page_module_d_trace():
     s = new_slide()
-    header(s, 6, "核心模块实现 · D 关联分析 ② 攻击者行为回溯",
+    header(s, 8, "核心模块实现 · D 关联分析 ② 攻击者行为回溯",
            "每一步可点开原始证据，每个攻击者都有画像")
     card(s, Inches(0.45), Inches(1.5), Inches(6.0), Inches(3.4))
     text(s, Inches(0.7), Inches(1.65), Inches(5.5), Inches(0.4),
@@ -391,7 +475,7 @@ def page_module_d_trace():
 # ---------------------------------------------------------------- 8 靶场
 def page_range():
     s = new_slide()
-    header(s, 7, "E 靶场构建 · 9 节点三段式",
+    header(s, 9, "E 靶场构建 · 9 节点三段式",
            "VMware 隔离 · OPNsense 三接口分段 · 完整入侵链由攻击机一手触发")
     text(s, Inches(0.45), Inches(1.48), Inches(12.3), Inches(0.4),
          "WAN 10.10.10.0/24（攻击机·C2）  →  DMZ 10.10.20.0/24（Web·Email）  →  LAN 10.10.30.0/24（Win10·Core）",
@@ -445,7 +529,7 @@ def page_range():
 # ---------------------------------------------------------------- 9 靶场实测
 def page_range_result():
     s = new_slide()
-    header(s, 8, "靶场实测 · 剧本 vs 检出对照",
+    header(s, 10, "靶场实测 · 剧本 vs 检出对照",
            "6 段剧本全部事件化，入侵点自动标记")
     card(s, Inches(0.45), Inches(1.5), Inches(6.2), Inches(5.3))
     text(s, Inches(0.7), Inches(1.65), Inches(5.7), Inches(0.5),
@@ -476,7 +560,7 @@ def page_range_result():
 # ---------------------------------------------------------------- 10 CTU-13
 def page_ctu13():
     s = new_slide()
-    header(s, 10, "公开数据集实验 ① CTU-13 僵尸网络",
+    header(s, 11, "公开数据集实验 ① CTU-13 僵尸网络",
            "任务书测试要求(1)：与 ground truth 对照")
     card(s, Inches(0.45), Inches(1.5), Inches(6.1), Inches(4.0))
     text(s, Inches(0.7), Inches(1.65), Inches(5.6), Inches(0.4),
@@ -504,7 +588,7 @@ def page_ctu13():
 # ---------------------------------------------------------------- 11 APT29
 def page_apt29():
     s = new_slide()
-    header(s, 10, "公开数据集实验 ② APT29 Evaluations Day1",
+    header(s, 12, "公开数据集实验 ② APT29 Evaluations Day1",
            "企业内网 APT 数据集 + ATT&CK ground truth 对照")
     card(s, Inches(0.45), Inches(1.5), Inches(6.0), Inches(5.3))
     text(s, Inches(0.7), Inches(1.7), Inches(5.5), Inches(0.4),
@@ -541,7 +625,7 @@ def page_apt29():
 # ---------------------------------------------------------------- 12 前端+LLM
 def page_frontend():
     s = new_slide()
-    header(s, 11, "F 前端与 LLM 分析报告",
+    header(s, 13, "F 前端与 LLM 分析报告",
            "5 页面 · LLM 优先 + 规则降级（永远 200）")
     picture(s, "shot_report.png", Inches(0.45), Inches(1.6), w=Inches(7.6))
     text(s, Inches(0.45), Inches(5.95), Inches(7.6), Inches(0.5),
@@ -568,7 +652,7 @@ def page_frontend():
 # ---------------------------------------------------------------- 13 成果总览
 def page_overview():
     s = new_slide()
-    header(s, 12, "平台成果总览 · 硬数字", "全部为实测值，可复现")
+    header(s, 14, "平台成果总览 · 硬数字", "全部为实测值，可复现")
     stats = [
         ("203", "自动化测试"),
         ("10", "网络检测器→ATT&CK"),
@@ -600,7 +684,7 @@ def page_overview():
 # ---------------------------------------------------------------- 14 开源对比
 def page_oss_compare():
     s = new_slide()
-    header(s, 13, "开源对比与创新性",
+    header(s, 15, "开源对比与创新性",
            "8 个同类项目对比 · 详见 docs/开源项目对比与自研系统创新性分析.md")
     card(s, Inches(0.45), Inches(1.5), Inches(7.3), Inches(5.3))
     text(s, Inches(0.7), Inches(1.65), Inches(6.8), Inches(0.4),
@@ -639,7 +723,7 @@ def page_oss_compare():
 # ---------------------------------------------------------------- 15 总结
 def page_summary():
     s = new_slide()
-    header(s, 14, "总结与展望", "对照任务书逐项交付")
+    header(s, 16, "总结与展望", "对照任务书逐项交付")
     card(s, Inches(0.45), Inches(1.5), Inches(6.0), Inches(4.4))
     text(s, Inches(0.7), Inches(1.65), Inches(5.5), Inches(0.4),
          "已完成", size=16, color=CYAN, bold=True)
@@ -689,6 +773,8 @@ def main():
     page_arch()
     page_contract()
     page_modules()
+    page_modules_c_build()
+    page_modules_c_hit()
     page_module_d_build()
     page_module_d_trace()
     page_range()
@@ -700,8 +786,14 @@ def main():
     page_oss_compare()
     page_summary()
     page_thanks()
-    prs.save(OUT)
-    print(f"saved: {OUT} ({len(prs.slides._sldIdLst)} slides)")
+    try:
+        prs.save(OUT)
+        print(f"saved: {OUT} ({len(prs.slides._sldIdLst)} slides)")
+    except PermissionError:
+        alt = OUT.replace(".pptx", "-新.pptx")
+        prs.save(alt)
+        print(f"LOCKED: {OUT} 正被 PowerPoint 占用，已另存: {alt}")
+        print("关闭 PowerPoint 后把 -新 文件重命名回去即可")
 
 
 if __name__ == "__main__":
