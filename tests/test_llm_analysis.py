@@ -111,11 +111,13 @@ def test_fallback_without_api_key(monkeypatch):
     report = generate_report(make_steps(), make_events())
 
     assert report["source"] == "fallback"
-    # 契约字段一个不能少（前端 report.js 按字段名渲染）
+    # 契约字段一个不能少（前端 report.js 按字段名渲染）；agent_trace 是
+    # 多智能体编排新增的轨迹字段，降级场景也必须存在（前端如实渲染）
     assert set(report) == {
         "attack_path", "summary", "key_evidences", "mitre_mapping",
-        "risk_level", "recommendations", "source",
+        "risk_level", "recommendations", "source", "agent_trace",
     }
+    assert all(a["status"] == "degraded" for a in report["agent_trace"])
     # attack_path 来自 build_attack_graph 推导：外部攻击IP → web-server → 内网
     assert "web-server" in report["attack_path"]
     # 证据 id 必须是数据库真实 id
@@ -192,7 +194,10 @@ def test_fallback_on_llm_timeout(monkeypatch):
     report = generate_report(make_steps(), make_events())
 
     assert report["source"] == "fallback"
-    assert calls["count"] == 2    # 失败后重试了一次，共两次尝试
+    # 多智能体编排：host/network 两个领域智能体各 1 次 + 协调智能体重试
+    # 一次共 2 次 = 4 次 LLM 调用，全部失败后整体降级
+    assert calls["count"] == 4
+    assert all(a["status"] == "degraded" for a in report["agent_trace"])
 
 
 # ---------------------------------------------------------------------------
@@ -214,7 +219,13 @@ def test_retry_after_parse_failure_then_llm_success(monkeypatch):
 
     responses = iter(["这不是 JSON，模型夹带了解释文字", f"```json\n{good_json}\n```"])
 
-    def fake_call_llm(_messages, _config=None):
+    def fake_call_llm(messages, _config=None):
+        # 多智能体编排：领域智能体的 prompt 含 findings schema → 返回领域发现；
+        # 协调智能体 → 依次返回"坏输出、好输出"，验证协调层重试一次后成功
+        if '"findings"' in messages[1]["content"]:
+            return json.dumps(
+                {"findings": ["203.0.113.66 高频请求 web-server 80 端口"]},
+                ensure_ascii=False)
         return next(responses)
 
     monkeypatch.setattr(llm_analysis, "call_llm", fake_call_llm)
@@ -298,3 +309,67 @@ def test_empty_database_report(monkeypatch):
     assert report["attack_path"] == []
     assert report["key_evidences"] == []
     assert "未关联出攻击行为" in report["summary"]
+
+# ---------------------------------------------------------------------------
+# 场景⑦/⑧：多智能体编排（题面"大模型多智能体协调技术"）
+# ---------------------------------------------------------------------------
+def test_orchestration_emits_agent_trace(monkeypatch):
+    """三个智能体全部成功 → agent_trace 三条、状态 ok、轨迹随报告返回。"""
+    monkeypatch.setenv("LLM_BASE_URL", "https://api.deepseek.com/v1")
+    monkeypatch.setenv("LLM_API_KEY", "sk-test")
+
+    good_report = json.dumps({
+        "attack_path": ["203.0.113.66", "web-server"],
+        "summary": "攻击者经 Web 漏洞入侵 web-server。",
+        "key_evidences": [{"event_id": 1, "reason": "Web 攻击载荷命中"}],
+        "mitre_mapping": [{"stage": "Initial Access", "technique": "T1190",
+                           "evidence_event_ids": [1]}],
+        "risk_level": "高危",
+        "recommendations": ["修复 Web 输入校验"],
+    }, ensure_ascii=False)
+
+    def fake_call_llm(messages, _config=None):
+        if '"findings"' in messages[1]["content"]:
+            return json.dumps({"findings": ["领域智能体的事实发现"]}, ensure_ascii=False)
+        return good_report
+
+    monkeypatch.setattr(llm_analysis, "call_llm", fake_call_llm)
+    report = generate_report(make_steps(), make_events())
+
+    assert report["source"] == "llm"
+    trace = report["agent_trace"]
+    assert [a["agent"] for a in trace] == [
+        "HostAnalysisAgent", "NetworkAnalysisAgent", "CorrelationAgent"]
+    assert all(a["status"] == "ok" for a in trace)
+    assert all("elapsed_ms" in a and "input_events" in a for a in trace)
+
+
+def test_single_agent_failure_degrades_without_breaking_report(monkeypatch):
+    """一个领域智能体失败 → 该智能体 degraded，报告仍由协调智能体产出。"""
+    monkeypatch.setenv("LLM_BASE_URL", "https://api.deepseek.com/v1")
+    monkeypatch.setenv("LLM_API_KEY", "sk-test")
+
+    good_report = json.dumps({
+        "attack_path": ["203.0.113.66", "web-server"],
+        "summary": "攻击者经 Web 漏洞入侵 web-server。",
+        "key_evidences": [{"event_id": 1, "reason": "Web 攻击载荷命中"}],
+        "mitre_mapping": [{"stage": "Initial Access", "technique": "T1190",
+                           "evidence_event_ids": [1]}],
+        "risk_level": "高危",
+        "recommendations": ["修复 Web 输入校验"],
+    }, ensure_ascii=False)
+
+    def fake_call_llm(messages, _config=None):
+        if '"findings"' in messages[1]["content"]:
+            # 领域智能体输出畸形 JSON → 该智能体 degraded（不传染）
+            return "这不是 JSON"
+        return good_report
+
+    monkeypatch.setattr(llm_analysis, "call_llm", fake_call_llm)
+    report = generate_report(make_steps(), make_events())
+
+    assert report["source"] == "llm"
+    trace = report["agent_trace"]
+    assert trace[0]["status"] == "degraded" or trace[1]["status"] == "degraded"
+    assert trace[2]["status"] == "ok"
+    assert report["key_evidences"][0]["event_id"] == 1

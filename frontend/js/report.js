@@ -186,8 +186,33 @@ function buildReportHtml(r) {
   const mappings = Array.isArray(safeField(r, "mitre_mapping")) ? r.mitre_mapping : [];
   const evidences = Array.isArray(safeField(r, "key_evidences")) ? r.key_evidences : [];
   const recommendations = Array.isArray(safeField(r, "recommendations")) ? r.recommendations : [];
+  const agentTrace = Array.isArray(safeField(r, "agent_trace")) ? r.agent_trace : [];
   const summary = safeField(r, "summary");
   const risk = safeField(r, "risk_level");
+
+  /* ---------- 多智能体协调轨迹（题面："大模型多智能体协调技术"） ----------
+   * 后端编排器把三个智能体（主机/网络/溯源协调）的职责、输入规模、
+   * 状态、耗时与关键发现随报告返回；这里如实渲染，含 degraded 状态。 */
+  const agentsHtml = agentTrace.map(a => {
+    const name = safeField(a, "agent") ?? "-";
+    const duty = safeField(a, "responsibility") ?? "";
+    const status = safeField(a, "status") ?? "-";
+    const ms = safeField(a, "elapsed_ms");
+    const inputs = safeField(a, "input_events");
+    const finds = Array.isArray(safeField(a, "key_findings")) ? a.key_findings : [];
+    const findList = finds.length
+      ? `<ul class="agent-findings">${finds.map(f => `<li>${App.esc(String(f))}</li>`).join("")}</ul>`
+      : "";
+    return `<div class="agent-card">
+      <div class="agent-head">
+        <b>${App.esc(String(name))}</b>
+        <span class="chip">${App.esc(String(duty))}</span>
+        <span class="chip agent-status-${App.esc(String(status))}">${App.esc(String(status))}</span>
+        <span class="chip">${inputs != null ? `输入 ${App.esc(String(inputs))} 事件` : ""}${ms != null ? ` · 耗时 ${App.esc(String(ms))}ms` : ""}</span>
+      </div>
+      ${findList}
+    </div>`;
+  }).join("");
 
   /* ---------- 一、攻击路径：横向流程图 ---------- */
   const flowHtml = path.length === 0
@@ -285,6 +310,8 @@ function buildReportHtml(r) {
     ${risk || recommendations.length ? '<h4>五、风险等级与处置建议</h4>' : ""}
     ${riskHtml}
     ${recoHtml}
+    ${agentTrace.length ? '<h4>六、多智能体协调过程</h4>' : ""}
+    ${agentsHtml}
     <p class="muted">—— 报告生成于 ${App.esc(nowLabel())} ·
       ${REPORT_LIVE
         ? "数据来源：后端 POST /api/analysis（LLM 分析结果经后端解析为结构化 JSON，前端不直接调用 LLM API）"
@@ -410,6 +437,20 @@ function buildReportMarkdown(r) {
   }
   if (recommendations.length) {
     recommendations.forEach(x => lines.push(`- ${typeof x === "string" ? x : JSON.stringify(x)}`));
+    lines.push("");
+  }
+  /* 多智能体协调过程（与 HTML 版口径一致） */
+  const agentTrace = Array.isArray(safeField(r, "agent_trace")) ? r.agent_trace : [];
+  if (agentTrace.length) {
+    lines.push("## 六、多智能体协调过程");
+    lines.push("");
+    agentTrace.forEach(a => {
+      lines.push(`- **${safeField(a, "agent") ?? "-"}**（${safeField(a, "responsibility") ?? "-"}）：` +
+        `状态 ${safeField(a, "status") ?? "-"} · 输入 ${safeField(a, "input_events") ?? 0} 事件 · ` +
+        `耗时 ${safeField(a, "elapsed_ms") ?? "-"}ms`);
+      (Array.isArray(safeField(a, "key_findings")) ? a.key_findings : [])
+        .forEach(f => lines.push(`  - ${typeof f === "string" ? f : JSON.stringify(f)}`));
+    });
     lines.push("");
   }
   return lines.join("\n");
