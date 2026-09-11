@@ -368,3 +368,15 @@ main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
   outline: 2px dashed var(--primary, #2563eb);
   outline-offset: 4px;
 }
+
+/* ---------- 多智能体协调过程区块（分析报告页 · 区块六） ---------- */
+.agent-card {
+  border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px;
+  margin-bottom: 10px; background: #fafafa;
+}
+.agent-head { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.agent-head b { margin-right: 4px; }
+.agent-findings { margin: 8px 0 0; padding-left: 20px; }
+.agent-findings li { font-size: 12px; line-height: 1.7; }
+.agent-status-ok { color: #16a34a; }
+.agent-status-degraded { color: #d97706; }

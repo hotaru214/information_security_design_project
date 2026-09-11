@@ -368,6 +368,171 @@ def validate_report(data: Any, valid_event_ids: set[int]) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# 多智能体协调（题面要求："利用大模型多智能体协调技术"完成溯源分析）
+# ---------------------------------------------------------------------------
+# 编排式多智能体：两个领域智能体并行感知（各自只看自己数据面的事件切片，
+# 职责边界 = Event V2 的 source 枚举），产物作为上下文交给溯源协调智能体
+# 归并成最终报告。设计约束：
+#   - 单个智能体失败只降级该智能体（status=degraded），不传染全链；
+#   - agent_trace 随报告返回，前端如实展示协调过程（含失败）；
+#   - 全链路仍守"永远 200"承诺：编排层任何意外最终都落到规则模板。
+
+AGENT_ROLES = (
+    ("HostAnalysisAgent",
+     "主机日志与行为分析：异常登录、可疑进程、敏感文件访问、持久化痕迹"),
+    ("NetworkAnalysisAgent",
+     "网络流量分析：异常连接、可疑外联、DNS/HTTP 隐蔽信道、数据外传"),
+    ("CorrelationAgent",
+     "溯源协调：归并两位领域智能体的发现与关联引擎结果，还原攻击路径并生成最终报告"),
+)
+
+_DOMAIN_SCHEMA = (
+    '请严格按以下 JSON schema 输出（不要输出多余文字）：\n'
+    '{"findings": ["发现1：一句话描述，必须含具体 IP/主机/端口/行为等事实", "..."]}\n'
+    '要求：3-8 条，只陈述给定事件里可验证的事实，禁止推测与编造。'
+)
+
+
+def _split_events_by_domain(events: list[dict[str, Any]]) -> tuple[list, list]:
+    """按契约 source 枚举把事件切成主机侧/网络侧两路（= 智能体职责边界）。"""
+    host_events: list[dict[str, Any]] = []
+    network_events: list[dict[str, Any]] = []
+    for event in events:
+        source = event.get("source")
+        if source in ("network_pcap", "network_zeek"):
+            network_events.append(event)
+        else:
+            host_events.append(event)
+    return host_events, network_events
+
+
+def _run_domain_agent(agent_name: str, responsibility: str,
+                      domain_events: list[dict[str, Any]]) -> list[str]:
+    """领域智能体：独立 LLM 调用，只分析自己数据面的事件切片。
+
+    返回 findings 字符串列表；任何失败抛异常，由编排层记为 degraded。
+    该域没有事件是正常情况（如纯流量库没有主机侧行程），返回空列表不算失败。
+    """
+    if not domain_events:
+        return []
+    messages = [
+        {"role": "system",
+         "content": f"你是企业安全溯源团队中的 {agent_name}。职责：{responsibility}。"
+                    "只基于给定事件输出可验证的发现，禁止编造具体数值。"},
+        {"role": "user",
+         "content": f"【职责】{responsibility}\n"
+                    "【本域事件摘要（已按严重度/时间排序，超量截断）】\n"
+                    f"{json.dumps(build_event_context(domain_events), ensure_ascii=False)}\n\n"
+                    f"{_DOMAIN_SCHEMA}"},
+    ]
+    raw = call_llm(messages)
+    data = extract_json(raw)
+    findings = data.get("findings") if isinstance(data, dict) else None
+    if not isinstance(findings, list):
+        raise ValueError("领域智能体输出缺少 findings 数组")
+    return [str(item) for item in findings][:8]
+
+
+def _degraded_agent_trace(events: list[dict[str, Any]], reason: str) -> list[dict[str, Any]]:
+    """降级场景的智能体轨迹：如实标注 degraded，前端照样渲染协调过程。"""
+    host_events, network_events = _split_events_by_domain(events)
+    counts = {"HostAnalysisAgent": len(host_events),
+              "NetworkAnalysisAgent": len(network_events)}
+    trace = [{"agent": name, "responsibility": role, "input_events": counts.get(name, 0),
+              "status": "degraded", "elapsed_ms": None, "key_findings": [reason]}
+             for name, role in AGENT_ROLES[:2]]
+    trace.append({"agent": AGENT_ROLES[2][0], "responsibility": AGENT_ROLES[2][1],
+                  "input_events": 0, "status": "degraded", "elapsed_ms": None,
+                  "key_findings": [reason]})
+    return trace
+
+
+def orchestrate_agents(attack_steps: list[dict[str, Any]],
+                       events: list[dict[str, Any]],
+                       events_by_id: dict[int, dict[str, Any]],
+                       attack_path: list[str],
+                       attribution: dict[str, Any] | None) -> dict[str, Any]:
+    """编排三个智能体：领域智能体并行感知 → 溯源协调智能体归并出报告。
+
+    并行用线程池即可——call_llm 是纯 I/O，两个领域智能体互不依赖；
+    顺序执行最坏 3×30s 会顶穿前端 60s 上限，并行后最坏 2×30s。
+    """
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    host_events, network_events = _split_events_by_domain(events)
+
+    def _domain_task(agent_name: str, responsibility: str,
+                     domain_events: list) -> dict[str, Any]:
+        started = time.perf_counter()
+        status, findings = "ok", []
+        try:
+            findings = _run_domain_agent(agent_name, responsibility, domain_events)
+        except Exception as exc:            # 单智能体失败不传染全链
+            status, findings = "degraded", [f"该智能体不可用，已跳过：{exc}"]
+            print(f"[llm_analysis] {agent_name} degraded: {exc}")
+        elapsed = int((time.perf_counter() - started) * 1000)
+        return {"agent": agent_name, "responsibility": responsibility,
+                "input_events": len(domain_events), "status": status,
+                "elapsed_ms": elapsed, "key_findings": findings}
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        fut_host = pool.submit(_domain_task, AGENT_ROLES[0][0], AGENT_ROLES[0][1], host_events)
+        fut_net = pool.submit(_domain_task, AGENT_ROLES[1][0], AGENT_ROLES[1][1], network_events)
+        host_result = fut_host.result()
+        network_result = fut_net.result()
+    agent_trace: list[dict[str, Any]] = [host_result, network_result]
+
+    # 溯源协调智能体：归并领域发现 + 关联引擎结果（+ D 的攻击者画像，可选）
+    started = time.perf_counter()
+    attribution_digest = None
+    if isinstance(attribution, dict):
+        attribution_digest = {key: attribution.get(key)
+                              for key in ("apt_matches", "c2_infrastructure", "behavior_sequence")
+                              if attribution.get(key)}
+    agent_findings_digest = json.dumps({
+        "HostAnalysisAgent": host_result.get("key_findings"),
+        "NetworkAnalysisAgent": network_result.get("key_findings"),
+    }, ensure_ascii=False)
+    orchestration_prompt = (
+        "【多智能体协作上下文】两位领域智能体已完成各自数据面的独立分析，"
+        "发现如下（请交叉验证后再采信）：\n"
+        f"{agent_findings_digest}\n\n"
+        + (f"【攻击者画像 / APT TTP 相似性匹配（规则引擎产出，可引用其结论）】\n"
+           f"{json.dumps(attribution_digest, ensure_ascii=False)}\n\n" if attribution_digest else "")
+        + build_user_prompt(attack_steps, build_event_context(events), attack_path)
+    )
+    # 保留"解析失败重试一次"的旧承诺——LLM 偶发的格式抖动不值得整场降级
+    messages = [{"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": orchestration_prompt}]
+    report = None
+    last_error: Exception | None = None
+    for _attempt in range(2):
+        try:
+            raw = call_llm(messages)
+            report = validate_report(extract_json(raw), set(events_by_id))
+            break
+        except (LLMRequestError, ValueError, json.JSONDecodeError) as exc:
+            last_error = exc
+    if report is None:
+        # 两次都失败：抛给编排层兜底（generate_report 的 try/except 落到规则模板）
+        raise LLMRequestError(f"correlation agent failed after retry: {last_error}")
+    if not report.get("summary"):
+        report["summary"] = _build_summary(attack_steps, attack_path)
+    agent_trace.append({
+        "agent": AGENT_ROLES[2][0], "responsibility": AGENT_ROLES[2][1],
+        "input_events": (len(host_result.get("key_findings") or [])
+                         + len(network_result.get("key_findings") or [])),
+        "status": "ok",
+        "elapsed_ms": int((time.perf_counter() - started) * 1000),
+        "key_findings": [m.get("technique") for m in (report.get("mitre_mapping") or [])
+                         if isinstance(m, dict)],
+    })
+    report["agent_trace"] = agent_trace
+    return report
+
+
+# ---------------------------------------------------------------------------
 # 降级报告（规则模板，结构同契约）
 # ---------------------------------------------------------------------------
 def generate_fallback_report(attack_steps: list[dict[str, Any]],
@@ -497,10 +662,14 @@ def _build_summary(attack_steps: list[dict[str, Any]], attack_path: list[str]) -
 # ---------------------------------------------------------------------------
 def generate_report(attack_steps: list[dict[str, Any]],
                     events: list[dict[str, Any]],
-                    internal_networks: list[str] | None = None) -> dict[str, Any]:
-    """生成溯源分析报告：LLM 优先 → 解析失败重试一次 → 规则模板降级。
+                    internal_networks: list[str] | None = None,
+                    attribution: dict[str, Any] | None = None) -> dict[str, Any]:
+    """生成溯源分析报告（多智能体编排版）。
 
-    所有分支的返回值都是同一结构（含 source 标记来源），路由层不做二次处理。
+    三个智能体协调产出：HostAnalysisAgent / NetworkAnalysisAgent 并行感知
+    各自数据面，CorrelationAgent 归并出最终报告。任一环节失败只降级该环节
+    （agent_trace 如实标注），编排层意外最终落到规则模板——所有分支返回
+    同一结构（含 source 标记来源 + agent_trace 协调轨迹），路由层零改动。
     """
     events_by_id: dict[int, dict[str, Any]] = {
         event["id"]: event for event in events if event.get("id") is not None
@@ -517,29 +686,20 @@ def generate_report(attack_steps: list[dict[str, Any]],
             "risk_level": "低危",
             "recommendations": ["继续保持日志与流量采集，扩大部分覆盖以积累分析素材"],
             "source": "fallback",
+            "agent_trace": _degraded_agent_trace(events, "未关联出攻击行为，智能体无分析对象"),
         }
 
     if not is_llm_configured():
-        return generate_fallback_report(attack_steps, events_by_id, attack_path)
+        report = generate_fallback_report(attack_steps, events_by_id, attack_path)
+        report["agent_trace"] = _degraded_agent_trace(events, "LLM 未配置，智能体降级为规则模板")
+        return report
 
-    context_events = build_event_context(events)
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": build_user_prompt(attack_steps, context_events, attack_path)},
-    ]
-
-    # 最多两次尝试：首次失败（请求/解析）重试一次，再失败降级
-    last_error: Exception | None = None
-    for _attempt in range(2):
-        try:
-            raw = call_llm(messages)
-            report = validate_report(extract_json(raw), set(events_by_id))
-            if not report["summary"]:
-                report["summary"] = _build_summary(attack_steps, attack_path)
-            return report
-        except (LLMRequestError, ValueError, json.JSONDecodeError) as exc:
-            last_error = exc
-
-    # 降级时在日志层面留痕（答辩时说明"LLM 不可用自动降级"就是这条）
-    print(f"[llm_analysis] LLM analysis failed after retry, fallback used: {last_error}")
-    return generate_fallback_report(attack_steps, events_by_id, attack_path)
+    try:
+        return orchestrate_agents(attack_steps, events, events_by_id,
+                                  attack_path, attribution)
+    except Exception as exc:
+        # 编排层兜底：任何意外（网络/解析/线程）都不允许炸掉"永远 200"承诺
+        print(f"[llm_analysis] multi-agent orchestration failed, fallback used: {exc}")
+        report = generate_fallback_report(attack_steps, events_by_id, attack_path)
+        report["agent_trace"] = _degraded_agent_trace(events, f"编排异常已降级：{exc}")
+        return report
