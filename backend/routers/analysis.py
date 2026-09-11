@@ -10,7 +10,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from backend.analysis import correlate_events
+from backend.analysis import build_attribution_profile, correlate_events
 from backend.database import get_events, get_hosts
 from backend.llm_analysis import generate_report
 from backend.routers.attack_chain import DEFAULT_INTERNAL_NETWORKS
@@ -59,6 +59,18 @@ def analyze(request: AnalysisRequest | None = None):
     attack_steps = correlate_events(
         events, host_map, internal_networks=DEFAULT_INTERNAL_NETWORKS
     )
+    # 多智能体溯源：把 D 的攻击者画像 / APT TTP 相似性匹配一并交给协调智能体。
+    # 画像不可用（数据缺失/异常）时传 None——协调智能体没有画像照常工作，
+    # 失败只影响报告的归因区块，绝不影响"永远 200"。
+    try:
+        attribution = build_attribution_profile(
+            events, attack_steps, host_map=host_map,
+            internal_networks=DEFAULT_INTERNAL_NETWORKS,
+        )
+    except Exception as exc:
+        print(f"[analysis] attribution unavailable, correlation agent runs without profile: {exc}")
+        attribution = None
     return generate_report(
-        attack_steps, events, internal_networks=DEFAULT_INTERNAL_NETWORKS
+        attack_steps, events, internal_networks=DEFAULT_INTERNAL_NETWORKS,
+        attribution=attribution,
     )
