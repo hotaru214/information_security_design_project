@@ -1,0 +1,2151 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>D &#x6a21;&#x5757;&#x8be6;&#x7ec6;&#x8bb2;&#x89e3;&#x7a3f;&#xff1a;&#x653b;&#x51fb;&#x5173;&#x8054;&#x3001;&#x653b;&#x51fb;&#x94fe;&#x56fe;&#x4e0e;&#x653b;&#x51fb;&#x8005;&#x753b;&#x50cf;&#x6eaf;&#x6e90;</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+/* From extension zhuangtongfa.material-theme */
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body {
+  box-sizing: border-box;
+  min-width: 200px;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body blockquote {
+  background-color: initial;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body pre {
+  color: initial;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body code, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body code, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body code, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body code {
+  color: inherit;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body pre code, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body pre code, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body pre code, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body pre code {
+  color: initial;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body code > div, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body code > div, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body code > div, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body code > div {
+  background: none;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body table th, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body table td, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body table th, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body table td, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body table th, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body table td, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body table th, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body table td {
+  border: 1px solid rgba(171, 178, 191, 0.5) !important;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body.showEditorSelection .code-active-line:before, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body.showEditorSelection .code-active-line:before, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body.showEditorSelection .code-active-line:before, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body.showEditorSelection .code-active-line:before {
+  border-left: none;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body.showEditorSelection .code-line:hover:before, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body.showEditorSelection .code-line:hover:before, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body.showEditorSelection .code-line:hover:before, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body.showEditorSelection .code-line:hover:before {
+  border-left: none;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body.showEditorSelection .code-line .code-line:hover:before, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body.showEditorSelection .code-line .code-line:hover:before, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body.showEditorSelection .code-line .code-line:hover:before, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body.showEditorSelection .code-line .code-line:hover:before {
+  border-left: none;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body p, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body dl, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body table, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body p, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body dl, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body table, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body p, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body dl, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body table, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body p, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ol, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body dl, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body table, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body pre {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+/* Generated from 'node_modules/github-markdown-css/github-markdown.css' */
+@font-face {
+  font-family: octicons-link;
+  src: url(data:font/woff;charset=utf-8;base64,d09GRgABAAAAAAZwABAAAAAACFQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEU0lHAAAGaAAAAAgAAAAIAAAAAUdTVUIAAAZcAAAACgAAAAoAAQAAT1MvMgAAAyQAAABJAAAAYFYEU3RjbWFwAAADcAAAAEUAAACAAJThvmN2dCAAAATkAAAABAAAAAQAAAAAZnBnbQAAA7gAAACyAAABCUM+8IhnYXNwAAAGTAAAABAAAAAQABoAI2dseWYAAAFsAAABPAAAAZwcEq9taGVhZAAAAsgAAAA0AAAANgh4a91oaGVhAAADCAAAABoAAAAkCA8DRGhtdHgAAAL8AAAADAAAAAwGAACfbG9jYQAAAsAAAAAIAAAACABiATBtYXhwAAACqAAAABgAAAAgAA8ASm5hbWUAAAToAAABQgAAAlXu73sOcG9zdAAABiwAAAAeAAAAME3QpOBwcmVwAAAEbAAAAHYAAAB/aFGpk3jaTY6xa8JAGMW/O62BDi0tJLYQincXEypYIiGJjSgHniQ6umTsUEyLm5BV6NDBP8Tpts6F0v+k/0an2i+itHDw3v2+9+DBKTzsJNnWJNTgHEy4BgG3EMI9DCEDOGEXzDADU5hBKMIgNPZqoD3SilVaXZCER3/I7AtxEJLtzzuZfI+VVkprxTlXShWKb3TBecG11rwoNlmmn1P2WYcJczl32etSpKnziC7lQyWe1smVPy/Lt7Kc+0vWY/gAgIIEqAN9we0pwKXreiMasxvabDQMM4riO+qxM2ogwDGOZTXxwxDiycQIcoYFBLj5K3EIaSctAq2kTYiw+ymhce7vwM9jSqO8JyVd5RH9gyTt2+J/yUmYlIR0s04n6+7Vm1ozezUeLEaUjhaDSuXHwVRgvLJn1tQ7xiuVv/ocTRF42mNgZGBgYGbwZOBiAAFGJBIMAAizAFoAAABiAGIAznjaY2BkYGAA4in8zwXi+W2+MjCzMIDApSwvXzC97Z4Ig8N/BxYGZgcgl52BCSQKAA3jCV8CAABfAAAAAAQAAEB42mNgZGBg4f3vACQZQABIMjKgAmYAKEgBXgAAeNpjYGY6wTiBgZWBg2kmUxoDA4MPhGZMYzBi1AHygVLYQUCaawqDA4PChxhmh/8ODDEsvAwHgMKMIDnGL0x7gJQCAwMAJd4MFwAAAHjaY2BgYGaA4DAGRgYQkAHyGMF8NgYrIM3JIAGVYYDT+AEjAwuDFpBmA9KMDEwMCh9i/v8H8sH0/4dQc1iAmAkALaUKLgAAAHjaTY9LDsIgEIbtgqHUPpDi3gPoBVyRTmTddOmqTXThEXqrob2gQ1FjwpDvfwCBdmdXC5AVKFu3e5MfNFJ29KTQT48Ob9/lqYwOGZxeUelN2U2R6+cArgtCJpauW7UQBqnFkUsjAY/kOU1cP+DAgvxwn1chZDwUbd6CFimGXwzwF6tPbFIcjEl+vvmM/byA48e6tWrKArm4ZJlCbdsrxksL1AwWn/yBSJKpYbq8AXaaTb8AAHja28jAwOC00ZrBeQNDQOWO//sdBBgYGRiYWYAEELEwMTE4uzo5Zzo5b2BxdnFOcALxNjA6b2ByTswC8jYwg0VlNuoCTWAMqNzMzsoK1rEhNqByEyerg5PMJlYuVueETKcd/89uBpnpvIEVomeHLoMsAAe1Id4AAAAAAAB42oWQT07CQBTGv0JBhagk7HQzKxca2sJCE1hDt4QF+9JOS0nbaaYDCQfwCJ7Au3AHj+LO13FMmm6cl7785vven0kBjHCBhfpYuNa5Ph1c0e2Xu3jEvWG7UdPDLZ4N92nOm+EBXuAbHmIMSRMs+4aUEd4Nd3CHD8NdvOLTsA2GL8M9PODbcL+hD7C1xoaHeLJSEao0FEW14ckxC+TU8TxvsY6X0eLPmRhry2WVioLpkrbp84LLQPGI7c6sOiUzpWIWS5GzlSgUzzLBSikOPFTOXqly7rqx0Z1Q5BAIoZBSFihQYQOOBEdkCOgXTOHA07HAGjGWiIjaPZNW13/+lm6S9FT7rLHFJ6fQbkATOG1j2OFMucKJJsxIVfQORl+9Jyda6Sl1dUYhSCm1dyClfoeDve4qMYdLEbfqHf3O/AdDumsjAAB42mNgYoAAZQYjBmyAGYQZmdhL8zLdDEydARfoAqIAAAABAAMABwAKABMAB///AA8AAQAAAAAAAAAAAAAAAAABAAAAAA==) format("woff");
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body {
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  line-height: 1.5;
+  color: rgb(171, 178, 191);
+  line-height: 1.5;
+  word-wrap: break-word;
+  background: #282c34;
+  padding-top: 20px;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-c, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-c, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-c, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-c {
+  color: #6a737d;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-c1, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-s .pl-v, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-c1, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-s .pl-v, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-c1, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-s .pl-v, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-c1, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-s .pl-v {
+  color: #005cc5;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-e, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-en, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-e, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-en, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-e, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-en, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-e, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-en {
+  color: #6f42c1;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-smi, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-s .pl-s1, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-smi, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-s .pl-s1, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-smi, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-s .pl-s1, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-smi, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-s .pl-s1 {
+  color: #24292e;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-ent, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-ent, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-ent, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-ent {
+  color: #22863a;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-k, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-k, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-k, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-k {
+  color: #d73a49;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-s, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-pds, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-s .pl-pse .pl-s1, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-sr, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-sr .pl-cce, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-sr .pl-sre, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-sr .pl-sra, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-s, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-pds, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-s .pl-pse .pl-s1, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-sr, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-sr .pl-cce, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-sr .pl-sre, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-sr .pl-sra, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-s, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-pds, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-s .pl-pse .pl-s1, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-sr, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-sr .pl-cce, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-sr .pl-sre, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-sr .pl-sra, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-s, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-pds, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-s .pl-pse .pl-s1, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-sr, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-sr .pl-cce, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-sr .pl-sre, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-sr .pl-sra {
+  color: #032f62;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-v, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-smw, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-v, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-smw, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-v, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-smw, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-v, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-smw {
+  color: #e36209;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-bu, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-bu, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-bu, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-bu {
+  color: #b31d28;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-ii, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-ii, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-ii, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-ii {
+  color: #fafbfc;
+  background-color: #b31d28;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-c2, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-c2, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-c2, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-c2 {
+  color: #fafbfc;
+  background-color: #d73a49;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-c2::before, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-c2::before, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-c2::before, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-c2::before {
+  content: "^M";
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-sr .pl-cce, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-sr .pl-cce, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-sr .pl-cce, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-sr .pl-cce {
+  font-weight: bold;
+  color: #22863a;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-ml, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-ml, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-ml, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-ml {
+  color: #735c0f;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-mh, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-mh .pl-en, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-ms, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-mh, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-mh .pl-en, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-ms, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-mh, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-mh .pl-en, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-ms, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-mh, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-mh .pl-en, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-ms {
+  font-weight: bold;
+  color: #005cc5;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-mi, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-mi, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-mi, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-mi {
+  font-style: italic;
+  color: #24292e;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-mb, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-mb, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-mb, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-mb {
+  font-weight: bold;
+  color: #24292e;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-md, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-md, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-md, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-md {
+  color: #b31d28;
+  background-color: #ffeef0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-mi1, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-mi1, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-mi1, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-mi1 {
+  color: #22863a;
+  background-color: #f0fff4;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-mc, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-mc, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-mc, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-mc {
+  color: #e36209;
+  background-color: #ffebda;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-mi2, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-mi2, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-mi2, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-mi2 {
+  color: #f6f8fa;
+  background-color: #005cc5;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-mdr, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-mdr, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-mdr, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-mdr {
+  font-weight: bold;
+  color: #6f42c1;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-ba, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-ba, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-ba, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-ba {
+  color: #586069;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-sg, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-sg, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-sg, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-sg {
+  color: #959da5;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-corl, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-corl, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-corl, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-corl {
+  text-decoration: underline;
+  color: #032f62;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .octicon, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .octicon, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .octicon, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .octicon {
+  display: inline-block;
+  vertical-align: text-top;
+  fill: currentColor;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body a, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body a, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body a, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body a {
+  background-color: transparent;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body a:active, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body a:hover, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body a:active, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body a:hover, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body a:active, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body a:hover, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body a:active, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body a:hover {
+  outline-width: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body strong, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body strong, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body strong, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body strong {
+  font-weight: inherit;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body strong, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body strong, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body strong, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body strong {
+  font-weight: bolder;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h1 {
+  margin: 0.67em 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body img, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body img, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body img, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body img {
+  border-style: none;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body hr, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body hr, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body hr, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body hr {
+  box-sizing: content-box;
+  height: 0;
+  overflow: visible;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body input, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body input, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body input, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body input {
+  font: inherit;
+  margin: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body input, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body input, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body input, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body input {
+  overflow: visible;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body [type=checkbox], .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body [type=checkbox], .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body [type=checkbox], .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body [type=checkbox] {
+  box-sizing: border-box;
+  padding: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body *, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body *, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body *, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body * {
+  box-sizing: border-box;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body input, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body input, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body input, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body input {
+  font-family: inherit;
+  line-height: inherit;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body a, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body a, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body a, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body a {
+  color: #528bff;
+  text-decoration: none;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body a:hover, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body a:hover, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body a:hover, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body a:hover {
+  text-decoration: underline;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body strong, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body strong, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body strong, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body strong {
+  font-weight: 600;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body hr, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body hr, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body hr, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body hr {
+  height: 0;
+  margin: 15px 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #dfe2e5;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body hr::before, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body hr::before, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body hr::before, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body hr::before {
+  display: table;
+  content: "";
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body hr::after, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body hr::after, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body hr::after, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body hr::after {
+  display: table;
+  clear: both;
+  content: "";
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body table, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body table, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body table, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body table {
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body td, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body th, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body td, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body th, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body td, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body th, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body td, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body th {
+  padding: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h2, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h3, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h4, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h5, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h6, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h2, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h3, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h4, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h5, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h6, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h2, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h3, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h4, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h5, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h6, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h2, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h3, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h4, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h5, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h6 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h1 {
+  font-weight: 600;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h2, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h2, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h2, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h2 {
+  font-weight: 600;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h3, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h3, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h3, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h3 {
+  font-weight: 600;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h4, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h4, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h4, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h4 {
+  font-weight: 600;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h5, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h5, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h5, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h5 {
+  font-weight: 600;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h6, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h6, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h6, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h6 {
+  font-weight: 600;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body p, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body p, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body p, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body p {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body blockquote {
+  margin: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ol, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ol {
+  padding-left: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ul ol {
+  list-style-type: lower-roman;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ul ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ul ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ol ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ol ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ul ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ul ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ol ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ol ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ul ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ul ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ol ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ol ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ul ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ul ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ol ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ol ol ol {
+  list-style-type: lower-alpha;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body dd, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body dd, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body dd, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body dd {
+  margin-left: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body pre {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .octicon, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .octicon, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .octicon, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .octicon {
+  vertical-align: text-bottom;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-0, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-0, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-0, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-0 {
+  padding-left: 0 !important;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-1, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-1, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-1, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-1 {
+  padding-left: 4px !important;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-2, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-2, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-2, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-2 {
+  padding-left: 8px !important;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-3, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-3, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-3, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-3 {
+  padding-left: 16px !important;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-4, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-4, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-4, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-4 {
+  padding-left: 24px !important;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-5, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-5, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-5, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-5 {
+  padding-left: 32px !important;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .pl-6, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .pl-6, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .pl-6, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .pl-6 {
+  padding-left: 40px !important;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body::before, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body::before, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body::before, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body::before {
+  display: table;
+  content: "";
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body::after, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body::after, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body::after, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body::after {
+  display: table;
+  clear: both;
+  content: "";
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body > *:first-child, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body > *:first-child, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body > *:first-child, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body > *:first-child {
+  margin-top: 0 !important;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body > *:last-child, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body > *:last-child, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body > *:last-child, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body > *:last-child {
+  margin-bottom: 0 !important;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body a:not([href]), .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body a:not([href]), .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body a:not([href]), .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .anchor {
+  float: left;
+  padding-right: 4px;
+  margin-left: -20px;
+  line-height: 1;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .anchor:focus, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .anchor:focus, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .anchor:focus, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .anchor:focus {
+  outline: none;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body p, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body dl, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body table, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body p, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body dl, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body table, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body p, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body dl, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body table, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body p, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ol, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body dl, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body table, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body pre {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body hr, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body hr, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body hr, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body hr {
+  height: 0.25em;
+  padding: 0;
+  margin: 24px 0;
+  background-color: #e1e4e8;
+  border: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body blockquote, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body blockquote {
+  /* padding: 0 1em;
+  color: #6a737d;
+  border-left: 0.25em solid #dfe2e5; */
+  padding: 8.5px 17px;
+  margin: 1.5em 0;
+  color: #7c879c;
+  border-color: #4b5362;
+  border-width: 4px;
+  border-left: 5px solid #4b5362;
+  background: transparent;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body blockquote > :first-child, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body blockquote > :first-child, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body blockquote > :first-child, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body blockquote > :first-child {
+  margin-top: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body blockquote > :last-child, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body blockquote > :last-child, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body blockquote > :last-child, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body blockquote > :last-child {
+  margin-bottom: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body kbd, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body kbd, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body kbd, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body kbd {
+  display: inline-block;
+  padding: 3px 5px;
+  line-height: 10px;
+  color: #444d56;
+  vertical-align: middle;
+  background-color: #fafbfc;
+  border: solid 1px #c6cbd1;
+  border-bottom-color: #959da5;
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 #959da5;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h2, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h3, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h4, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h5, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h6, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h2, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h3, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h4, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h5, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h6, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h2, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h3, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h4, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h5, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h6, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h2, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h3, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h4, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h5, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h6 {
+  margin-top: 24px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: rgb(240, 240, 240);
+  border-bottom: none;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h1 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h2 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h3 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h4 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h5 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h6 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h1 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h2 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h3 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h4 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h5 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h6 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h1 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h2 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h3 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h4 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h5 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h6 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h1 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h2 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h3 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h4 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h5 .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h6 .octicon-link {
+  color: #1b1f23;
+  vertical-align: middle;
+  visibility: hidden;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h1:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h2:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h3:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h4:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h5:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h6:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h1:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h2:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h3:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h4:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h5:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h6:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h1:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h2:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h3:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h4:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h5:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h6:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h1:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h2:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h3:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h4:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h5:hover .anchor, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h6:hover .anchor {
+  text-decoration: none;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h1:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h2:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h3:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h4:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h5:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h6:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h1:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h2:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h3:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h4:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h5:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h6:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h1:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h2:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h3:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h4:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h5:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h6:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h1:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h2:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h3:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h4:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h5:hover .anchor .octicon-link, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h6:hover .anchor .octicon-link {
+  visibility: visible;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h1, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h1 {
+  padding-bottom: 0.3em;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h2, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h2, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h2, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h2 {
+  padding-bottom: 0.3em;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body h6, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body h6, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body h6, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body h6 {
+  color: #6a737d;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ol, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ul, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ol {
+  padding-left: 2em;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ul ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body ol ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ul ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body ol ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ul ul, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body ol ul, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ul ul, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ul ol, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ol ol, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body ol ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body li, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body li, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body li, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body li {
+  word-wrap: break-all;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body li > p, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body li > p, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body li > p, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body li > p {
+  margin-top: 16px;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body li + li, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body li + li, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body li + li, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body li + li {
+  margin-top: 0.25em;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body dl, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body dl, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body dl, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body dl {
+  padding: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body dl dt, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body dl dt, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body dl dt, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-style: italic;
+  font-weight: 600;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body dl dd, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body dl dd, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body dl dd, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body table, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body table, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body table, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body table {
+  display: block;
+  width: 100%;
+  overflow: auto;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body table th, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body table th, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body table th, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body table th {
+  font-weight: 700;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body table th, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body table td, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body table th, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body table td, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body table th, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body table td, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body table th, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body table td {
+  padding: 6px 13px;
+  /* border: 1px solid #dfe2e5; */
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body img, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body img, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body img, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body img {
+  max-width: 100%;
+  box-sizing: content-box;
+  display: inline-block;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body img[align=right], .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body img[align=right], .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body img[align=right], .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body img[align=right] {
+  padding-left: 20px;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body img[align=left], .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body img[align=left], .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body img[align=left], .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body img[align=left] {
+  padding-right: 20px;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body code, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body code, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body code, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  background-color: #3a3f4b;
+  border-radius: 3px;
+  color: white;
+  margin: 0 1px;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body pre {
+  word-wrap: normal;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body pre > code, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body pre > code, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body pre > code, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .highlight, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .highlight, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .highlight, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .highlight {
+  margin-bottom: 16px;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .highlight pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .highlight pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .highlight pre, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .highlight pre {
+  margin-bottom: 0;
+  word-break: normal;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .highlight pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .highlight pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .highlight pre, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body pre, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .highlight pre, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body pre {
+  padding: 16px;
+  overflow: auto;
+  line-height: 1.45;
+  /* background-color: #f6f8fa; */
+  border-radius: 3px;
+  background-color: #31363f;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body pre code, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body pre code, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body pre code, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body pre code {
+  display: inline;
+  max-width: auto;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  line-height: inherit;
+  word-wrap: normal;
+  background-color: transparent;
+  border: 0;
+  color: rgb(171, 178, 191);
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .full-commit .btn-outline:not(:disabled):hover, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .full-commit .btn-outline:not(:disabled):hover, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .full-commit .btn-outline:not(:disabled):hover, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .full-commit .btn-outline:not(:disabled):hover {
+  color: #005cc5;
+  border-color: #005cc5;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body kbd, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body kbd, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body kbd, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body kbd {
+  display: inline-block;
+  padding: 3px 5px;
+  line-height: 10px;
+  color: #444d56;
+  vertical-align: middle;
+  background-color: #fafbfc;
+  border: solid 1px #d1d5da;
+  border-bottom-color: #c6cbd1;
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 #c6cbd1;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body :checked + .radio-label, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body :checked + .radio-label, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body :checked + .radio-label, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body :checked + .radio-label {
+  position: relative;
+  z-index: 1;
+  border-color: #0366d6;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .task-list-item, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .task-list-item, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .task-list-item, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .task-list-item {
+  list-style-type: none;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .task-list-item + .task-list-item, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .task-list-item + .task-list-item, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .task-list-item + .task-list-item, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .task-list-item + .task-list-item {
+  margin-top: 3px;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body .task-list-item input, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body .task-list-item input, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body .task-list-item input, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body .task-list-item input {
+  margin: 0 0.2em 0.25em -1.6em;
+  vertical-align: middle;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"].vscode-body hr, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"].vscode-body hr, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"].vscode-body hr, .vscode-dark[data-vscode-theme-name="One Dark Pro"].vscode-body hr {
+  border-bottom-color: #eee;
+}
+
+/*
+
+Atom One Dark by Daniel Gamage
+Original One Dark Syntax theme from https://github.com/atom/one-dark-syntax
+
+base:    #282c34
+mono-1:  #abb2bf
+mono-2:  #818896
+mono-3:  #5c6370
+hue-1:   #56b6c2
+hue-2:   #61aeee
+hue-3:   #c678dd
+hue-4:   #98c379
+hue-5:   #e06c75
+hue-5-2: #be5046
+hue-6:   #d19a66
+hue-6-2: #e6c07b
+
+*/
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs, .vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0.5em;
+  color: #abb2bf;
+  background: #282c34;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-comment,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-quote, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-comment,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-quote, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-comment,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-quote, .vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-comment,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-quote {
+  color: #5c6370;
+  font-style: italic;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-doctag,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-keyword,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-formula, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-doctag,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-keyword,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-formula, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-doctag,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-keyword,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-formula, .vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-doctag,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-keyword,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-formula {
+  color: #c678dd;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-section,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-name,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-selector-tag,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-deletion,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-subst, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-section,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-name,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-selector-tag,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-deletion,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-subst, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-section,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-name,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-selector-tag,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-deletion,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-subst, .vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-section,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-name,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-selector-tag,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-deletion,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-subst {
+  color: #e06c75;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-literal, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-literal, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-literal, .vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-literal {
+  color: #56b6c2;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-string,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-regexp,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-addition,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-attribute,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-meta-string, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-string,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-regexp,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-addition,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-attribute,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-meta-string, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-string,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-regexp,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-addition,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-attribute,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-meta-string, .vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-string,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-regexp,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-addition,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-attribute,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-meta-string {
+  color: #98c379;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-built_in,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-class .hljs-title, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-built_in,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-class .hljs-title, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-built_in,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-class .hljs-title, .vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-built_in,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-class .hljs-title {
+  color: #e6c07b;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-attr,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-variable,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-template-variable,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-type,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-selector-class,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-selector-attr,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-selector-pseudo,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-number, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-attr,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-variable,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-template-variable,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-type,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-selector-class,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-selector-attr,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-selector-pseudo,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-number, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-attr,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-variable,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-template-variable,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-type,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-selector-class,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-selector-attr,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-selector-pseudo,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-number, .vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-attr,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-variable,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-template-variable,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-type,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-selector-class,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-selector-attr,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-selector-pseudo,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-number {
+  color: #d19a66;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-symbol,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-bullet,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-link,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-meta,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-selector-id,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-title, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-symbol,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-bullet,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-link,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-meta,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-selector-id,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-title, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-symbol,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-bullet,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-link,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-meta,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-selector-id,
+.vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-title, .vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-symbol,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-bullet,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-link,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-meta,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-selector-id,
+.vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-title {
+  color: #61aeee;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-emphasis, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-emphasis, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-emphasis, .vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-emphasis {
+  font-style: italic;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-strong, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-strong, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-strong, .vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-strong {
+  font-weight: bold;
+}
+.vscode-dark[data-vscode-theme-name="One Dark Pro Mix"] .hljs-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Flat"] .hljs-link, .vscode-dark[data-vscode-theme-name="One Dark Pro Darker"] .hljs-link, .vscode-dark[data-vscode-theme-name="One Dark Pro"] .hljs-link {
+  text-decoration: underline;
+}
+
+</style>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ startOnLoad: true });
+    </script>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <span id="markdown-mermaid" aria-hidden="true" data-config="{&quot;darkModeTheme&quot;:&quot;vscode&quot;,&quot;lightModeTheme&quot;:&quot;vscode&quot;,&quot;maxTextSize&quot;:50000,&quot;clickDrag&quot;:&quot;alt&quot;,&quot;showControls&quot;:&quot;onHoverOrFocus&quot;,&quot;resizable&quot;:true,&quot;maxHeight&quot;:&quot;&quot;}"></span>
+				<h1 id="d-模块详细讲解稿攻击关联攻击链图与攻击者画像溯源">D 模块详细讲解稿：攻击关联、攻击链图与攻击者画像溯源</h1>
+<h2 id="1-d-模块在系统中的位置">1. D 模块在系统中的位置</h2>
+<p>D 模块负责的是“分析”和“关联”，不是原始数据解析，也不是数据库管理。</p>
+<p>系统整体流程可以理解为：</p>
+<pre><code class="language-text">原始数据
+  ├─ Windows / Linux 主机日志
+  ├─ Sysmon / auditd / auth 日志
+  ├─ PCAP / Zeek / 防火墙 / WAF 流量
+  ↓
+B/C 解析模块
+  ↓
+统一 Event V2 标准事件
+  ↓
+A 后端 SQLite 入库并生成数据库内部 id
+  ↓
+D 关联分析模块
+  ├─ ATT&amp;CK 攻击步骤识别
+  ├─ 攻击链关联
+  ├─ 攻击图构建
+  ├─ 证据事件回溯
+  └─ 攻击者画像与 APT 相似性分析
+  ↓
+F 前端展示
+</code></pre>
+<p>所以 D 的一句话定位是：</p>
+<blockquote>
+<p>D 将 A/B/C 提供的标准化 EventOut 事件流，转换为可解释的 ATT&amp;CK 攻击步骤、攻击链图和攻击者画像。</p>
+</blockquote>
+<p>D 不直接读原始 EVTX、PCAP，也不直接解析 raw log。D 假设输入已经是统一格式，重点解决三个问题：</p>
+<ol>
+<li>单条事件属于哪个攻击阶段？</li>
+<li>多条事件之间是否能组成攻击链？</li>
+<li>这些攻击行为体现出什么攻击者工具、脚本、C2 和 TTP 特征？</li>
+</ol>
+<h2 id="2-输入与输出">2. 输入与输出</h2>
+<h3 id="21-输入函数">2.1 输入函数</h3>
+<p>D 的主入口是：</p>
+<pre><code class="language-python">correlate_events(events, host_map=<span class="hljs-literal">None</span>, internal_networks=<span class="hljs-literal">None</span>)
+</code></pre>
+<p>参数含义：</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>events</code></td>
+<td>A 后端返回的 EventOut 列表，已经带数据库内部 <code>id</code></td>
+</tr>
+<tr>
+<td><code>host_map</code></td>
+<td>IP 到主机名映射，例如 <code>10.10.30.20 -&gt; core-server</code></td>
+</tr>
+<tr>
+<td><code>internal_networks</code></td>
+<td>内网网段列表，例如 <code>10.10.20.0/24</code>、<code>10.10.30.0/24</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-eventout-中-d-主要使用的字段">2.2 EventOut 中 D 主要使用的字段</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>D 中的作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>数据库内部事件 ID，用于 evidence 回溯</td>
+</tr>
+<tr>
+<td><code>case_id</code> / <code>detail.batch_id</code></td>
+<td>批次隔离，防止不同攻击数据串链</td>
+</tr>
+<tr>
+<td><code>timestamp</code></td>
+<td>时间排序、时间窗口关联</td>
+</tr>
+<tr>
+<td><code>host</code></td>
+<td>主机侧事件所属主机</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>数据来源，例如 <code>windows_evtx</code>、<code>linux_audit</code>、<code>network_pcap</code>、<code>firewall</code>、<code>waf</code></td>
+</tr>
+<tr>
+<td><code>event_type</code></td>
+<td>行为类型，例如 <code>process_start</code>、<code>http_request</code>、<code>network_connection</code></td>
+</tr>
+<tr>
+<td><code>user</code></td>
+<td>登录、执行、权限变化相关用户</td>
+</tr>
+<tr>
+<td><code>process</code></td>
+<td>进程名，用于执行、持久化、提权、工具识别</td>
+</tr>
+<tr>
+<td><code>src_ip</code> / <code>dst_ip</code></td>
+<td>网络关联中的源和目标</td>
+</tr>
+<tr>
+<td><code>dst_port</code> / <code>protocol</code></td>
+<td>判断远程服务、C2、HTTP、DNS 等</td>
+</tr>
+<tr>
+<td><code>logon_type</code> / <code>session_id</code></td>
+<td>登录会话和横向移动辅助证据</td>
+</tr>
+<tr>
+<td><code>cmdline</code></td>
+<td>命令行特征，识别脚本、工具、压缩、下载、执行</td>
+</tr>
+<tr>
+<td><code>detail</code></td>
+<td>存放特殊字段，例如 <code>parent_process</code>、<code>file_path</code>、<code>registry_key</code>、<code>uri</code>、<code>bytes_out</code></td>
+</tr>
+<tr>
+<td><code>anomaly_flags</code></td>
+<td>B/C 标注的异常语义，例如 <code>initial_access</code>、<code>c2</code>、<code>exfiltration</code></td>
+</tr>
+<tr>
+<td><code>severity</code></td>
+<td>异常严重程度，辅助规则判定</td>
+</tr>
+<tr>
+<td><code>raw_log</code></td>
+<td>原始日志，D 不直接依赖解析，但保留给 evidence 展示</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-输出-attackstep">2.3 输出 AttackStep</h3>
+<p>D 输出的是攻击步骤列表。每个 AttackStep 表示一次可解释的攻击行为：</p>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;step_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;S008&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;stage&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Collection&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;technique_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;T1005&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;technique_name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Data from Local System&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;timestamp&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;2026-09-09T12:10:54+08:00&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;source_host&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;win10-jump&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;target_host&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;core-server&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;source_ip&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;10.10.30.10&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;target_ip&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;10.10.30.20&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;description&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;win10-jump retrieved sensitive internal resource /finance_demo.txt from core-server&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;evidence_event_ids&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-number">12345</span><span class="hljs-punctuation">,</span> <span class="hljs-number">12346</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;case_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;e_final&quot;</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>字段解释：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>step_id</code></td>
+<td>D 生成的攻击步骤编号</td>
+</tr>
+<tr>
+<td><code>stage</code></td>
+<td>ATT&amp;CK 战术阶段</td>
+</tr>
+<tr>
+<td><code>technique_id</code></td>
+<td>ATT&amp;CK 技术编号</td>
+</tr>
+<tr>
+<td><code>technique_name</code></td>
+<td>ATT&amp;CK 技术名称</td>
+</tr>
+<tr>
+<td><code>timestamp</code></td>
+<td>该攻击步骤的代表时间</td>
+</tr>
+<tr>
+<td><code>source_host</code> / <code>source_ip</code></td>
+<td>攻击行为发起方</td>
+</tr>
+<tr>
+<td><code>target_host</code> / <code>target_ip</code></td>
+<td>攻击行为目标方</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>面向前端和报告的自然语言解释</td>
+</tr>
+<tr>
+<td><code>evidence_event_ids</code></td>
+<td>支撑该判断的数据库内部 <code>events.id</code></td>
+</tr>
+<tr>
+<td><code>case_id</code></td>
+<td>所属攻击批次</td>
+</tr>
+</tbody>
+</table>
+<p>特别强调：</p>
+<blockquote>
+<p><code>evidence_event_ids</code> 保存的是数据库内部 <code>events.id</code>，不是 Windows 4624、Sysmon 1 这类原始日志编号。</p>
+</blockquote>
+<p>这样前端点击某个攻击步骤时，可以通过这些 ID 反查完整事件、detail 和 raw_log。</p>
+<h2 id="3-总体算法流程">3. 总体算法流程</h2>
+<p>D 的主流程不是一个单独的大模型判断，而是“规则关联 + 图建模 + 画像匹配”的组合算法。</p>
+<p>整体流程：</p>
+<pre><code class="language-text">输入 EventOut 列表
+  ↓
+1. 参数校验
+  ↓
+2. 事件预处理
+  ↓
+3. 按 case_id / batch_id 分组
+  ↓
+4. 针对每个 case 独立运行 ATT&amp;CK 检测器
+  ↓
+5. 生成 AttackStep
+  ↓
+6. AttackStep 去重、排序、编号
+  ↓
+7. 基于 AttackStep 构建攻击图
+  ↓
+8. 提取攻击路径与关键分支
+  ↓
+9. 提取攻击者指纹、C2 基础设施、APT 相似性候选
+</code></pre>
+<p>伪代码如下：</p>
+<pre><code class="language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">correlate_events</span>(<span class="hljs-params">events, host_map=<span class="hljs-literal">None</span>, internal_networks=<span class="hljs-literal">None</span></span>):
+    host_map = host_map <span class="hljs-keyword">or</span> {}
+    networks = compile_internal_networks(internal_networks)
+
+    normalized = preprocess_events(events)
+    normalized.sort(key=<span class="hljs-keyword">lambda</span> e: e[<span class="hljs-string">&quot;_time&quot;</span>])
+
+    grouped_events = group_events_by_case(normalized)
+
+    steps = []
+    <span class="hljs-keyword">for</span> case_events <span class="hljs-keyword">in</span> grouped_events.values():
+        steps.extend(correlate_case_events(case_events, host_map, networks))
+
+    steps = deduplicate_steps(steps)
+    steps.sort(key=<span class="hljs-keyword">lambda</span> s: s[<span class="hljs-string">&quot;timestamp&quot;</span>])
+
+    <span class="hljs-keyword">for</span> index, step <span class="hljs-keyword">in</span> <span class="hljs-built_in">enumerate</span>(steps, start=<span class="hljs-number">1</span>):
+        step[<span class="hljs-string">&quot;step_id&quot;</span>] = <span class="hljs-string">f&quot;S<span class="hljs-subst">{index:03d}</span>&quot;</span>
+
+    <span class="hljs-keyword">return</span> steps
+</code></pre>
+<h2 id="4-事件预处理算法">4. 事件预处理算法</h2>
+<h3 id="41-为什么要预处理">4.1 为什么要预处理</h3>
+<p>B/C/A 给 D 的事件字段是统一的，但不同来源的数据有几个现实差异：</p>
+<ul>
+<li>有的事件有 <code>host</code>，有的只有 IP。</li>
+<li>有的行为在 <code>event_type</code> 中，有的补充语义在 <code>anomaly_flags</code> 或 <code>detail</code> 中。</li>
+<li>时间需要统一转换成可排序的 <code>datetime</code>。</li>
+<li>detail 中的字段可能包含注册表、文件路径、HTTP URI、hash 等。</li>
+</ul>
+<p>所以 D 会先把 Event 变成内部增强结构。</p>
+<h3 id="42-预处理做了什么">4.2 预处理做了什么</h3>
+<p>每条 Event 会补充这些内部字段：</p>
+<table>
+<thead>
+<tr>
+<th>内部字段</th>
+<th>来源</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_time</code></td>
+<td><code>timestamp</code></td>
+<td>时间排序、时间窗口判断</td>
+</tr>
+<tr>
+<td><code>_detail</code></td>
+<td><code>detail</code></td>
+<td>安全读取 detail 内字段</td>
+</tr>
+<tr>
+<td><code>_event_type</code></td>
+<td><code>event_type.lower()</code></td>
+<td>统一事件类型比较</td>
+</tr>
+<tr>
+<td><code>_host</code></td>
+<td><code>host</code></td>
+<td>主机索引</td>
+</tr>
+<tr>
+<td><code>_source</code></td>
+<td><code>source.lower()</code></td>
+<td>区分 WAF、防火墙、PCAP、主机日志</td>
+</tr>
+<tr>
+<td><code>_user</code></td>
+<td><code>user</code></td>
+<td>用户实体</td>
+</tr>
+<tr>
+<td><code>_process</code></td>
+<td><code>process.lower()</code></td>
+<td>进程规则</td>
+</tr>
+<tr>
+<td><code>_cmdline</code></td>
+<td><code>cmdline.lower()</code></td>
+<td>命令行规则</td>
+</tr>
+<tr>
+<td><code>_parent_process</code></td>
+<td><code>detail.parent_process</code></td>
+<td>父进程链分析</td>
+</tr>
+<tr>
+<td><code>_file_path</code></td>
+<td><code>detail.file_path</code></td>
+<td>文件行为</td>
+</tr>
+<tr>
+<td><code>_registry_key</code></td>
+<td><code>detail.registry_key</code></td>
+<td>注册表持久化</td>
+</tr>
+<tr>
+<td><code>_registry_value_data</code></td>
+<td><code>detail.registry_value_data</code></td>
+<td>注册表值数据</td>
+</tr>
+<tr>
+<td><code>_anomaly_flags</code></td>
+<td><code>anomaly_flags</code></td>
+<td>异常语义集合</td>
+</tr>
+<tr>
+<td><code>_case_id</code></td>
+<td><code>case_id</code> 或 <code>detail.case_id</code> / <code>detail.batch_id</code></td>
+<td>批次隔离</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-case-隔离算法">5. case 隔离算法</h2>
+<p>为了避免不同攻击样本混在一个数据库里时互相串链，D 会按 <code>case_id</code> 或 <code>detail.batch_id</code> 分组。</p>
+<p>核心思想：</p>
+<pre><code class="language-text">同一个 case 内的事件可以互相关联；
+不同 case 的事件不能互相作为 evidence，也不能组成同一条攻击链。
+</code></pre>
+<p>这样做的好处：</p>
+<ol>
+<li>多个攻击数据可以放在同一个 SQLite 库里。</li>
+<li>D 不会把 APT29 的主机日志和 CTU13 的网络流量误连起来。</li>
+<li>前端可以按批次展示攻击链。</li>
+<li>evidence_event_ids 仍然是全库唯一的数据库 ID。</li>
+</ol>
+<h2 id="6-host-mapping-与网络边界判断">6. Host Mapping 与网络边界判断</h2>
+<h3 id="61-ip-到主机名映射">6.1 IP 到主机名映射</h3>
+<p>网络事件里经常只有 IP，例如：</p>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;src_ip&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;10.10.30.10&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;dst_ip&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;10.10.30.20&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;event_type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;http_request&quot;</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>D 会通过 <code>host_map</code> 把它转换成：</p>
+<pre><code class="language-text">10.10.30.10 -&gt; win10-jump
+10.10.30.20 -&gt; core-server
+</code></pre>
+<p>这样攻击图里就不是一堆裸 IP，而是有语义的主机节点。</p>
+<h3 id="62-内外网判断">6.2 内外网判断</h3>
+<p>D 使用 <code>internal_networks</code> 来判断 IP 属于内网还是外网。</p>
+<p>例如 E 数据中：</p>
+<pre><code class="language-text">10.10.20.0/24 -&gt; DMZ 区
+10.10.30.0/24 -&gt; 内网办公区 / 服务器区
+</code></pre>
+<p>则：</p>
+<pre><code class="language-text">10.10.10.10 -&gt; 外部攻击者
+10.10.10.20 -&gt; 外部 C2
+10.10.20.10 -&gt; DMZ web-server
+10.10.30.10 -&gt; 内网 win10-jump
+10.10.30.20 -&gt; 内网 core-server
+</code></pre>
+<p>内外网判断是很多规则的基础：</p>
+<table>
+<thead>
+<tr>
+<th>行为</th>
+<th>源</th>
+<th>目标</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Initial Access</td>
+<td>外网</td>
+<td>内网 / DMZ</td>
+</tr>
+<tr>
+<td>Lateral Movement</td>
+<td>内网</td>
+<td>内网</td>
+</tr>
+<tr>
+<td>Collection</td>
+<td>内网主机</td>
+<td>内网服务器 / 本机文件</td>
+</tr>
+<tr>
+<td>C2</td>
+<td>内网</td>
+<td>外网</td>
+</tr>
+<tr>
+<td>Exfiltration</td>
+<td>内网</td>
+<td>外网</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-attck-攻击步骤检测算法">7. ATT&amp;CK 攻击步骤检测算法</h2>
+<p>D 采用多个检测器，每个检测器负责一个或一类 ATT&amp;CK 阶段。</p>
+<p>目前主流程包括：</p>
+<pre><code class="language-text">detect_initial_access
+detect_execution
+detect_persistence
+detect_privilege_escalation
+detect_lateral_movement
+detect_collection
+detect_c2
+detect_exfiltration
+detect_defense_evasion
+</code></pre>
+<h3 id="71-initial-access初始访问">7.1 Initial Access：初始访问</h3>
+<p>对应 ATT&amp;CK：</p>
+<pre><code class="language-text">T1190 Exploit Public-Facing Application
+</code></pre>
+<p>主要判定思路：</p>
+<pre><code class="language-text">外部 IP 访问内部 / DMZ 服务
+并且满足以下任一条件：
+  - URI 含有明显攻击关键字
+  - anomaly_flags 标记 initial_access / web_attack 等
+  - WAF 报警
+  - 防火墙允许了边界 Web 访问
+  - severity &gt;= 2
+</code></pre>
+<p>典型输入：</p>
+<pre><code class="language-text">event_type = http_request
+src_ip = 10.10.10.10
+dst_ip = 10.10.20.10
+detail.uri = /vulnerabilities/exec/source.php?cmd=whoami
+anomaly_flags = [&quot;initial_access&quot;]
+severity = 2
+</code></pre>
+<p>输出：</p>
+<pre><code class="language-text">Initial Access / T1190
+attack-external -&gt; web-server
+</code></pre>
+<p>算法重点：</p>
+<ol>
+<li>必须是外部到内部。</li>
+<li>不能把普通内部访问当成初始入侵。</li>
+<li>会用 <code>host_map</code> 把攻击源 IP 和目标 IP 转成节点名称。</li>
+<li>会在目标主机后续 10 分钟内找 <code>process_start</code> 作为辅助证据。</li>
+</ol>
+<h3 id="72-execution命令执行">7.2 Execution：命令执行</h3>
+<p>对应 ATT&amp;CK：</p>
+<pre><code class="language-text">T1059 Command and Scripting Interpreter
+</code></pre>
+<p>主要判定思路：</p>
+<pre><code class="language-text">event_type = process_start
+并且进程或命令行体现出异常执行语义：
+  - powershell / cmd / bash / sh / python 等脚本解释器
+  - curl / wget / certutil 等下载执行工具
+  - mshta / rundll32 / wmic 等常见 LOLBin
+  - 命令行中包含 encoded command、download、反弹 shell 等特征
+</code></pre>
+<p>输出一般是本机自环边：</p>
+<pre><code class="language-text">Execution / T1059
+web-server -&gt; web-server
+</code></pre>
+<p>为什么是自环：</p>
+<p>执行行为通常发生在某台主机本机上，不一定有明确远程目标，所以攻击图里用主机到自身表示“该主机上发生了执行行为”。</p>
+<h3 id="73-persistence持久化">7.3 Persistence：持久化</h3>
+<p>主要覆盖：</p>
+<pre><code class="language-text">T1547.001 Registry Run Keys / Startup Folder
+T1053.005 Scheduled Task
+T1543.003 Windows Service
+</code></pre>
+<p>判定思路：</p>
+<ol>
+<li>注册表持久化：</li>
+</ol>
+<pre><code class="language-text">event_type = registry_set / registry_create
+detail.registry_key 命中 Run / RunOnce / Startup 等启动项路径
+</code></pre>
+<p>例如：</p>
+<pre><code class="language-text">HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+</code></pre>
+<ol start="2">
+<li>计划任务持久化：</li>
+</ol>
+<pre><code class="language-text">event_type = scheduled_task_created
+或 process_start 中出现 schtasks /create
+</code></pre>
+<ol start="3">
+<li>服务持久化：</li>
+</ol>
+<pre><code class="language-text">event_type = service_created
+或命令行中出现 sc create / New-Service
+</code></pre>
+<p>输出：</p>
+<pre><code class="language-text">Persistence / T1547.001
+win10-jump -&gt; win10-jump
+</code></pre>
+<h3 id="74-privilege-escalation权限提升">7.4 Privilege Escalation：权限提升</h3>
+<p>主要覆盖：</p>
+<pre><code class="language-text">T1078 Valid Accounts
+T1548.003 Sudo and Sudo Caching
+</code></pre>
+<p>判定思路：</p>
+<ol>
+<li>权限变化事件：</li>
+</ol>
+<pre><code class="language-text">event_type = privilege_change
+</code></pre>
+<ol start="2">
+<li>用户被加入管理员组：</li>
+</ol>
+<pre><code class="language-text">event_type = group_member_added
+detail.group_name 包含 admin / sudo
+</code></pre>
+<ol start="3">
+<li>sudo 或高权限命令执行：</li>
+</ol>
+<pre><code class="language-text">event_type = process_start
+cmdline 或 process 中体现 sudo / su / 高权限执行语义
+</code></pre>
+<p>输出：</p>
+<pre><code class="language-text">Privilege Escalation / T1548.003
+core-server -&gt; core-server
+</code></pre>
+<h3 id="75-lateral-movement横向移动">7.5 Lateral Movement：横向移动</h3>
+<p>对应 ATT&amp;CK：</p>
+<pre><code class="language-text">T1021 Remote Services
+</code></pre>
+<p>判定思路：</p>
+<pre><code class="language-text">event_type = network_connection
+src_ip 是内网
+dst_ip 是内网
+dst_port 是远程服务端口
+</code></pre>
+<p>典型远程服务：</p>
+<table>
+<thead>
+<tr>
+<th>端口</th>
+<th>服务</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>22</td>
+<td>SSH</td>
+</tr>
+<tr>
+<td>3389</td>
+<td>RDP</td>
+</tr>
+<tr>
+<td>445</td>
+<td>SMB</td>
+</tr>
+<tr>
+<td>5985 / 5986</td>
+<td>WinRM</td>
+</tr>
+</tbody>
+</table>
+<p>输出：</p>
+<pre><code class="language-text">Lateral Movement / T1021
+web-server -&gt; win10-jump
+</code></pre>
+<p>关联证据增强：</p>
+<ol>
+<li>在源主机前 10 分钟查找可疑 <code>process_start</code>。</li>
+<li>在目标主机后 10 分钟查找 <code>login_success</code>、<code>process_start</code>、<code>service_created</code>。</li>
+<li>这些事件都会放进 <code>evidence_event_ids</code>。</li>
+</ol>
+<p>这说明 D 不是只看一条网络连接，而是把连接前后的主机行为也纳入证据。</p>
+<h3 id="76-collection数据收集">7.6 Collection：数据收集</h3>
+<p>对应 ATT&amp;CK：</p>
+<pre><code class="language-text">T1005 Data from Local System
+</code></pre>
+<p>Collection 有三类来源：</p>
+<ol>
+<li>敏感文件读取 / 创建 / 写入：</li>
+</ol>
+<pre><code class="language-text">event_type in file_read / file_write / file_create
+file_path 命中敏感目录、敏感后缀或敏感文件名
+</code></pre>
+<ol start="2">
+<li>压缩打包命令：</li>
+</ol>
+<pre><code class="language-text">process_start 中出现 zip / rar / tar / 7z / Compress-Archive 等
+</code></pre>
+<ol start="3">
+<li>内网 HTTP 资源访问：</li>
+</ol>
+<pre><code class="language-text">event_type = http_request
+src_ip 是内网主机
+dst_ip 是内网服务器
+method = GET
+uri 指向文件或资源
+并且目标主机附近存在敏感文件行为，或 URI 本身是敏感资源
+</code></pre>
+<p>E 数据中的关键例子：</p>
+<pre><code class="language-text">10.10.30.10 -&gt; 10.10.30.20:9100
+GET /finance_demo.txt HTTP/1.1
+</code></pre>
+<p>经过 host_map：</p>
+<pre><code class="language-text">win10-jump -&gt; core-server
+</code></pre>
+<p>D 判定为：</p>
+<pre><code class="language-text">Collection / T1005
+win10-jump retrieved sensitive internal resource /finance_demo.txt from core-server
+</code></pre>
+<p>注意这里没有硬编码：</p>
+<pre><code class="language-text">没有硬编码 10.10.30.10
+没有硬编码 10.10.30.20
+没有硬编码 9100
+没有硬编码 /finance_demo.txt
+</code></pre>
+<p>它判断的是通用语义：</p>
+<pre><code class="language-text">内部主机 -&gt; 内部服务器
+HTTP GET 文件资源
+资源名或目标侧文件行为体现敏感数据访问
+</code></pre>
+<p>为什么不判成 Lateral Movement：</p>
+<p><code>win10-jump -&gt; core-server</code> 这一步不是 SSH/RDP/SMB/WinRM 远程登录或远程服务控制，而是 HTTP 读取内部文件资源，所以更符合 Collection，而不是 T1021 横向移动。</p>
+<h3 id="77-command-and-controlc2-通信">7.7 Command and Control：C2 通信</h3>
+<p>对应 ATT&amp;CK：</p>
+<pre><code class="language-text">T1071 Application Layer Protocol
+</code></pre>
+<p>判定思路：</p>
+<pre><code class="language-text">内网主机 -&gt; 外部 IP / 域名
+并且满足以下任一条件：
+  - 短时间内重复连接
+  - 目标端口属于可疑 C2 端口
+  - anomaly_flags 中有 c2 / beacon / external_connection
+  - DNS 查询过长或被标记为 dns_tunnel / c2
+</code></pre>
+<p>重复连接规则：</p>
+<pre><code class="language-text">同一 source_host + dst_ip + dst_port
+30 分钟内出现 &gt;= 3 次
+</code></pre>
+<p>误报控制：</p>
+<p>如果某个外部 IP 已经被识别为 Initial Access 的攻击源，例如：</p>
+<pre><code class="language-text">10.10.10.10 -&gt; web-server
+</code></pre>
+<p>那么后续内网对 <code>10.10.10.10</code> 的普通回连，不能轻易再判成 C2，除非它有强 C2 证据：</p>
+<pre><code class="language-text">c2 / beacon 标记
+可疑 C2 端口
+明确 external_connection 语义
+</code></pre>
+<p>这样可以避免把“攻击者入口 IP”误标成“C2 服务器”。</p>
+<p>E 数据中正确结果：</p>
+<pre><code class="language-text">attack-external 10.10.10.10 是攻击源
+c2-server 10.10.10.20 是 C2
+</code></pre>
+<h3 id="78-exfiltration数据外传">7.8 Exfiltration：数据外传</h3>
+<p>对应 ATT&amp;CK：</p>
+<pre><code class="language-text">T1041 Exfiltration Over C2 Channel
+</code></pre>
+<p>判定思路：</p>
+<pre><code class="language-text">内网主机 -&gt; 外部目标
+并且满足：
+  - bytes_out &gt;= 5MB
+  - 或 anomaly_flags 包含 exfiltration / large_upload
+</code></pre>
+<p>为了降低误报，D 还会检查该主机此前 30 分钟是否出现：</p>
+<pre><code class="language-text">敏感文件读取
+压缩打包命令
+数据收集行为
+</code></pre>
+<p>也就是 D 希望看到：</p>
+<pre><code class="language-text">先收集数据，再向外传输
+</code></pre>
+<p>而不是单独看到一次大流量就马上判定为外传。</p>
+<h3 id="79-defense-evasion防御规避">7.9 Defense Evasion：防御规避</h3>
+<p>对应 ATT&amp;CK：</p>
+<pre><code class="language-text">T1070.002 Clear Windows Event Logs
+</code></pre>
+<p>判定思路：</p>
+<pre><code class="language-text">event_type = log_cleared
+</code></pre>
+<p>这是攻击者抹除痕迹的典型动作。如果 B/C/A 提供 <code>log_cleared</code>，D 会映射到 Defense Evasion 阶段。</p>
+<h2 id="8-时间窗口关联算法">8. 时间窗口关联算法</h2>
+<p>D 中很多攻击步骤不是单事件判断，而是“主事件 + 附近证据”的组合。</p>
+<p>核心函数思想：</p>
+<pre><code class="language-python">find_events_in_window(
+    events,
+    center_time,
+    before_minutes=<span class="hljs-number">10</span>,
+    after_minutes=<span class="hljs-number">10</span>,
+    event_types={<span class="hljs-string">&quot;process_start&quot;</span>, <span class="hljs-string">&quot;login_success&quot;</span>}
+)
+</code></pre>
+<p>含义：</p>
+<pre><code class="language-text">以某个关键事件为中心，
+向前或向后查找指定时间窗口内的相关事件，
+把它们合并为同一个 AttackStep 的 evidence。
+</code></pre>
+<p>例子：</p>
+<pre><code class="language-text">web-server -&gt; win10-jump 的 SSH 连接
+</code></pre>
+<p>D 会补充查找：</p>
+<pre><code class="language-text">连接前 web-server 上是否有可疑命令执行
+连接后 win10-jump 上是否有登录成功或进程启动
+</code></pre>
+<p>这样输出的不是孤立的一条网络边，而是跨源证据组合：</p>
+<pre><code class="language-text">网络连接 + 源主机执行 + 目标主机登录/执行
+</code></pre>
+<p>这正好对应课程题目里要求的：</p>
+<blockquote>
+<p>主机日志、主机行为、网络流量等多源数据采集与融合。</p>
+</blockquote>
+<h2 id="9-攻击图构建算法">9. 攻击图构建算法</h2>
+<h3 id="91-节点和边的抽象">9.1 节点和边的抽象</h3>
+<p>D 会把 AttackStep 转成图结构。</p>
+<p>节点：</p>
+<pre><code class="language-text">主机
+攻击者外部 IP
+C2 服务器
+内部服务器
+</code></pre>
+<p>边：</p>
+<pre><code class="language-text">一次 AttackStep
+</code></pre>
+<p>例如：</p>
+<pre><code class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;source&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;host:win10-jump&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;target&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;host:core-server&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;attack_stage&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Collection&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;mitre_technique&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;T1005&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;evidence_event_ids&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-number">120</span><span class="hljs-punctuation">,</span> <span class="hljs-number">121</span><span class="hljs-punctuation">]</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h3 id="92-图论模型">9.2 图论模型</h3>
+<p>攻击图本质上是一个有向图：</p>
+<pre><code class="language-text">G = (V, E)
+</code></pre>
+<p>其中：</p>
+<pre><code class="language-text">V = 主机、攻击者、C2、外部基础设施
+E = 攻击步骤
+</code></pre>
+<p>一条边表示：</p>
+<pre><code class="language-text">攻击行为从 source 指向 target
+</code></pre>
+<p>例如：</p>
+<pre><code class="language-text">attack-external -&gt; web-server
+web-server -&gt; win10-jump
+win10-jump -&gt; core-server
+win10-jump -&gt; c2-server
+</code></pre>
+<h3 id="93-路径搜索算法">9.3 路径搜索算法</h3>
+<p>为了从攻击图中提取攻击路径，D 使用 BFS 思想搜索路径。</p>
+<p>基本思路：</p>
+<ol>
+<li>先统计所有节点的入边。</li>
+<li>入度为 0 的节点作为可能入口。</li>
+<li>从入口开始广度优先搜索。</li>
+<li>避免路径中重复节点，防止环路无限扩展。</li>
+<li>记录所有长度大于 1 的路径。</li>
+<li>按路径长度排序，得到候选攻击路径。</li>
+</ol>
+<p>伪代码：</p>
+<pre><code class="language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">find_attack_paths</span>(<span class="hljs-params">attack_steps</span>):
+    graph = build_attack_graph(attack_steps)
+    adjacency = build_adjacency(graph.edges)
+    entries = nodes_without_incoming_edges()
+
+    paths = []
+    <span class="hljs-keyword">for</span> entry <span class="hljs-keyword">in</span> entries:
+        queue = [(entry, [entry])]
+        <span class="hljs-keyword">while</span> queue:
+            current, path = queue.pop(<span class="hljs-number">0</span>)
+            next_nodes = adjacency[current]
+
+            <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> next_nodes:
+                paths.append(path)
+                <span class="hljs-keyword">continue</span>
+
+            <span class="hljs-keyword">for</span> next_node <span class="hljs-keyword">in</span> next_nodes:
+                <span class="hljs-keyword">if</span> next_node <span class="hljs-keyword">not</span> <span class="hljs-keyword">in</span> path:
+                    queue.append((next_node, path + [next_node]))
+
+    <span class="hljs-keyword">return</span> <span class="hljs-built_in">sorted</span>(paths, key=<span class="hljs-built_in">len</span>, reverse=<span class="hljs-literal">True</span>)
+</code></pre>
+<h3 id="94-攻击链和攻击图的关系">9.4 攻击链和攻击图的关系</h3>
+<p>可以这样讲：</p>
+<pre><code class="language-text">攻击链是图中的一条路径；
+攻击图是多条路径和分支叠加后的整体结构。
+</code></pre>
+<p>例如 E 数据不是一条完全直线，而是有分支：</p>
+<pre><code class="language-text">attack-external
+      ↓
+web-server
+      ↓
+win10-jump
+   ├──→ core-server
+   └──→ c2-server
+</code></pre>
+<p>其中：</p>
+<pre><code class="language-text">attack-external -&gt; web-server -&gt; win10-jump -&gt; core-server
+</code></pre>
+<p>是数据访问路径。</p>
+<pre><code class="language-text">attack-external -&gt; web-server -&gt; win10-jump -&gt; c2-server
+</code></pre>
+<p>是 C2 通信路径。</p>
+<p>所以攻击图比攻击链更完整。前端图展示的是整体攻击图，报告里的主路径则是从图中提取出的关键叙事路径。</p>
+<h2 id="10-生命周期叙事路径算法">10. 生命周期叙事路径算法</h2>
+<p>实际攻击图可能存在并行分支。如果只取 BFS 最长路径，可能出现问题：</p>
+<pre><code class="language-text">win10-jump 同时指向 core-server 和 c2-server
+</code></pre>
+<p>如果两个分支长度相同，普通 BFS 可能选中 C2 分支，导致报告里看不到 core-server。</p>
+<p>所以 D 在报告路径中增加了生命周期叙事路径：</p>
+<pre><code class="language-text">Initial Access
+  ↓
+Lateral Movement
+  ↓
+Collection
+  ↓
+Command and Control / Exfiltration
+</code></pre>
+<p>对于 E 数据，最终叙事路径是：</p>
+<pre><code class="language-text">attack-external -&gt; web-server -&gt; win10-jump -&gt; core-server -&gt; c2-server
+</code></pre>
+<p>这里要注意：</p>
+<pre><code class="language-text">core-server -&gt; c2-server 不一定表示真实网络边；
+它表示报告叙事顺序中先访问核心数据，再发生 C2 / 外传相关行为。
+</code></pre>
+<p>真实图边仍然是：</p>
+<pre><code class="language-text">win10-jump -&gt; core-server
+win10-jump -&gt; c2-server
+</code></pre>
+<p>也就是说：</p>
+<pre><code class="language-text">图负责表达真实关系；
+报告路径负责表达攻击过程叙事。
+</code></pre>
+<h2 id="11-evidence-证据保留机制">11. evidence 证据保留机制</h2>
+<p>D 的每个判断都尽量保留证据。</p>
+<p>例如横向移动步骤可能包含：</p>
+<pre><code class="language-text">网络连接事件 id
+源主机可疑命令执行事件 id
+目标主机登录成功事件 id
+目标主机进程启动事件 id
+</code></pre>
+<p>这些 ID 统一放在：</p>
+<pre><code class="language-json"><span class="hljs-attr">&quot;evidence_event_ids&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-number">12</span><span class="hljs-punctuation">,</span> <span class="hljs-number">13</span><span class="hljs-punctuation">,</span> <span class="hljs-number">17</span><span class="hljs-punctuation">]</span>
+</code></pre>
+<p>设计目的：</p>
+<ol>
+<li>前端可以点击攻击步骤查看原始证据。</li>
+<li>报告中的结论不是黑箱生成。</li>
+<li>老师追问“你为什么这么判断”时，可以回到具体事件。</li>
+<li>D 不需要保存 raw_log 副本，只保存数据库 ID，避免数据冗余。</li>
+</ol>
+<h2 id="12-攻击者画像与身份溯源算法">12. 攻击者画像与身份溯源算法</h2>
+<p>攻击者画像模块入口：</p>
+<pre><code class="language-python">build_attribution_profile(events, attack_steps, host_map, apt_profiles, threat_intel, internal_networks)
+</code></pre>
+<p>它解决的是课程要求中的：</p>
+<blockquote>
+<p>从攻击工具、脚本、配置文件中提取攻击者指纹特征，分析攻击者和 C2 服务器的基础设施关联信息，开展行为模式分析和组织特征匹配。</p>
+</blockquote>
+<h3 id="121-画像提取对象">12.1 画像提取对象</h3>
+<p>D 会从事件和 AttackStep 中提取：</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ATT&amp;CK 技术编号</td>
+<td>AttackStep 的 <code>technique_id</code></td>
+</tr>
+<tr>
+<td>ATT&amp;CK 阶段序列</td>
+<td>AttackStep 的 <code>stage</code> 时间序列</td>
+</tr>
+<tr>
+<td>工具</td>
+<td><code>process</code>、<code>cmdline</code>、<code>raw_log</code></td>
+</tr>
+<tr>
+<td>脚本</td>
+<td><code>.ps1</code>、<code>.bat</code>、<code>.sh</code>、<code>.py</code> 等路径</td>
+</tr>
+<tr>
+<td>配置文件</td>
+<td><code>.conf</code>、<code>.cfg</code>、<code>.ini</code>、<code>.json</code>、<code>.xml</code>、<code>.yaml</code> 等</td>
+</tr>
+<tr>
+<td>压缩包</td>
+<td><code>.zip</code>、<code>.rar</code>、<code>.7z</code>、<code>.tar.gz</code> 等</td>
+</tr>
+<tr>
+<td>注册表键</td>
+<td><code>detail.registry_key</code></td>
+</tr>
+<tr>
+<td>文件 hash</td>
+<td><code>detail.hashes</code></td>
+</tr>
+<tr>
+<td>域名</td>
+<td>URL、DNS query、HTTP Host</td>
+</tr>
+<tr>
+<td>外部 IP</td>
+<td>C2、外传目标、攻击源</td>
+</tr>
+<tr>
+<td>用户</td>
+<td>相关事件中的 <code>user</code></td>
+</tr>
+<tr>
+<td>命令行</td>
+<td>高价值事件中的 <code>cmdline</code></td>
+</tr>
+</tbody>
+</table>
+<p>为了减少噪声，画像模块不是扫描所有普通事件，而是优先扫描：</p>
+<pre><code class="language-text">AttackStep 的 evidence 事件
+带 anomaly_flags 的异常事件
+severity &gt;= 2 的高风险事件
+</code></pre>
+<h3 id="122-工具和脚本指纹">12.2 工具和脚本指纹</h3>
+<p>工具提取主要看：</p>
+<pre><code class="language-text">process
+cmdline
+raw_log
+description
+</code></pre>
+<p>例如：</p>
+<pre><code class="language-text">powershell.exe
+cmd.exe
+bash
+curl
+wget
+certutil
+mshta
+rundll32
+wmic
+nmap
+netcat
+</code></pre>
+<p>脚本和配置文件通过路径正则识别，例如：</p>
+<pre><code class="language-text">C:\Users\Public\updater.ps1
+/tmp/reverse.sh
+config.json
+c2_profile.conf
+</code></pre>
+<p>这些特征的意义是：</p>
+<pre><code class="language-text">不同攻击组织或攻击工具链往往有稳定的工具偏好、脚本形态和配置习惯。
+</code></pre>
+<h3 id="123-c2-基础设施提取">12.3 C2 基础设施提取</h3>
+<p>C2 基础设施来自两类证据：</p>
+<ol>
+<li>AttackStep 中的 C2 / Exfiltration 目标。</li>
+<li>原始事件中被标记为 C2、beacon、external_connection、dns_tunnel、large_upload 的外部连接或 DNS 查询。</li>
+</ol>
+<p>提取字段包括：</p>
+<pre><code class="language-text">ip
+domains
+ports
+protocols
+first_seen
+last_seen
+source_hosts
+source_ips
+evidence_event_ids
+registration
+history
+related_domains
+intel
+</code></pre>
+<p>其中：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>registration</code></td>
+<td>注册信息，例如组织、国家、ASN、注册商等</td>
+</tr>
+<tr>
+<td><code>history</code></td>
+<td>历史观察记录，例如曾被用作 C2、恶意样本回连等</td>
+</tr>
+<tr>
+<td><code>related_domains</code></td>
+<td>关联域名</td>
+</tr>
+<tr>
+<td><code>intel</code></td>
+<td>本地威胁情报命中详情</td>
+</tr>
+</tbody>
+</table>
+<p>当前实现是课程设计合理范围内的本地威胁情报增强：</p>
+<pre><code class="language-text">data/threat_intel/c2_intel.json
+</code></pre>
+<p>也就是说，它不是实时联网查 WHOIS，而是模拟真实安全平台中常见的“本地威胁情报库匹配”。</p>
+<p>这样做有两个好处：</p>
+<ol>
+<li>演示稳定，不受网络影响。</li>
+<li>老师可以看到 C2 注册信息、历史记录、关联域名这类字段已经进入算法和前端。</li>
+</ol>
+<h3 id="124-apt-相似性匹配">12.4 APT 相似性匹配</h3>
+<p>画像模块会把观测到的攻击者画像和本地 APT 画像库比较。</p>
+<p>APT 画像库位置：</p>
+<pre><code class="language-text">data/threat_intel/apt_profiles.json
+</code></pre>
+<p>每个 APT profile 可以包含：</p>
+<pre><code class="language-text">group_id
+name
+aliases
+techniques
+technique_names
+tools
+behavior_sequence
+infrastructure_tags
+description
+source_refs
+</code></pre>
+<p>匹配不是“确认归属”，而是“行为相似性候选”。</p>
+<p>输出中会明确说明：</p>
+<pre><code class="language-text">TTP similarity match only, not confirmed attribution.
+</code></pre>
+<h3 id="125-相似度算法">12.5 相似度算法</h3>
+<p>当前相似度由两部分组成：</p>
+<pre><code class="language-text">最终分数 = 0.7 * 规则相似度 + 0.3 * 语义相似度
+</code></pre>
+<p>规则相似度又由四部分构成：</p>
+<pre><code class="language-text">规则相似度 =
+  0.55 * technique_score
+  + 0.20 * tool_score
+  + 0.15 * sequence_score
+  + 0.10 * infra_score
+</code></pre>
+<p>解释：</p>
+<table>
+<thead>
+<tr>
+<th>分数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>technique_score</code></td>
+<td>ATT&amp;CK 技术编号重合度</td>
+</tr>
+<tr>
+<td><code>tool_score</code></td>
+<td>工具重合度</td>
+</tr>
+<tr>
+<td><code>sequence_score</code></td>
+<td>攻击阶段序列相似度</td>
+</tr>
+<tr>
+<td><code>infra_score</code></td>
+<td>C2 / 基础设施标签相似度</td>
+</tr>
+<tr>
+<td><code>semantic_score</code></td>
+<td>文本画像的 token cosine 相似度</td>
+</tr>
+</tbody>
+</table>
+<h4 id="technique_score">technique_score</h4>
+<p>计算方式：</p>
+<pre><code class="language-text">观测到的 technique_id 与 APT profile 中 technique_id 的交集覆盖率
+</code></pre>
+<p>例如：</p>
+<pre><code class="language-text">观测：T1190, T1059, T1021, T1005, T1071
+APT29：T1059, T1021, T1005, T1071, T1567
+匹配：T1059, T1021, T1005, T1071
+</code></pre>
+<p>匹配越多，分数越高。</p>
+<h4 id="tool_score">tool_score</h4>
+<p>计算方式：</p>
+<pre><code class="language-text">观测工具集合 与 APT profile 工具集合 的归一化匹配程度
+</code></pre>
+<p>会做简单标准化，例如：</p>
+<pre><code class="language-text">powershell.exe -&gt; powershell
+cmd.exe -&gt; cmd
+</code></pre>
+<h4 id="sequence_score">sequence_score</h4>
+<p>使用最长公共子序列思想：</p>
+<pre><code class="language-text">Observed sequence:
+Initial Access -&gt; Execution -&gt; Lateral Movement -&gt; Collection -&gt; C2
+
+APT profile sequence:
+Initial Access -&gt; Execution -&gt; Persistence -&gt; Lateral Movement -&gt; Collection -&gt; C2
+</code></pre>
+<p>两者的共同顺序越一致，说明行为模式越接近。</p>
+<p>这里用 LCS 的原因是：</p>
+<pre><code class="language-text">攻击步骤中可能缺少某些阶段，或者检测结果有噪声；
+但只要整体顺序相似，仍然应该得到一定分数。
+</code></pre>
+<h4 id="infra_score">infra_score</h4>
+<p>比较 C2 基础设施标签，例如：</p>
+<pre><code class="language-text">cloud-hosting
+dynamic-dns
+bulletproof-hosting
+known-c2
+</code></pre>
+<h4 id="semantic_score">semantic_score</h4>
+<p>把观测画像拼成文本，再和 APT profile 文本做 token cosine 相似度。</p>
+<p>当前是轻量文本相似度，不依赖外部 embedding 服务。</p>
+<p>设计原因：</p>
+<ol>
+<li>小学期项目需要可离线运行。</li>
+<li>不依赖 API key。</li>
+<li>结果可解释。</li>
+</ol>
+<p>如果后续扩展，可以把这一项替换为 embedding 相似度：</p>
+<pre><code class="language-text">semantic_score = cosine(embedding(observed_profile_text), embedding(apt_profile_text))
+</code></pre>
+<p>但当前实现选择轻量算法，更适合演示环境。</p>
+<h3 id="126-无证据时的保护">12.6 无证据时的保护</h3>
+<p>如果没有有效 Event、AttackStep、TTP 或 C2 证据，画像模块不会强行返回 APT29/APT28/FIN7。</p>
+<p>而是返回：</p>
+<pre><code class="language-text">attribution_status = insufficient_evidence
+apt_matches = []
+</code></pre>
+<p>这样避免“没有证据也硬猜一个组织”的问题。</p>
+<h2 id="13-e-数据上的实际分析结果">13. E 数据上的实际分析结果</h2>
+<p>当前 E 数据导入后：</p>
+<pre><code class="language-text">事件数：47775
+主机映射：9
+批次：e_final
+</code></pre>
+<p>攻击图包含 5 个关键节点：</p>
+<pre><code class="language-text">attack-external
+web-server
+win10-jump
+core-server
+c2-server
+</code></pre>
+<p>关键攻击边：</p>
+<pre><code class="language-text">Initial Access:
+attack-external 10.10.10.10 -&gt; web-server 10.10.20.10
+
+Lateral Movement:
+web-server 10.10.20.10 -&gt; win10-jump 10.10.30.10
+
+Collection:
+win10-jump 10.10.30.10 -&gt; core-server 10.10.30.20
+
+Command and Control:
+win10-jump 10.10.30.10 -&gt; c2-server 10.10.10.20
+</code></pre>
+<p>叙事路径：</p>
+<pre><code class="language-text">attack-external -&gt; web-server -&gt; win10-jump -&gt; core-server -&gt; c2-server
+</code></pre>
+<p>对应课程 PDF 中的要求：</p>
+<table>
+<thead>
+<tr>
+<th>PDF 要求</th>
+<th>D 中的实现</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>通过边界设备日志识别初始入侵点</td>
+<td>Initial Access 检测外部到 DMZ / 内网的 WAF、防火墙、HTTP 异常</td>
+</tr>
+<tr>
+<td>基于认证日志和网络连接追踪内网移动路径</td>
+<td>Lateral Movement 结合内网远程服务连接、登录和进程行为</td>
+</tr>
+<tr>
+<td>分析权限提升路径</td>
+<td>privilege_change、group_member_added、sudo / 高权限命令</td>
+</tr>
+<tr>
+<td>跟踪数据从存储到外传路径</td>
+<td>Collection + Exfiltration / C2，识别内部文件资源访问和外部连接</td>
+</tr>
+<tr>
+<td>构建攻击点关系图</td>
+<td>AttackStep 转有向图节点和边</td>
+</tr>
+<tr>
+<td>与已知 APT 组织 TTP 匹配</td>
+<td>APT profile 相似度匹配</td>
+</tr>
+<tr>
+<td>攻击者身份溯源</td>
+<td>提取工具、脚本、配置、注册表、C2 和基础设施特征</td>
+</tr>
+</tbody>
+</table>
+<h2 id="14-d-模块的技术特点">14. D 模块的技术特点</h2>
+<h3 id="141-多源事件融合">14.1 多源事件融合</h3>
+<p>D 同时使用：</p>
+<pre><code class="language-text">主机日志
+主机行为
+网络流量
+防火墙
+WAF
+</code></pre>
+<p>例如横向移动不是只看网络连接，还会补充前后主机事件。</p>
+<h3 id="142-可解释规则">14.2 可解释规则</h3>
+<p>每条 AttackStep 都能解释：</p>
+<pre><code class="language-text">为什么是这个阶段
+为什么是这个技术编号
+证据事件有哪些
+源和目标是谁
+</code></pre>
+<p>这比单纯用大模型输出结论更适合课程答辩。</p>
+<h3 id="143-图论表达攻击链">14.3 图论表达攻击链</h3>
+<p>D 不是只输出文字，而是把攻击行为抽象成：</p>
+<pre><code class="language-text">节点 + 有向边 + evidence
+</code></pre>
+<p>这样前端可以展示攻击图，也可以从图中抽取路径。</p>
+<h3 id="144-批次隔离">14.4 批次隔离</h3>
+<p>按 case 分析，防止多数据集混合时串链。</p>
+<h3 id="145-误报控制">14.5 误报控制</h3>
+<p>例如 C2 规则中：</p>
+<pre><code class="language-text">初始攻击源 IP 不会因为普通回连被误判成 C2
+</code></pre>
+<p>Collection 规则中：</p>
+<pre><code class="language-text">普通 HTTP 文件访问不会直接判定为数据收集；
+需要敏感资源语义或目标主机附近有敏感文件行为。
+</code></pre>
+<h3 id="146-画像结果谨慎表达">14.6 画像结果谨慎表达</h3>
+<p>APT 匹配输出的是：</p>
+<pre><code class="language-text">行为相似性候选
+</code></pre>
+<p>不是：</p>
+<pre><code class="language-text">确定真实攻击组织
+</code></pre>
+<p>这符合安全分析中的严谨表述。</p>
+<h2 id="15-可以在答辩中重点讲的算法点">15. 可以在答辩中重点讲的算法点</h2>
+<h3 id="151-规则检测不是简单-if-else而是多条件证据组合">15.1 规则检测不是简单 if-else，而是多条件证据组合</h3>
+<p>例如横向移动：</p>
+<pre><code class="language-text">内网到内网
+远程服务端口
+源主机前序可疑执行
+目标主机后续登录/执行
+</code></pre>
+<p>这些证据共同支撑 T1021。</p>
+<h3 id="152-使用时间窗口进行跨源关联">15.2 使用时间窗口进行跨源关联</h3>
+<p>例如：</p>
+<pre><code class="language-text">网络连接发生后 10 分钟内目标主机出现登录成功
+</code></pre>
+<p>比单条日志判断更可信。</p>
+<h3 id="153-使用图算法表示攻击关系">15.3 使用图算法表示攻击关系</h3>
+<p>D 把 AttackStep 转成有向图，然后用 BFS 提取路径。</p>
+<p>这个图既能表示主线攻击链，也能表示分支行为。</p>
+<h3 id="154-使用-lcs-比较行为序列">15.4 使用 LCS 比较行为序列</h3>
+<p>APT 相似性不是只看单个工具，而是看攻击阶段顺序是否接近。</p>
+<p>例如：</p>
+<pre><code class="language-text">Initial Access -&gt; Execution -&gt; Persistence -&gt; Lateral Movement -&gt; Collection -&gt; C2
+</code></pre>
+<p>这种序列比单点 IOC 更能体现 TTP。</p>
+<h3 id="155-使用-evidence_event_ids-保证可追溯">15.5 使用 evidence_event_ids 保证可追溯</h3>
+<p>D 每一步输出都保留数据库事件 ID，可以反查原始日志。</p>
+<p>这使系统具备：</p>
+<pre><code class="language-text">可解释性
+可验证性
+可审计性
+</code></pre>
+<h2 id="16-局限性与合理说明">16. 局限性与合理说明</h2>
+<p>答辩时如果被问到局限，可以这样说：</p>
+<ol>
+<li>D 当前是规则驱动为主，优点是可解释，缺点是依赖 B/C 解析出的语义质量。</li>
+<li>C2 注册信息、历史记录、关联域名当前来自本地威胁情报库，不是实时联网查询。</li>
+<li>APT 匹配是 TTP 相似性，不代表法律意义上的攻击者身份确认。</li>
+<li>如果输入事件缺少关键字段，例如没有 <code>src_ip</code>、<code>dst_ip</code>、<code>event_type</code> 或 <code>detail.uri</code>，部分规则无法触发。</li>
+<li>攻击图展示真实关系，报告叙事路径展示生命周期顺序，两者关注点不同。</li>
+</ol>
+<h2 id="17-讲解时可以直接使用的总结">17. 讲解时可以直接使用的总结</h2>
+<p>D 模块首先对 A 后端返回的统一 EventOut 进行预处理，统一时间、事件类型、detail 字段和 case_id。然后按批次隔离事件，避免不同攻击样本互相串链。在每个 case 内，D 使用一组面向 ATT&amp;CK 的检测器，分别识别初始访问、命令执行、持久化、权限提升、横向移动、数据收集、C2 通信、数据外传和防御规避等阶段。</p>
+<p>每个检测器不是只依赖单条日志，而是结合内外网方向、端口、命令行、异常标记、severity、host_map 和时间窗口进行综合判断。例如横向移动要求内网到内网的远程服务连接，并补充连接前后的主机执行或登录证据；数据收集会识别敏感文件访问、压缩命令以及内网 HTTP 文件资源读取。</p>
+<p>识别出的攻击行为会被转换为 AttackStep，每个 AttackStep 都包含 ATT&amp;CK 阶段、技术编号、源主机、目标主机、描述和 evidence_event_ids。这里的 evidence_event_ids 使用数据库内部事件 ID，因此前端可以回溯到完整原始日志。</p>
+<p>随后 D 将 AttackStep 构造成有向攻击图，节点表示攻击者、主机、核心服务器和 C2 基础设施，边表示攻击步骤。攻击链可以看作攻击图中的一条路径，而攻击图可以表示多条路径和分支活动的叠加。对于 E 数据，系统识别出的关键过程是 attack-external 入侵 web-server，随后 web-server 横向移动到 win10-jump，win10-jump 访问 core-server 上的内部数据资源，并与 c2-server 发生 C2 通信。</p>
+<p>最后，D 会从攻击步骤和证据事件中提取攻击者画像，包括工具、脚本、配置文件、注册表键、外部 IP、域名、C2 基础设施和 ATT&amp;CK TTP 序列，并与本地 APT 画像库进行相似性匹配。匹配算法结合技术编号覆盖率、工具重合度、行为序列 LCS 相似度、基础设施标签和文本语义相似度，输出的是行为相似性候选，而不是绝对身份确认。</p>
+<h2 id="18-讲解关键词">18. 讲解关键词</h2>
+<p>可以记住这几个关键词：</p>
+<pre><code class="language-text">EventOut
+AttackStep
+ATT&amp;CK Mapping
+case_id 隔离
+host_map 映射
+时间窗口关联
+多源证据融合
+有向攻击图
+BFS 路径搜索
+生命周期叙事路径
+evidence_event_ids 回溯
+攻击者指纹
+C2 基础设施
+APT TTP 相似性匹配
+</code></pre>
+
+            
+            
+        </body>
+        </html>
