@@ -49,7 +49,7 @@ def t1():
         # 登录与会话
         "login_success", "login_failed", "logout",
         # 进程
-        "process_start", "process_end",
+        "process_start", "process_end", "process_access", "remote_thread_create",
         # 网络
         "network_connection", "dns_query", "http_request",
         # 文件
@@ -72,7 +72,7 @@ def t1():
     assert not extra, f"不在V2词表里(不许私造): {extra}"
 
 
-check("契约", "EVENT_TYPES与V2冻结词表逐词一致(31词, 含D确认的log_cleared)", t1)
+check("契约", "EVENT_TYPES与V2冻结词表逐词一致(33词, 含log_cleared与进程内存2词)", t1)
 
 
 # ---------- t2：任务8b 六个新事件ID + 任务7b 注销事件（合成XML逐个断言） ----------
@@ -496,6 +496,104 @@ def t9():
 
 
 check("Sysmon 22/23", "ID23→file_delete / ID22→dns_query(与sysmon_json.py词表对齐) / 非目标ID回归", t9)
+
+
+# ---------- t10：任务书第4条 内存行为分析（Sysmon 10/8 解析 + 注入检测规则） ----------
+def t10():
+    import json
+    import tempfile
+    from sysmon_json import parse_sysmon_json
+    from anomaly import apply_anomaly_rules
+
+    def line(eid, **fields):
+        base = {"Channel": "Microsoft-Windows-Sysmon/Operational", "EventID": eid,
+                "Hostname": "SCRANTON.dmevals.local", "EventTime": "2020-05-01 23:05:16",
+                "UtcTime": "2020-05-02 03:05:16.623"}
+        base.update(fields)
+        return json.dumps(base)
+
+    lines = [
+        # 凭据转储指纹：mimikatz 访问 lsass，全权掩码 + 无模块调用栈 → 应命中全部3条规则
+        line(10, SourceImage=r"C:\Windows\Temp\rundll32.exe",
+             TargetImage=r"C:\Windows\system32\lsass.exe",
+             GrantedAccess="0x1FFFFF",
+             CallTrace=r"C:\Windows\SYSTEM32\ntdll.dll+9c584|0x00007ff6a1b2c300"),
+        # 良性访问：svchost→svchost，查询类掩码，模块化调用栈 → 不应命中任何规则
+        line(10, SourceImage=r"C:\Windows\system32\svchost.exe",
+             TargetImage=r"C:\Windows\System32\svchost.exe",
+             GrantedAccess="0x1000",
+             CallTrace=r"C:\Windows\SYSTEM32\ntdll.dll+9c584|C:\Windows\SYSTEM32\kernel32.dll+1a2b3"),
+        # 良性lsass查询：系统进程以查询掩码访问lsass（APT29实测286次全是这种）→ 不误报
+        line(10, SourceImage=r"C:\Windows\system32\svchost.exe",
+             TargetImage=r"C:\Windows\system32\lsass.exe",
+             GrantedAccess="0x1000",
+             CallTrace=r"C:\Windows\SYSTEM32\ntdll.dll+9c584"),
+        # 读写掩码但目标是普通进程 → 只命中 suspicious_memory_access
+        line(10, SourceImage=r"C:\Windows\explorer.exe",
+             TargetImage=r"C:\Windows\System32\notepad.exe",
+             GrantedAccess="0x143A",
+             CallTrace=r"C:\Windows\SYSTEM32\ntdll.dll+9c584"),
+        # 远程线程注入：powershell → lsass，StartModule 无归属 → remote_thread_create + reflective_load
+        line(8, SourceImage=r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
+             TargetImage=r"C:\Windows\System32\lsass.exe",
+             NewThreadId="912", StartAddress="0x00000117610E0000",
+             StartModule="-", StartFunction="-"),
+        # 老ID回归：ID 1 进程创建仍正常
+        line(1, Image=r"C:\Windows\System32\cmd.exe", User="SCRANTON\\mxy",
+             CommandLine="whoami", ParentImage=r"C:\Windows\System32\svchost.exe"),
+    ]
+    tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8")
+    tmp.write("\n".join(lines))
+    tmp.close()
+    try:
+        st = {}
+        events = parse_sysmon_json(tmp.name, st)
+    finally:
+        import os
+        os.unlink(tmp.name)
+
+    assert st["parsed"] == 6 and st["failed"] == 0, st
+    assert st["by_event_id"] == {"10": 4, "8": 1, "1": 1}, st["by_event_id"]
+
+    access = [e for e in events if e["event_type"] == "process_access"]
+    thread = next(e for e in events if e["event_type"] == "remote_thread_create")
+    assert len(access) == 4, f"process_access应有4条, 实际{len(access)}"
+    a0 = next(e for e in access if e["detail"]["granted_access"] == "0x1FFFFF")
+    assert a0["detail"]["target_image"] == "lsass.exe" and a0["detail"]["call_trace"], a0["detail"]
+    assert a0["process"] == "rundll32.exe", f"SourceImage应取文件名当process: {a0['process']}"
+    # StartModule="-"按契约归一为null（_clean语义），规则侧 None/"-" 都视为无归属模块
+    assert thread["detail"]["start_module"] is None and thread["detail"]["new_thread_id"] == 912, \
+        thread["detail"]
+
+    stats = apply_anomaly_rules(events)
+    by_flag = {f: [e for e in events if f in e["anomaly_flags"]] for f in stats["by_rule"]}
+    # 凭据转储三指纹全中
+    lsass_full = next(e for e in access if e["detail"]["granted_access"] == "0x1FFFFF")
+    assert set(lsass_full["anomaly_flags"]) == {"lsass_access", "suspicious_memory_access",
+                                                "reflective_load"}, lsass_full["anomaly_flags"]
+    assert lsass_full["severity"] == 3, f"多规则命中取最高severity: {lsass_full['severity']}"
+    # 良性访问零误报（含系统进程查询lsass——APT29实测的svchost场景）
+    benign = next(e for e in access if e["detail"]["granted_access"] == "0x1000"
+                  and (e["detail"]["target_image"] or "").lower() == "svchost.exe")
+    assert benign["anomaly_flags"] == [] and benign["severity"] == 0, \
+        f"良性访问误报: {benign['anomaly_flags']}"
+    lsass_query = next(e for e in access if e["detail"]["granted_access"] == "0x1000"
+                       and (e["detail"]["target_image"] or "").lower() == "lsass.exe")
+    assert lsass_query["anomaly_flags"] == [], \
+        f"良性lsass查询误报: {lsass_query['anomaly_flags']}"
+    # 读写掩码只命中一条规则
+    rw = next(e for e in access if e["detail"]["granted_access"] == "0x143A")
+    assert rw["anomaly_flags"] == ["suspicious_memory_access"] and rw["severity"] == 2, \
+        f"0x143A应只命中掩码规则: {rw['anomaly_flags']}"
+    # 远程线程命中 reflective_load
+    assert thread["anomaly_flags"] == ["reflective_load"] and thread["severity"] == 3, \
+        f"远程线程应命中reflective_load: {thread['anomaly_flags']}"
+    # 幂等
+    assert apply_anomaly_rules(events) == stats, "规则引擎必须幂等"
+
+
+check("内存行为分析", "Sysmon10→process_access / Sysmon8→remote_thread_create / "
+                     "lsass_access+suspicious_memory_access+reflective_load 3规则命中+良性零误报", t10)
 
 
 # ---------- 汇总 ----------

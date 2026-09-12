@@ -23,6 +23,8 @@
 | Sysmon .evtx | ID 13 注册表键值 | registry_set |
 | Sysmon .evtx | ID 22 DNS查询 | dns_query（与sysmon_json.py、C的DNS事件同词表） |
 | Sysmon .evtx | ID 23 文件删除 | file_delete（与sysmon_json.py对齐） |
+| Sysmon JSON行 | ID 10 进程访问内存 | process_access（GrantedAccess掩码+CallTrace，内存注入检测原料） |
+| Sysmon JSON行 | ID 8 远程线程创建 | remote_thread_create（跨进程注入动作，StartModule无归属=反射加载指纹） |
 | Linux auth.log | sshd Accepted/Failed | login_success / login_failed（含invalid_user线索；合成样本见 data/sample_logs/linux/） |
 | Linux audit.log | sudo USER_CMD（HEX命令解码） | process_start（sudo信息放detail，D决议） |
 | Linux audit（原始/ausearch -i解释 双格式） | execve + EXECVE | process_start（完整命令行cmdline） |
@@ -36,7 +38,7 @@ auditd双格式说明：E交付的 `audit.log` 是原始格式（epoch+数字字
 
 附加能力（Day2）：
 - **会话重建**（`sessions.py`）：4624↔4634/4647 按 `(host, LogonId)` 配对成会话，登录事件补 `logout_time/session_duration_s`，未注销标 `active`，孤儿注销标 `no_login_record`；整批汇总存 `all_sessions.json`。
-- **异常预标记**（`anomaly.py`）：5条规则（offhour_login/brute_force/username_enumeration/encoded_exec/remote_download）→ `anomaly_flags` + `severity(0-3)`，幂等可重跑。
+- **异常预标记**（`anomaly.py`）：8条规则（offhour_login/brute_force/username_enumeration/encoded_exec/remote_download + 内存注入3条：lsass_access/suspicious_memory_access/reflective_load）→ `anomaly_flags` + `severity(0-3)`，幂等可重跑。内存3条基于 Sysmon 10/8（APT29 day1 实测：可疑内存访问1,256 / lsass凭据访问5 / 反射加载2），任务书第4条内存行为分析落地。
 - **全量导入**（`run_parse.py --dir`）：递归解析文件夹，双层容错（按条+按文件），末尾打印按文件分组统计，直接抄进《测试分析报告》。
 
 ## 快速开始
@@ -58,7 +60,7 @@ python run_parse.py --dir "..\..\data\sample_logs"
 python run_parse.py <文件.evtx> --post http://127.0.0.1:8000/api/events/import
 ```
 
-自检：`python verify_day1.py`（Day1产出回归）+ `python verify_day2.py`（Day2新功能，9项）。
+自检：`python verify_day1.py`（Day1产出回归，7项）+ `python verify_day2.py`（Day2新功能，10项），共17项。
 
 ## 文件结构
 
@@ -69,11 +71,11 @@ backend/b_host_parser/
 ├── sysmon.py          # Sysmon日志解析器（ID 1/3/11/13）
 ├── sysmon_json.py     # JSON行格式Windows日志适配器（APT29等已导出数据集）
 ├── sessions.py        # 任务7b：登录↔注销会话重建（(host,LogonId)配对）
-├── anomaly.py         # 任务8：异常预标记规则引擎（5条规则→anomaly_flags+severity）
+├── anomaly.py         # 任务8：异常预标记规则引擎（8条规则→anomaly_flags+severity，含内存注入3条）
 ├── import_client.py   # 落地.jsonl / 批量POST给A
 ├── run_parse.py       # 命令行入口（单文件 / --dir 全量导入）
 ├── verify_day1.py     # 一键自检（Day1产出回归，7项）
-├── verify_day2.py     # 一键自检（Day2新功能，9项）
+├── verify_day2.py     # 一键自检（Day2新功能，10项）
 └── requirements.txt
 ```
 

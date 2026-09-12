@@ -22,3 +22,5 @@ backend/data/
 
 # E最终批次EventOut（66MB，按约定不进git，可由build_e_final_batch.py一键复现）
 data/sample_events/e_final_host_eventout.json
+data/sample_events/apt29_day1_eventout.json
+data/sample_events/e_case01_full_db.json

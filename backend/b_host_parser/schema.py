@@ -49,6 +49,8 @@ EVENT_TYPES = [
     # 进程
     "process_start",         # 进程创建        (Sysmon 1 / 4688 / Linux sudo USER_CMD)
     "process_end",           # 进程结束        (Sysmon 5，暂不解析)
+    "process_access",        # 进程访问内存    (Sysmon 10，内存注入检测原料；2026-09-12 补任务书第4条)
+    "remote_thread_create",  # 跨进程远程线程  (Sysmon 8，代码注入动作；2026-09-12 补任务书第4条)
     # 网络
     "network_connection",    # 主机发起的网络连接 (Sysmon 3 + C的流量事件)
     "dns_query",             # DNS查询         (C)

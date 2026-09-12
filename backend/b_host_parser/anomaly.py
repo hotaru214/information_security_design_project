@@ -17,6 +17,16 @@ D的关联引擎和F的前端可以直接用，不必每条事件都等D二次�
   | encoded_exec         | 命令行含 powershell -enc/-EncodedCommand/-w hidden    | 3        |
   | remote_download      | 命令行含 wget/curl/certutil -urlcache/Invoke-WebRequest | 2      |
 
+2026-09-12 追加3条内存注入规则（任务书第4条，只作用于 process_access / remote_thread_create）：
+  | 规则ID                  | 条件                                                  | severity |
+  | lsass_access            | Sysmon10 目标是 lsass.exe 且 GrantedAccess ∈ 可疑掩码集  | 3        |
+  |                         | 或 CallTrace 含无模块裸地址（凭据转储特征，T1003.001）     |          |
+  |                         | ⚠️ 不加掩码条件会大量误报——实测svchost良性查询lsass        |          |
+  |                         |    286次全是0x1000，真正的转储是0x1FFFFF/0x1F3FFF         |          |
+  | suspicious_memory_access| Sysmon10 GrantedAccess ∈ 全权/读写掩码集                | 2        |
+  | reflective_load         | Sysmon10 CallTrace 含无模块裸地址段（非模块内存执行）     | 3        |
+  |                         | 或 Sysmon8 跨进程远程线程且 StartModule 无归属          |          |
+
 ⚠️ 两个依赖：
   1. offhour_login 依赖任务3的时区转换正确——timestamp必须已是UTC+8
      （解析器入口 to_utc8() 已保证；直接拿原始日志时间喂进来的结果不可信）。
@@ -44,12 +54,23 @@ SEVERITY = {
     "username_enumeration": 3,
     "encoded_exec": 3,
     "remote_download": 2,
+    "lsass_access": 3,
+    "suspicious_memory_access": 2,
+    "reflective_load": 3,
 }
 
 # powershell编码执行/隐藏窗口（忽略大小写；-w hidden与-windowstyle hidden等价写法都覆盖）
 _ENCODED_RE = re.compile(r"-enc\b|-encodedcommand|-w\s*hidden|-windowstyle\s*hidden", re.I)
 # 远程下载工具（wget/curl是词边界匹配，防止误伤"curlxxx"这类子串）
 _DOWNLOAD_RE = re.compile(r"\bwget\b|\bcurl\b|certutil\s+.*-urlcache|invoke-webrequest", re.I)
+
+# ---- 内存注入规则（任务书第4条）----
+# 全权/读写掩码集：PROCESS_ALL_ACCESS(0x1FFFFF)及其常用变体、可读写虚拟内存组合
+# （0x143A=OPERATION|READ|WRITE|QUERY_INFORMATION 等）。良性查询类(0x1000/0x1400/0x1010)不命中
+_SUSPICIOUS_ACCESS_MASKS = {0x1FFFFF, 0x1F0FFF, 0x1F1FFF, 0x1F2FFF, 0x1F3FFF,
+                            0x143A, 0x147A, 0x1F03FF}
+# CallTrace里的裸地址段：正常帧是"模块路径+偏移"，无模块的裸 0x 地址=非模块内存执行（反射加载指纹）
+_UNBACKED_FRAME_RE = re.compile(r"(?:^|\|)0x[0-9a-fA-F]{4,}(?:\||$)")
 
 
 def _parse_ts(ts: str):
@@ -86,6 +107,35 @@ def apply_anomaly_rules(events: list) -> dict:
                 _flag(ev, "encoded_exec")
             if _DOWNLOAD_RE.search(cmdline):
                 _flag(ev, "remote_download")
+
+    # ---- 内存注入规则（只作用于 process_access / remote_thread_create）----
+    for ev in events:
+        et = ev.get("event_type")
+        if et == "process_access":
+            detail = ev.get("detail") or {}
+            target = (detail.get("target_image") or "").lower()
+            granted = (detail.get("granted_access") or "").strip()
+            try:
+                mask = int(granted, 16) if granted.startswith("0x") else None
+            except ValueError:
+                mask = None
+            call_trace = detail.get("call_trace") or ""
+            unbacked = bool(call_trace and _UNBACKED_FRAME_RE.search(call_trace))
+            if target == "lsass.exe" and (mask in _SUSPICIOUS_ACCESS_MASKS or unbacked):
+                _flag(ev, "lsass_access")
+            if mask in _SUSPICIOUS_ACCESS_MASKS:
+                _flag(ev, "suspicious_memory_access")
+            if unbacked:
+                _flag(ev, "reflective_load")
+        elif et == "remote_thread_create":
+            detail = ev.get("detail") or {}
+            source = (detail.get("source_image") or "").lower()
+            target = (detail.get("target_image") or "").lower()
+            # 跨进程远程线程本身就是注入动作；起始地址无归属模块（"-"）是反射加载的直接证据。
+            # 进程自己创建自己的线程（源=目标）不算跨进程注入。
+            if source and target and source != target \
+                    and detail.get("start_module") in (None, "-"):
+                _flag(ev, "reflective_load")
 
     # ---- 跨事件时间窗规则：把登录失败事件分给两条规则 ----
     failures = [ev for ev in events if ev["event_type"] == "login_failed"]
