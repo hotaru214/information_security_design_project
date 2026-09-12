@@ -190,7 +190,7 @@ def page_arch():
     boxes = [
         ("E 靶场 / 数据", "9 节点三段式\n4 抓包点+防火墙",
          Inches(0.45), RGBColor(0x7C, 0x3A, 0xED)),
-        ("B 主机日志解析", "EVTX / Sysmon / auditd\n31 种事件类型",
+        ("B 主机日志解析", "EVTX / Sysmon / auditd\n33 种事件类型",
          Inches(2.98), CYAN),
         ("C 网络流量解析", "PCAP / Zeek / filterlog\n10 检测器→ATT&CK",
          Inches(5.51), RGBColor(0x05, 0x96, 0x69)),
@@ -268,15 +268,15 @@ def page_contract():
 def page_modules():
     s = new_slide()
     header(s, 4, "核心模块实现 · B 主机日志解析",
-           "5 类异构输入，归一成 31 种标准事件类型")
+           "5 类异构输入，归一成 33 种标准事件类型")
     card(s, Inches(0.45), Inches(1.5), Inches(6.0), Inches(5.3))
     text(s, Inches(0.7), Inches(1.7), Inches(5.5), Inches(0.5),
          "能力清单", size=18, color=CYAN, bold=True)
     bullets(s, Inches(0.7), Inches(2.35), Inches(5.5), [
         "5 类输入：EVTX / Sysmon EVTX+JSON / auth / auditd",
-        "31 种标准事件类型，时间统一 UTC+8",
+        "33 种标准事件类型，时间统一 UTC+8",
         "登录会话重建：4624/4634/4647 配对",
-        "异常预标记 9 规则（爆破/编码执行/持久化…）",
+        "异常预标记 8 规则（爆破/编码执行/内存注入…）",
         "filterlog 防火墙事件：action/rule_id 进 detail",
     ], size=13.5, mark="✓ ", gap=0.78)
     card(s, Inches(6.85), Inches(1.5), Inches(6.0), Inches(5.3))
@@ -740,7 +740,7 @@ def page_summary():
     text(s, Inches(7.1), Inches(1.65), Inches(5.5), Inches(0.4),
          "局限与下一步", size=16, color=ORANGE, bold=True)
     todo = [
-        "主机侧深挖：内存注入 / 反射加载",
+        "内存镜像取证：YARA 扫描",
         "隐蔽信道：HTTP 隧道建模",
         "LLM 升级多智能体协作",
         "打包分发：PyInstaller + electron-builder",
