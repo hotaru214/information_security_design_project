@@ -261,7 +261,7 @@ def page_contract():
              d, size=12.5, color=MUTED)
         yy += 1.45
     text(s, Inches(7.1), Inches(6.35), Inches(5.5), Inches(0.4),
-         "实测：47,055 条主机事件一次入库全过校验", size=13, color=ORANGE, bold=True)
+         "实测：47,195 条主机事件一次入库全过校验", size=13, color=ORANGE, bold=True)
 
 
 # ---------------------------------------------------------------- 6 B 模块
@@ -288,7 +288,7 @@ def page_modules():
     text(s, Inches(7.1), Inches(4.0), Inches(5.5), Inches(0.4),
          "实测", size=15, color=CYAN, bold=True)
     bullets(s, Inches(7.1), Inches(4.5), Inches(5.6), [
-        "E 靶场 47,055 条一次通过契约校验",
+        "E 靶场 47,195 条一次通过契约校验",
         "apt29 批次 23,993 条驱动 D 输出 1,129 步",
     ], size=13.5, mark="✓ ", gap=0.62)
 
@@ -661,7 +661,7 @@ def page_overview():
         ("9", "靶场节点 · 3 网段"),
         ("139,195", "CTU-13 会话入库"),
         ("720→47", "e_case01→攻击步骤"),
-        ("47,055", "B 侧事件过契约"),
+        ("47,195", "B 侧事件过契约"),
     ]
     for i, (n, t) in enumerate(stats):
         x = Inches(0.45 + (i % 2) * 3.0)
