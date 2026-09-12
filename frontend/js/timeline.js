@@ -44,10 +44,10 @@
  *     本页的内嵌面板与弹窗共用 app.js 的工具函数，口径一致。
  * ============================================================ */
 
-/* ---------- 冻结枚举：event_type 7 类分组（契约冻结，不得自造） ---------- */
+/* ---------- 冻结枚举：event_type 7 类分组（契约冻结，不得自造；2026-09-12 补进程内存 2 词） ---------- */
 const EVENT_TYPE_GROUPS = [
   ["登录与会话", ["login_success", "login_failed", "logout"]],
-  ["进程行为", ["process_start", "process_end"]],
+  ["进程行为", ["process_start", "process_end", "process_access", "remote_thread_create"]],
   ["网络行为", ["network_connection", "dns_query", "http_request"]],
   ["文件行为", ["file_create", "file_read", "file_write", "file_modify", "file_delete"]],
   ["注册表行为", ["registry_set", "registry_create", "registry_delete", "registry_query"]],
