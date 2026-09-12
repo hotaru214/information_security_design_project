@@ -28,8 +28,11 @@ Sysmon/Security JSON-lines 适配器（APT29 day1 manual 数据集专用）
                                        Security 4697 → service_created（Security
                                                           通道版"服务安装"=7045 的等价事件）
                                        Security 4698 → scheduled_task_created
-其余 ID（Sysmon 12/10/7/9/5/18/2/8/17、Security 4656/4663/5156/5447...、
+其余 ID（Sysmon 12/7/9/5/18/2/17、Security 4656/4663/5156/5447...、
 PowerShell 4103/4104/800）跳过并计数——大多是没有现成词表词的噪声/审计事件。
+（2026-09-12 起 Sysmon 8/10 已支持——任务书第4条"内存行为分析"：
+ProcessAccess 掩码/调用栈 + CreateRemoteThread 是注入与反射加载的日志层指纹，
+检测规则在 anomaly.py 的 lsass_access / suspicious_memory_access / reflective_load）
 
 ⚠️ 时间口径：
   - 优先取事件自己的 UtcTime（Sysmon EventData 自带，毫秒精度，真·UTC）；
@@ -51,6 +54,8 @@ from windows_evtx import to_utc8, _clean, _basename, _norm_substatus
 SYSMON_SUPPORTED = {
     1: "process_start",
     3: "network_connection",
+    8: "remote_thread_create",
+    10: "process_access",
     11: "file_create",
     13: "registry_set",
     22: "dns_query",
@@ -182,6 +187,48 @@ def _sysmon_event(event_id: int, data: dict, ts, host: str) -> dict | None:
                   "registry_value_data": details,
                   "registry_operation": _clean(data.get("EventType")),
                   "process_guid": _clean(data.get("ProcessGuid"))}
+    elif event_id == 10:  # 进程访问内存：内存注入检测的原料（掩码/调用栈进detail供规则判读）
+        source_image = _basename(_clean(data.get("SourceImage")))
+        target_image = _basename(_clean(data.get("TargetImage")))
+        granted = _clean(data.get("GrantedAccess"))
+        call_trace = _clean(data.get("CallTrace"))
+        description = (f"进程 {source_image or '未知'} 访问 {target_image or '未知'} 内存"
+                       f"（GrantedAccess={granted or '未记录'}）")
+        detail = {"source_image": source_image,
+                  "source_process_guid": _clean(data.get("SourceProcessGUID")),
+                  "source_process_id": _to_int(data.get("SourceProcessId")),
+                  "target_image": target_image,
+                  "target_process_guid": _clean(data.get("TargetProcessGUID")),
+                  "target_process_id": _to_int(data.get("TargetProcessId")),
+                  "granted_access": granted,
+                  "call_trace": call_trace}
+        return make_event(timestamp=ts, host=host, source="sysmon",
+                         source_event_id=event_id, event_type=event_type,
+                         user=user, process=source_image,
+                         detail=detail, description=description,
+                         raw_log=data.get("_raw_line"))
+    elif event_id == 8:  # 跨进程远程线程创建：代码注入的直接动作（StartModule为"-"=无模块起始地址）
+        source_image = _basename(_clean(data.get("SourceImage")))
+        target_image = _basename(_clean(data.get("TargetImage")))
+        start_module = _clean(data.get("StartModule"))
+        description = (f"远程线程创建: {source_image or '未知'} → {target_image or '未知'}"
+                       f"（起始地址 {_clean(data.get('StartAddress')) or '未记录'}"
+                       f"{'，无归属模块' if start_module in (None, '-') else ''}）")
+        detail = {"source_image": source_image,
+                  "source_process_guid": _clean(data.get("SourceProcessGUID")),
+                  "source_process_id": _to_int(data.get("SourceProcessId")),
+                  "target_image": target_image,
+                  "target_process_guid": _clean(data.get("TargetProcessGUID")),
+                  "target_process_id": _to_int(data.get("TargetProcessId")),
+                  "new_thread_id": _to_int(data.get("NewThreadId")),
+                  "start_address": _clean(data.get("StartAddress")),
+                  "start_module": start_module,
+                  "start_function": _clean(data.get("StartFunction"))}
+        return make_event(timestamp=ts, host=host, source="sysmon",
+                         source_event_id=event_id, event_type=event_type,
+                         user=user, process=source_image,
+                         detail=detail, description=description,
+                         raw_log=data.get("_raw_line"))
     elif event_id == 22:  # DNS查询：C2域名解析的主机侧证据
         qname = _clean(data.get("QueryName"))
         description = f"DNS查询: {qname}（进程: {image}）"

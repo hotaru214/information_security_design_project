@@ -151,13 +151,13 @@ function withSimulatedIds(events) {
  *      都依赖它，坏一条会污染整页。
  */
 
-/* 契约冻结的 event_type 全集（31 值 = 7 类 30 值 + log_cleared）。
- * 出处：docs/数据格式契约-v1.md 第四节（V2.1 起 log_cleared 转正）。
+/* 契约冻结的 event_type 全集（33 值 = 2026-09-12 起含进程内存 2 词）。
+ * 出处：docs/Event-V2-FINAL.md（唯一权威版本）+ backend/b_host_parser/schema.py。
  * 与 timeline.js 的 EVENT_TYPE_GROUPS 保持同源——那边按 7 类分组
  * 做过滤器下拉，这边只做"是否合法"判定；改枚举必须两处同步。 */
 const EVENT_TYPE_ALLOWED = new Set([
   "login_success", "login_failed", "logout",
-  "process_start", "process_end",
+  "process_start", "process_end", "process_access", "remote_thread_create",
   "network_connection", "dns_query", "http_request",
   "file_create", "file_read", "file_write", "file_modify", "file_delete",
   "registry_set", "registry_create", "registry_delete", "registry_query",

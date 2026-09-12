@@ -32,12 +32,12 @@ EVENT_V2_FIELDS = (
     "detail", "description", "anomaly_flags", "severity", "raw_log",
 )
 
-# event_type 冻结枚举（全组规范，B 起草 2026-09-07）
+# event_type 冻结枚举（全组规范，B 起草 2026-09-07；2026-09-12 补任务书第4条的两个进程内存词）
 EVENT_TYPE_ENUM = {
     # 登录与会话
     "login_success", "login_failed", "logout",
     # 进程行为
-    "process_start", "process_end",
+    "process_start", "process_end", "process_access", "remote_thread_create",
     # 网络行为
     "network_connection", "dns_query", "http_request",
     # 文件行为

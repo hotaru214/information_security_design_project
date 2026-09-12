@@ -246,6 +246,8 @@ INITIAL_ACCESS_URI_KEYWORDS = [
 
 INITIAL_ACCESS_FLAGS = [
     "web_attack",
+    "http_attack",          # C 侧 HTTP 检测器实际输出的 kind（2026-09-12 对齐，此前真实数据识别不出 T1190）
+    "entry_point_candidate",
     "initial_access",
     "exploit",
     "rce",
