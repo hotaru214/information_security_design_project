@@ -61,6 +61,46 @@ def build_chain_view(attack_steps, event_count, hosts, internal_networks=None):
             node["ip"] = ip
         return node_id
 
+    def merge_semantic_links(raw_links):
+        merged = {}
+        order = []
+
+        for link in raw_links:
+            key = (
+                link.get("case_id"),
+                link.get("source"),
+                link.get("target"),
+                link.get("attack_stage"),
+                link.get("mitre_technique"),
+            )
+            if key not in merged:
+                merged[key] = dict(link)
+                merged[key]["step_ids"] = [link.get("step_id")]
+                merged[key]["occurrence_count"] = 1
+                merged[key]["first_seen"] = link.get("timestamp")
+                merged[key]["last_seen"] = link.get("timestamp")
+                order.append(key)
+                continue
+
+            current = merged[key]
+            current["occurrence_count"] += 1
+            if link.get("step_id") is not None:
+                current["step_ids"].append(link["step_id"])
+            current["last_seen"] = max(
+                value for value in [current.get("last_seen"), link.get("timestamp")] if value
+            )
+            current["first_seen"] = min(
+                value for value in [current.get("first_seen"), link.get("timestamp")] if value
+            )
+
+            evidence = list(current.get("evidence_event_ids") or [])
+            for event_id in link.get("evidence_event_ids") or []:
+                if event_id not in evidence:
+                    evidence.append(event_id)
+            current["evidence_event_ids"] = evidence
+
+        return [merged[key] for key in order]
+
     for step in attack_steps:
         link = {key: step[key] for key in (
             "step_id", "technique_name", "source_host", "target_host",
@@ -76,12 +116,15 @@ def build_chain_view(attack_steps, event_count, hosts, internal_networks=None):
         link["target"] = endpoint(step["target_host"], step["target_ip"])
         links.append(link)
 
+    links = merge_semantic_links(links)
+
     return {
         "meta": {
             "case": "live-analysis",
             "description": "Attack chain generated from current event database",
             "generated_from": "live", "event_count": event_count,
-            "step_count": len(attack_steps),
+            "step_count": len(links),
+            "raw_step_count": len(attack_steps),
         },
         "nodes": list(nodes.values()), "links": links,
     }

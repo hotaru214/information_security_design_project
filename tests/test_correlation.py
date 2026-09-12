@@ -300,6 +300,83 @@ def test_waf_http_alert_is_initial_access():
     )
 
 
+def test_web_command_injection_payload_is_execution():
+    request = network_event(
+        id=201,
+        host="10.10.20.10",
+        event_type="http_request",
+        src_ip="10.10.10.10",
+        dst_ip="10.10.20.10",
+        dst_port=8088,
+        detail={
+            "method": "POST",
+            "uri": "/vulnerabilities/exec/",
+            "http_requests": [{
+                "method": "POST",
+                "uri": "/vulnerabilities/exec/",
+                "body": "ip=127.0.0.1+%26%26+%2Fhome%2Fmxy%2Fcase01-stage.sh&Submit=Submit",
+            }],
+        },
+    )
+    alert = network_event(
+        id=202,
+        host="10.10.10.10",
+        timestamp="2026-09-08T13:00:01+08:00",
+        event_type="http_request",
+        src_ip="10.10.10.10",
+        dst_ip="10.10.20.10",
+        dst_port=8088,
+        anomaly_flags=["http_attack", "T1190", "entry_point_candidate"],
+        severity=3,
+        detail={"method": "POST", "uri": "/vulnerabilities/exec/", "mitre_technique": "T1190"},
+    )
+
+    steps = correlate_events(
+        [request, alert],
+        {"10.10.20.10": "web-server"},
+        FINAL_NETWORKS,
+    )
+
+    execution = [
+        step for step in steps
+        if step["stage"] == "Execution" and step["technique_id"] == "T1059"
+    ]
+    assert len(execution) == 1
+    assert execution[0]["source_host"] == execution[0]["target_host"] == "web-server"
+    assert execution[0]["source_ip"] == execution[0]["target_ip"] == "10.10.20.10"
+    assert execution[0]["evidence_event_ids"] == [201, 202]
+
+
+def test_normal_dvwa_command_page_is_not_execution():
+    request = network_event(
+        id=201,
+        event_type="http_request",
+        src_ip="10.10.10.10",
+        dst_ip="10.10.20.10",
+        dst_port=8088,
+        detail={"method": "GET", "uri": "/vulnerabilities/exec/"},
+    )
+
+    steps = correlate_events([request], internal_networks=FINAL_NETWORKS)
+
+    assert not any(step["stage"] == "Execution" for step in steps)
+
+
+def test_analytics_utmcmd_parameter_is_not_execution():
+    request = network_event(
+        id=201,
+        event_type="http_request",
+        src_ip="10.10.10.10",
+        dst_ip="10.10.20.10",
+        dst_port=8088,
+        detail={"method": "GET", "uri": "/pixel.gif?utmcmd=checkout"},
+    )
+
+    steps = correlate_events([request], internal_networks=FINAL_NETWORKS)
+
+    assert not any(step["stage"] == "Execution" for step in steps)
+
+
 def test_firewall_boundary_connection_is_initial_access():
     event = network_event(
         source="firewall",
@@ -388,6 +465,44 @@ def test_lateral_hosts_only_use_endpoint_mapping(host_map, expected):
     assert (step["source_host"], step["target_host"]) == expected
     assert (step["source_ip"], step["target_ip"]) == ("192.168.1.10", "192.168.1.20")
     assert step["evidence_event_ids"] == [101]
+
+
+def test_initial_access_does_not_use_network_host_as_target_endpoint():
+    event = network_event(
+        host="10.10.10.10",
+        event_type="http_request",
+        src_ip="10.10.10.10",
+        dst_ip="10.10.20.10",
+        dst_port=8088,
+        detail={"uri": "/vulnerabilities/exec/source.php?cmd=whoami"},
+        anomaly_flags=["initial_access"],
+        severity=3,
+    )
+
+    steps = correlate_events([event], internal_networks=FINAL_NETWORKS)
+    step = next(s for s in steps if s["stage"] == "Initial Access")
+
+    assert step["source_host"] is None
+    assert step["target_host"] is None
+    assert (step["source_ip"], step["target_ip"]) == ("10.10.10.10", "10.10.20.10")
+
+
+def test_c2_does_not_use_network_host_as_source_endpoint():
+    event = network_event(
+        host="10.10.10.20",
+        event_type="http_request",
+        src_ip="10.10.30.10",
+        dst_ip="10.10.10.20",
+        dst_port=8080,
+        detail={"uri": "/test-beacon?data=CASE01_WIN10_FAKE_DATA"},
+    )
+
+    steps = correlate_events([event], internal_networks=FINAL_NETWORKS)
+    step = next(s for s in steps if s["stage"] == "Command and Control")
+
+    assert step["source_host"] is None
+    assert step["target_host"] is None
+    assert (step["source_ip"], step["target_ip"]) == ("10.10.30.10", "10.10.10.20")
 
 
 @pytest.mark.parametrize("ip,hostname,expected", [
@@ -498,7 +613,7 @@ def test_graph_zone_and_original_demo():
                          "data/sample_events/d_attack_chain_events.json").read_text(encoding="utf-8"))
     steps = correlate_events(sample["events"], sample["host_map"])
     graph = build_attack_graph(steps)
-    assert (len(steps), len(graph["nodes"]), len(graph["edges"]), len(find_attack_paths(steps))) == (11, 5, 11, 1)
+    assert (len(steps), len(graph["nodes"]), len(graph["edges"]), len(find_attack_paths(steps))) == (12, 5, 12, 1)
     step = dict(steps[0], source_host=None, source_ip="10.10.10.10",
                 target_host=None, target_ip="10.10.20.10")
     graph = build_attack_graph([step], FINAL_NETWORKS)

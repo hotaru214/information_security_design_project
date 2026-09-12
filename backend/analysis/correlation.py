@@ -4,6 +4,7 @@ from collections import defaultdict, deque
 from datetime import datetime
 from ipaddress import IPv4Network, IPv6Network, ip_address, ip_network
 from typing import Any
+from urllib.parse import unquote_plus
 
 
 ATTACK_TECHNIQUES = {
@@ -236,8 +237,6 @@ SUSPICIOUS_C2_PORTS = {4444, 5555, 6666, 7777, 8080, 9001}
 
 INITIAL_ACCESS_URI_KEYWORDS = [
     "upload",
-    "admin",
-    "login",
     "shell",
     "cmd",
     "eval",
@@ -262,6 +261,30 @@ INITIAL_ACCESS_ATTACK_TYPES = [
     "file_upload",
     "path_traversal",
     "sql_injection",
+]
+
+WEB_COMMAND_EXECUTION_MARKERS = [
+    "&&",
+    ";",
+    "|",
+    "`",
+    "$(",
+    "whoami",
+    "/bin/sh",
+    "/bin/bash",
+    "bash ",
+    "sh ",
+    "powershell",
+    "cmd.exe",
+    "python ",
+    "perl ",
+    "nc ",
+    "netcat",
+    "curl ",
+    "wget ",
+    "chmod ",
+    ".sh",
+    ".ps1",
 ]
 
 
@@ -457,7 +480,7 @@ def detect_initial_access(
             continue
 
         source_host = resolve_host(src_ip, host_map)
-        target_host = resolve_host(dst_ip, host_map) or event["_host"] or None
+        target_host = resolve_host(dst_ip, host_map)
         evidence = [event]
         if target_host:
             evidence.extend(
@@ -528,6 +551,49 @@ def detect_execution(
                 source_ip=None,
                 target_ip=None,
                 description=f"Suspicious command execution was detected on {host}{parent_note}",
+                evidence_events=evidence,
+            )
+        )
+
+    networks = context.get("internal_networks")
+    for event in events:
+        if not is_web_command_execution_event(event, networks):
+            continue
+
+        src_ip = get_value(event, "src_ip")
+        dst_ip = get_value(event, "dst_ip")
+        target_host = resolve_host(dst_ip, host_map)
+        evidence = [event]
+        evidence.extend(
+            [
+                candidate
+                for candidate in find_events_in_window(
+                    events,
+                    event["_time"],
+                    before_minutes=0,
+                    after_minutes=1,
+                    event_types={"http_request"},
+                    limit=8,
+                )
+                if candidate is not event
+                and same_network_endpoints(candidate, src_ip, dst_ip)
+                and (
+                    has_any_flag(candidate, INITIAL_ACCESS_FLAGS + ["http_attack", "t1190"])
+                    or as_text(get_detail(candidate, "mitre_technique")).lower() == "t1190"
+                )
+            ][:2]
+        )
+
+        steps.append(
+            make_step(
+                stage="Execution",
+                technique_id="T1059",
+                timestamp=event["timestamp"],
+                source_host=target_host,
+                target_host=target_host,
+                source_ip=dst_ip,
+                target_ip=dst_ip,
+                description=f"Web command injection from {src_ip} caused command or script execution on {target_host or dst_ip}",
                 evidence_events=evidence,
             )
         )
@@ -775,7 +841,7 @@ def detect_collection(
             src_ip = get_value(event, "src_ip")
             dst_ip = get_value(event, "dst_ip")
             source_host = resolve_host(src_ip, host_map)
-            target_host = resolve_host(dst_ip, host_map) or host
+            target_host = resolve_host(dst_ip, host_map)
             if source_host and target_host and source_host == target_host:
                 continue
 
@@ -863,7 +929,7 @@ def detect_c2(
         if not is_internal_ip(src_ip, networks) or not is_external_ip(dst_ip, networks):
             continue
 
-        source_host = resolve_host(src_ip, host_map) or event["_host"] or None
+        source_host = resolve_host(src_ip, host_map)
         grouped_connections[(source_host, dst_ip, dst_port)].append(event)
 
     for (source_host, dst_ip, dst_port), group in grouped_connections.items():
@@ -912,7 +978,7 @@ def detect_c2(
             or not is_external_ip(get_value(event, "dst_ip"), networks)
         ):
             continue
-        source_host = resolve_host(src_ip, host_map) or event["_host"] or None
+        source_host = resolve_host(src_ip, host_map)
         steps.append(
             make_step(
                 stage="Command and Control",
@@ -986,7 +1052,7 @@ def detect_exfiltration(
         if not large_transfer and not has_any_flag(event, ["exfiltration", "large_upload"]):
             continue
 
-        source_host = resolve_host(src_ip, host_map) or event["_host"] or None
+        source_host = resolve_host(src_ip, host_map)
         source_events = context["by_host"].get(source_host, []) if source_host else []
         collection_evidence = [
             candidate
@@ -1330,6 +1396,64 @@ def is_archive_command(event: dict[str, Any]) -> bool:
         return False
     command_text = f"{event['_process']} {event['_cmdline']}"
     return any(keyword in command_text for keyword in ARCHIVE_COMMAND_KEYWORDS)
+
+
+def is_web_command_execution_event(event: dict[str, Any], internal_networks=None) -> bool:
+    if event["_event_type"] != "http_request":
+        return False
+    if not is_external_ip(get_value(event, "src_ip"), internal_networks):
+        return False
+    if internal_networks is not None and not is_internal_ip(get_value(event, "dst_ip"), internal_networks):
+        return False
+
+    payload = http_payload_text(event)
+    if not payload:
+        return False
+    if http_method(event) not in {"get", "post", "put"}:
+        return False
+    return (
+        any(marker in payload for marker in WEB_COMMAND_EXECUTION_MARKERS)
+        or has_web_command_parameter(payload)
+    )
+
+
+def http_payload_text(event: dict[str, Any]) -> str:
+    parts = [
+        http_uri(event),
+        as_text(get_value(event, "cmdline")),
+        as_text(get_value(event, "description")),
+        as_text(get_value(event, "raw_log")),
+    ]
+
+    detail = event.get("_detail") or event.get("detail") or {}
+    if isinstance(detail, dict):
+        for key in ("body", "request", "payload", "query", "matched_requests"):
+            parts.append(as_text(detail.get(key)))
+        requests = detail.get("http_requests")
+        if isinstance(requests, list):
+            for request in requests:
+                if isinstance(request, dict):
+                    parts.extend(
+                        as_text(request.get(key))
+                        for key in ("method", "uri", "body", "request")
+                    )
+
+    return unquote_plus(" ".join(parts)).lower()
+
+
+def same_network_endpoints(event: dict[str, Any], src_ip: Any, dst_ip: Any) -> bool:
+    return get_value(event, "src_ip") == src_ip and get_value(event, "dst_ip") == dst_ip
+
+
+def has_web_command_parameter(payload: str) -> bool:
+    command_parameters = ("cmd=", "command=", "exec=")
+    return any(
+        payload.startswith(parameter)
+        or f"?{parameter}" in payload
+        or f"&{parameter}" in payload
+        or f" {parameter}" in payload
+        for parameter in command_parameters
+    )
 
 
 def is_internal_http_resource_request(event: dict[str, Any], internal_networks=None) -> bool:

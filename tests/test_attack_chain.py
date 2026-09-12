@@ -80,15 +80,44 @@ def test_ip_endpoint_uses_host_inventory_mapping():
     assert view["links"][0]["source"] == "host:attacker"
 
 
+def test_semantic_duplicate_links_are_merged_for_graph_view():
+    view = module.build_chain_view(
+        [
+            step(step_id="S001", evidence_event_ids=[12, 13],
+                 timestamp="2026-09-08T13:00:00+08:00"),
+            step(step_id="S002", evidence_event_ids=[13, 14],
+                 timestamp="2026-09-08T13:02:00+08:00"),
+            step(step_id="S003", stage="Collection", technique_id="T1005",
+                 technique_name="Data from Local System",
+                 evidence_event_ids=[15],
+                 timestamp="2026-09-08T13:05:00+08:00"),
+        ],
+        4,
+        [],
+    )
+
+    assert view["meta"]["raw_step_count"] == 3
+    assert view["meta"]["step_count"] == 2
+    lateral = next(link for link in view["links"] if link["attack_stage"] == "Lateral Movement")
+    assert lateral["occurrence_count"] == 2
+    assert lateral["step_ids"] == ["S001", "S002"]
+    assert lateral["first_seen"] == "2026-09-08T13:00:00+08:00"
+    assert lateral["last_seen"] == "2026-09-08T13:02:00+08:00"
+    assert lateral["evidence_event_ids"] == [12, 13, 14]
+
+
 def test_original_d_sample():
     path = Path(__file__).resolve().parents[1] / "data/sample_events/d_attack_chain_events.json"
     sample = json.loads(path.read_text(encoding="utf-8"))
     steps = correlate_events(sample["events"], sample["host_map"])
     view = module.build_chain_view(steps, len(sample["events"]), [])
-    assert len(view["links"]) == len(steps) == 11
+    assert len(steps) == 12
+    assert len(view["links"]) == 11
     ids = {n["id"] for n in view["nodes"]}
-    for original, link in zip(steps, view["links"]):
-        assert link["evidence_event_ids"] == original["evidence_event_ids"]
+    assert set().union(*(set(link["evidence_event_ids"]) for link in view["links"])) == set().union(
+        *(set(step["evidence_event_ids"]) for step in steps)
+    )
+    for link in view["links"]:
         assert link["source"] in ids and link["target"] in ids
 
 
