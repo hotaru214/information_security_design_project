@@ -437,6 +437,67 @@ check("任务6", "Linux解析: sshd登录 / audit原始+解释双格式(中文�
                "SERVICE_START / 异常规则生效 / 跨文件去重", t7)
 
 
+# ---------- t8：文件删除/改名解析（E靶场真实审计数据） ----------
+def t8():
+    from linux_log import parse_linux_audit
+
+    audit_path = PROJECT / "E-work" / "raw" / "web" / "web-file-audit.txt"
+    assert audit_path.exists(), f"E真实审计数据缺失: {audit_path}"
+
+    st = {}
+    evs = parse_linux_audit(str(audit_path), st, host="web-server")
+    # E的web审计原本有~117条unlink/rename，修复前全部落入skipped_other被丢弃
+    assert st["by_event_id"].get("file_delete", 0) >= 50, f"unlink应产出file_delete: {st}"
+    assert st["by_event_id"].get("file_modify", 0) >= 10, f"rename应产出file_modify: {st}"
+    assert st["failed"] == 0, st
+
+    # 删除事件：file_path是绝对路径、审计key保留、description可读
+    dele = next(e for e in evs if e["event_type"] == "file_delete")
+    assert dele["detail"]["file_path"] and dele["detail"]["file_path"].startswith("/"), dele
+    assert "删除" in dele["description"] and dele["detail"]["audit_key"] == "case01_file"
+    assert dele["process"] == "dpkg", f"unlink的进程应从exe/comm还原: {dele['process']}"
+
+    # 改名事件：旧/新路径都进detail（nametype DELETE→CREATE）
+    ren = next(e for e in evs if e["event_type"] == "file_modify")
+    assert ren["detail"]["old_path"] and ren["detail"]["new_path"], ren
+    assert "改名" in ren["description"]
+
+
+check("文件删除/改名", "Linux unlink/rename→file_delete/file_modify(E真实数据,修复前全部被丢弃)", t8)
+
+
+# ---------- t9：Sysmon ID 22/23（DNS查询/文件删除，合成XML免evtx二进制） ----------
+def t9():
+    from sysmon import xml_to_event
+
+    # ID 23 文件删除：字段结构照真实Sysmon记录
+    e = xml_to_event(ev_xml(23, ts="2020-09-09T04:31:47.000Z",
+                            provider="Microsoft-Windows-Sysmon",
+                            UtcTime="2020-09-09 04:31:47.000",
+                            Image="C:\\Windows\\System32\\cmd.exe", User="WIN-TEST\\mxy",
+                            TargetFilename="C:\\Users\\mxy\\AppData\\Roaming\\implant.exe",
+                            Hashes="SHA256=ABC123", IsExecutable="true", Archived="false"))
+    assert e["event_type"] == "file_delete" and e["source_event_id"] == 23
+    assert e["detail"]["file_path"].endswith("implant.exe") and e["process"] == "cmd.exe"
+    assert e["user"] == "WIN-TEST\\mxy"
+    assert e["timestamp"].startswith("2020-09-09T12:31:47"), "UTC要转UTC+8"
+
+    # ID 22 DNS查询
+    e = xml_to_event(ev_xml(22, ts="2020-09-09T04:32:00.000Z",
+                            provider="Microsoft-Windows-Sysmon",
+                            Image="C:\\Windows\\System32\\curl.exe",
+                            QueryName="c2.evil.com", QueryStatus="0",
+                            QueryResults="type:  5 evil.com;::ffff:185.199.108.153;"))
+    assert e["event_type"] == "dns_query" and e["detail"]["query_name"] == "c2.evil.com"
+    assert e["detail"]["query_results"], "QueryResults要保留（C2解析线索）"
+
+    # 不关心的ID仍返回None（回归）
+    assert xml_to_event(ev_xml(5, UtcTime="2020-09-09 04:31:47.000")) is None
+
+
+check("Sysmon 22/23", "ID23→file_delete / ID22→dns_query(与sysmon_json.py词表对齐) / 非目标ID回归", t9)
+
+
 # ---------- 汇总 ----------
 print("-" * 56)
 if all(results):

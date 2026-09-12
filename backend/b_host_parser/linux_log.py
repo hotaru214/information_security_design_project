@@ -26,6 +26,8 @@ parse_linux_audit —— auditd（2026-09-08按E真实数据适配，支持两�
       SYSCALL execve + EXECVE（argv配对）          → process_start（进程+完整命令行，D的核心需求）
       SYSCALL open/openat + PATH（敏感文件访问）    → file_read/file_write（按open flags
                                                      区分读写，相对路径会和CWD拼成绝对路径）
+      SYSCALL unlink/unlinkat/rmdir + PATH         → file_delete（nametype=DELETE的PATH才是被删文件）
+      SYSCALL rename/renameat/renameat2 + PATH     → file_modify（DELETE=旧路径/CREATE=新路径都进detail）
       SYSCALL connect/accept + SOCKADDR（仅inet）   → network_connection（本地unix socket是噪音，跳过）
       SERVICE_START / SERVICE_STOP                 → service_started / service_stopped
       其余（CONFIG_CHANGE/BPF/USER_AUTH/...）       → skipped_other 计数
@@ -79,11 +81,15 @@ _SYSCALL_NUM2NAME = {
     "2": "open", "257": "openat", "304": "open_by_handle_at",
     "59": "execve",
     "42": "connect", "43": "accept", "288": "accept4",
+    "87": "unlink", "263": "unlinkat", "84": "rmdir",
+    "82": "rename", "264": "renameat", "316": "renameat2",
 }
 FILE_OPEN_SYSCALLS = {"open", "openat", "open_by_handle_at"}
 EXEC_SYSCALLS = {"execve"}
 CONNECT_SYSCALLS = {"connect"}
 ACCEPT_SYSCALLS = {"accept", "accept4"}
+FILE_DELETE_SYSCALLS = {"unlink", "unlinkat", "rmdir"}
+RENAME_SYSCALLS = {"rename", "renameat", "renameat2"}
 
 
 def _kv_pairs(text: str) -> dict:
@@ -201,6 +207,13 @@ def _parse_sockaddr(rest: str):
         if ip:
             return "inet", ip.group(1), int(port.group(1)) if port else None
     return None
+
+
+def _resolve_path(fname, g: dict):
+    """相对路径拼CWD成绝对路径（文件访问/删除/改名分支共用同一规则）。"""
+    if fname and not fname.startswith("/") and g.get("cwd"):
+        return g["cwd"].rstrip("/") + "/" + fname
+    return fname
 
 
 def _new_event(ts, host, source, event_type, user, process, src_ip,
@@ -339,7 +352,9 @@ def parse_linux_audit(file_path: str, stats: dict = None, host: str = None) -> l
                         kv = _kv_pairs(rest)
                         name = kv.get("name")
                         if name and name != "(null)":
-                            g.setdefault("paths", []).append((int(kv.get("item") or 0), name))
+                            # nametype：DELETE=被删/改名前，CREATE=改名后（rename/delete分支要用）
+                            g.setdefault("paths", []).append(
+                                (int(kv.get("item") or 0), name, kv.get("nametype")))
                     elif rtype == "CWD":
                         g["cwd"] = _kv_pairs(rest).get("cwd")
                     elif rtype == "SOCKADDR":
@@ -388,9 +403,7 @@ def parse_linux_audit(file_path: str, stats: dict = None, host: str = None) -> l
 
         if name in FILE_OPEN_SYSCALLS:  # 敏感文件访问 → file_read / file_write
             paths = sorted(g.get("paths", []), key=lambda p: p[0])
-            fname = paths[-1][1] if paths else None  # item最大的那条才是目标文件
-            if fname and not fname.startswith("/") and g.get("cwd"):
-                fname = g["cwd"].rstrip("/") + "/" + fname  # 相对路径拼CWD成绝对路径
+            fname = _resolve_path(paths[-1][1] if paths else None, g)  # item最大的那条才是目标文件
             exe = sk.get("exe")
             process = _basename(exe) or _basename(sk.get("comm"))
             # 读写区分（D靠它匹配外传/落盘行为）：openat 的 flags 在 a2、open 在 a1。
@@ -417,6 +430,45 @@ def parse_linux_audit(file_path: str, stats: dict = None, host: str = None) -> l
                             f"{fname or '路径未记录'}（进程: {process or '未知'}）",
                 raw_line="\n".join(g["raw"])))
             stats["by_event_id"][event_type] = stats["by_event_id"].get(event_type, 0) + 1
+
+        elif name in FILE_DELETE_SYSCALLS:  # 文件删除（任务书"删除"操作；E的web审计有大量unlink记录）
+            paths = sorted(g.get("paths", []), key=lambda p: p[0])
+            # PATH的nametype=DELETE才是被删文件本身（item=0往往是父目录PARENT），缺失则退回item最大者
+            deleted = next((p[1] for p in paths if p[2] == "DELETE"),
+                           paths[-1][1] if paths else None)
+            fname = _resolve_path(deleted, g)
+            exe = sk.get("exe")
+            process = _basename(exe) or _basename(sk.get("comm"))
+            events.append(_new_event(
+                ts=g["ts"], host=host, source="linux_audit", event_type="file_delete",
+                user=user, process=process, src_ip=None,
+                detail={**base_detail, "file_path": fname, "syscall": name,
+                        "comm": sk.get("comm") or None, "exe": exe},
+                description=f"敏感文件删除: {fname or '路径未记录'}（进程: {process or '未知'}）",
+                raw_line="\n".join(g["raw"])))
+            stats["by_event_id"]["file_delete"] = stats["by_event_id"].get("file_delete", 0) + 1
+
+        elif name in RENAME_SYSCALLS:  # 文件改名 → file_modify（旧路径nametype=DELETE/新路径CREATE）
+            paths = sorted(g.get("paths", []), key=lambda p: p[0])
+            old = next((p[1] for p in paths if p[2] == "DELETE"), None)
+            new = next((p[1] for p in paths if p[2] == "CREATE"), None)
+            if old is None and new is None and paths:  # nametype缺失时按item顺序兜底
+                old = paths[0][1]
+                new = paths[1][1] if len(paths) > 1 else None
+            old_p = _resolve_path(old, g)
+            new_p = _resolve_path(new, g)
+            exe = sk.get("exe")
+            process = _basename(exe) or _basename(sk.get("comm"))
+            events.append(_new_event(
+                ts=g["ts"], host=host, source="linux_audit", event_type="file_modify",
+                user=user, process=process, src_ip=None,
+                detail={**base_detail, "file_path": old_p or new_p, "old_path": old_p,
+                        "new_path": new_p, "syscall": name,
+                        "comm": sk.get("comm") or None, "exe": exe},
+                description=f"敏感文件改名: {old_p or '路径未记录'} → {new_p or '路径未记录'}"
+                            f"（进程: {process or '未知'}）",
+                raw_line="\n".join(g["raw"])))
+            stats["by_event_id"]["file_modify"] = stats["by_event_id"].get("file_modify", 0) + 1
 
         elif name in EXEC_SYSCALLS:  # 进程执行 → process_start（EXECVE带完整argv）
             args = []

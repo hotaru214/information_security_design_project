@@ -19,3 +19,6 @@ data/datasets/
 data/ingest/
 data/ingest/
 backend/data/
+
+# E最终批次EventOut（66MB，按约定不进git，可由build_e_final_batch.py一键复现）
+data/sample_events/e_final_host_eventout.json

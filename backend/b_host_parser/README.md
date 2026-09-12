@@ -21,10 +21,14 @@
 | Sysmon .evtx | ID 3 网络连接 | network_connection（src/dst IP+端口+协议，对齐网络事件字段） |
 | Sysmon .evtx | ID 11 文件创建 | file_create |
 | Sysmon .evtx | ID 13 注册表键值 | registry_set |
+| Sysmon .evtx | ID 22 DNS查询 | dns_query（与sysmon_json.py、C的DNS事件同词表） |
+| Sysmon .evtx | ID 23 文件删除 | file_delete（与sysmon_json.py对齐） |
 | Linux auth.log | sshd Accepted/Failed | login_success / login_failed（含invalid_user线索；合成样本见 data/sample_logs/linux/） |
 | Linux audit.log | sudo USER_CMD（HEX命令解码） | process_start（sudo信息放detail，D决议） |
 | Linux audit（原始/ausearch -i解释 双格式） | execve + EXECVE | process_start（完整命令行cmdline） |
 | Linux audit（同上） | open/openat + PATH/CWD | file_read / file_write（按open flags区分读写，D的外传/落盘匹配用；相对路径自动拼CWD成绝对路径） |
+| Linux audit（同上） | unlink/unlinkat/rmdir + PATH | file_delete（nametype=DELETE的PATH才是被删文件） |
+| Linux audit（同上） | rename/renameat/renameat2 + PATH | file_modify（旧路径nametype=DELETE/新路径CREATE，都进detail） |
 | Linux audit（同上） | connect/accept + SOCKADDR(仅inet) | network_connection（本地unix socket噪音自动跳过） |
 | Linux audit（同上） | SERVICE_START / SERVICE_STOP | service_started / service_stopped |
 
@@ -54,7 +58,7 @@ python run_parse.py --dir "..\..\data\sample_logs"
 python run_parse.py <文件.evtx> --post http://127.0.0.1:8000/api/events/import
 ```
 
-自检：`python verify_day1.py`（Day1产出回归）+ `python verify_day2.py`（Day2新功能，6项）。
+自检：`python verify_day1.py`（Day1产出回归）+ `python verify_day2.py`（Day2新功能，9项）。
 
 ## 文件结构
 
@@ -69,19 +73,19 @@ backend/b_host_parser/
 ├── import_client.py   # 落地.jsonl / 批量POST给A
 ├── run_parse.py       # 命令行入口（单文件 / --dir 全量导入）
 ├── verify_day1.py     # 一键自检（Day1产出回归，7项）
-├── verify_day2.py     # 一键自检（Day2新功能，6项）
+├── verify_day2.py     # 一键自检（Day2新功能，9项）
 └── requirements.txt
 ```
 
 ## E 最终批次导出（2026-09-09，A 封箱合并用）
 
-一条命令从 E 最终原始主机日志复现整批标准事件（47,055 条，全过 C 侧 `validate_events` 预检）：
+一条命令从 E 最终原始主机日志复现整批标准事件（47,195 条，全过 C 侧 `validate_events` 预检）：
 
 ```bash
 python backend/b_host_parser/build_e_final_batch.py          # → data/output/e_final_host_events.json
 python scripts/reset_import_export.py --name e_final_host \
     --events data/output/e_final_host_events.json --hosts data/hosts_e_case01.csv
-# → data/sample_events/e_final_host_eventout.json（EventOut，id 1~47055，batch_id=e_final_host）
+# → data/sample_events/e_final_host_eventout.json（EventOut，id 1~47195，batch_id=e_final_host）
 ```
 
 覆盖输入：core-server 的 `core-auth.log`（**rsyslog ISO 8601 时间格式已支持**，见 linux_log.py `_AUTH_HEAD_ISO`）+ 三个 auditd txt、web-server 的三个 auditd txt、office-win 的 `security-final.evtx` + `system-final.evtx`。evtx 的 Computer 字段（DESKTOP-88HQCN9/WIN-UL7KE8FN5I6）自动对齐成 `hosts_e_case01.csv` 里的靶机名 win10-jump。eventout 约 72MB，按 apt29 先例保持未跟踪、不进 git。

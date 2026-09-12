@@ -10,6 +10,8 @@ Sysmon 日志解析器（Day2任务7提前完成——应A同学"要进程/文�
     ID 3   网络连接      → network_connection（src/dst IP + 端口 + 协议，桥接C的流量数据）
     ID 11  文件创建      → file_create
     ID 13  注册表键值修改 → registry_set
+    ID 22  DNS查询       → dns_query（与sysmon_json.py、C的DNS事件同一词表）
+    ID 23  文件删除      → file_delete（与sysmon_json.py对齐，补齐任务书"删除"操作）
 
 用法:
     from sysmon import parse_sysmon_evtx
@@ -28,12 +30,28 @@ SUPPORTED = {
     3: "network_connection",
     11: "file_create",
     13: "registry_set",
+    22: "dns_query",
+    23: "file_delete",
 }
 
 
 def _record_to_event(record) -> dict:
-    """把单条Sysmon记录转成标准事件。不关心的ID返回None，异常向上抛。"""
-    xml_text = record.xml()
+    """python-evtx的record适配层：取出XML文本交给xml_to_event（record只兜底时间戳）。"""
+    fallback_ts = None
+    try:
+        fallback_ts = record.timestamp()
+    except Exception:
+        pass
+    return xml_to_event(record.xml(), fallback_ts)
+
+
+def xml_to_event(xml_text: str, fallback_ts=None) -> dict:
+    """把单条Sysmon记录的XML文本转成标准事件dict。
+
+    fallback_ts : XML里TimeCreated缺失时的兜底时间（evtx记录头FILETIME，UTC）。
+    返回 None 表示这条记录不是我们关心的事件ID（由调用方计入 skipped_other）。
+    解析异常会抛出（由调用方按"条"捕获，一条坏了不能影响整个文件）。
+    """
     root = ET.fromstring(xml_text)
 
     event_id_text = root.findtext(f"{NS}System/{NS}EventID")
@@ -52,7 +70,7 @@ def _record_to_event(record) -> dict:
             ts = to_utc8(_try_iso(raw))
     if ts is None:
         try:
-            ts = to_utc8(record.timestamp())
+            ts = to_utc8(fallback_ts)
         except Exception:
             ts = None
 
@@ -97,6 +115,23 @@ def _record_to_event(record) -> dict:
         description = f"文件创建: {target}（进程: {image}）"
         detail = {"file_path": target,
                   "creation_utc_time": _clean(data.get("CreationUtcTime"))}
+        extra = dict()
+
+    elif event_id == 22:  # DNS查询（QueryResults可能是"a 1.2.3.4;aaaa ::1"多值形态）
+        query = _clean(data.get("QueryName"))
+        description = f"DNS查询: {query or '未记录'}（进程: {image or '未知'}）"
+        detail = {"query_name": query,
+                  "query_results": _clean(data.get("QueryResults")),
+                  "query_status": _clean(data.get("QueryStatus"))}
+        extra = dict()
+
+    elif event_id == 23:  # 文件删除（补齐任务书"删除"操作；Hashes/IsExecutable助判植入物）
+        target = _clean(data.get("TargetFilename"))
+        description = f"文件删除: {target}（进程: {image or '未知'}）"
+        detail = {"file_path": target,
+                  "is_executable": _clean(data.get("IsExecutable")),
+                  "hashes": _clean(data.get("Hashes")),
+                  "archived": _clean(data.get("Archived"))}
         extra = dict()
 
     else:  # ID 13 注册表键值修改（detail键名按Event V2契约）
